@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <arg name="42_cmd_type"  default="vel_forward"   doc="type [position,vel_forward,vel_backward]"/>
+
+    <node pkg="stepper_motor_42" type="stepper_motor_42_node" name="motor_42" output="screen">
+        <param name="motor_cmd_type" type="string" value="$(arg 42_cmd_type)"/>
+        <rosparam command="load" file="$(find general_file)/config/motor_config/42_config.yaml"/>
+    </node>
+</launch>

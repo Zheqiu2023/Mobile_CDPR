@@ -1,0 +1,12 @@
+# 正转电动缸前伸，反转缩回  导程4mm
+motor_ctrl_data:
+  goal_pos_arr: [0, 0x19, 0, 0] 
+  goal_vel_forward_arr: [0, 0, 0, 100] 
+  goal_vel_reverse_arr: [0, 0, 0, 100]
+operating_param:    # 运行参数：启动周期   恒速周期    加速步数    加速系数   细分    工作模式
+  plus_start_time: [0xf4, 0x01, 0, 0, 0x10]
+  plus_constant_time: [0x3c, 0, 0, 0, 0x0e]
+  acc_steps: [0x20, 0x03, 0, 0, 0]
+  acc_cof: [0xcd, 0xcc, 0x4c, 0x3d, 0x12]
+  sub_divide: [0x20, 0, 0, 0, 0x0a]
+  reset_mode: [0, 0, 0, 0, 0x0c]

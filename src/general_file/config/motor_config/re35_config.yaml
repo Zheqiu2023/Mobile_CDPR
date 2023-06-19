@@ -1,0 +1,4 @@
+reduction_ratio: 35   # 减速比
+encoder_lines_num: 2000   # 4倍频后的编码器线数
+motor_ctrl_data:
+  goal_pos_vec: [22.5, 45.0, 90.0, 180.0]    # 目标位置(°)

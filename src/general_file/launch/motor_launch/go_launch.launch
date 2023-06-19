@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <!-- 控制模式：0：位置，1：速度，2：力矩，3：贝塞尔轨迹规划，4：五次多项式轨迹规划 -->
+    <arg name="cmd_type" default="3" doc="type [0,1,2,3,4]"/>
+
+    <node pkg="unitree_motor_go" type="unitree_motor_go_node" name="go" output="screen">
+        <param name="cmd_type" type="int" value="$(arg cmd_type)"/>
+        <rosparam command="load" file="$(find general_file)/config/motor_config/go_config.yaml"/>
+        <rosparam command="load" file="$(find general_file)/config/interpolation_config.yaml"/>
+    </node>
+</launch>

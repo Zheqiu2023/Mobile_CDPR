@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <arg name="57_cmd_type"  default="vel_backward"   doc="type [position,vel_forward,vel_backward]"/>
+    
+    <node pkg="stepper_motor_57" type="stepper_motor_57_node" name="motor_57" output="screen">
+        <param name="motor_cmd_type" type="string" value="$(arg 57_cmd_type)"/>
+        <rosparam command="load" file="$(find general_file)/config/motor_config/57_config.yaml"/>
+    </node>
+</launch>

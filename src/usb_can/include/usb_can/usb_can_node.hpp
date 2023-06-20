@@ -43,6 +43,10 @@ TransferStation::TransferStation()
 {
     subs_.push_back(nh_.subscribe<general_file::can_msgs>(
         "/usbcan/motor_42", 100, boost::bind(&TransferStation::canCallback, this, _1, CAN_IND0)));
+    subs_.push_back(nh_.subscribe<general_file::can_msgs>(
+        "/usbcan/motor_57", 100, boost::bind(&TransferStation::canCallback, this, _1, CAN_IND0)));
+    subs_.push_back(nh_.subscribe<general_file::can_msgs>(
+        "/usbcan/motor_re35", 100, boost::bind(&TransferStation::canCallback, this, _1, CAN_IND1)));
     pub_ = nh_.advertise<general_file::can_msgs>("/usbcan/can_pub", 100);
 }
 

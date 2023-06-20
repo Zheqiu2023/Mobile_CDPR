@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
+    <!-- 正转电动缸缩回，反转前伸 -->
     <arg name="42_cmd_type"  default="vel_forward"   doc="type [position,vel_forward,vel_backward]"/>
 
     <node pkg="stepper_motor_42" type="stepper_motor_42_node" name="motor_42" output="screen">

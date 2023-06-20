@@ -89,11 +89,11 @@ void MsgBox::setCmd(StepperMotorRunMode cmd_mode)
 
     send_cmd_.ID = 0xc1;  // 帧ID，与驱动器地址相同
     send_cmd_.SendType = 1;  // 单次发送（只发送一次，发送失败不会自动重发，总线只产生一帧数据）
-    send_cmd_.RemoteFlag = 0;                                   // 0为数据帧，1为远程帧
-    send_cmd_.ExternFlag = 0;                                   // 0为标准帧，1为拓展帧
-    send_cmd_.DataLen = 8;                                      // 数据长度8字节
-    send_cmd_.Data[0] = static_cast<unsigned char>(0xc1 >> 3);  // CAN 驱动器地址0x0c1(11bits)的高 8bits
-    send_cmd_.Data[1] = static_cast<unsigned char>(0xc1 << 5);  // CAN 驱动器地址的低 3bits，后五位一般设置为 0
+    send_cmd_.RemoteFlag = 0;                                           // 0为数据帧，1为远程帧
+    send_cmd_.ExternFlag = 0;                                           // 0为标准帧，1为拓展帧
+    send_cmd_.DataLen = 8;                                              // 数据长度8字节
+    send_cmd_.Data[0] = static_cast<unsigned char>(send_cmd_.ID >> 3);  // CAN 驱动器地址0x0c1(11bits)的高 8bits
+    send_cmd_.Data[1] = static_cast<unsigned char>(send_cmd_.ID << 5);  // CAN 驱动器地址的低 3bits，后五位一般设置为 0
     switch (cmd_mode)
     {
         case StepperMotorRunMode::RESET:
@@ -197,28 +197,31 @@ void MotorParam::writeParam()
 {
     ros::NodeHandle nh;
     ros::Publisher pub = nh.advertise<general_file::can_msgs>("/usbcan/motor_42", 100);
-    std::array<general_file::can_msgs, 6> data_arr;  // data_arr[0]:启动周期   data_arr[1]:恒速周期 data_arr[2]:加速步数
+    std::array<general_file::can_msgs, 8> data_arr;  // data_arr[0]:启动周期   data_arr[1]:恒速周期 data_arr[2]:加速步数
                                                      // data_arr[3]:加速系数   data_arr[4]:细分    data_arr[5]：工作模式
+                                                     // data_arr[6]：相电流    data_arr[7]：CAN ID
     for (auto& data : data_arr)
     {
         data.ID = 0xc1;  // 帧ID，与驱动器地址相同
         data.SendType = 1;  // 单次发送（只发送一次，发送失败不会自动重发，总线只产生一帧数据）
-        data.RemoteFlag = 0;                                   // 0为数据帧，1为远程帧
-        data.ExternFlag = 0;                                   // 0为标准帧，1为拓展帧
-        data.DataLen = 8;                                      // 数据长度8字节
-        data.Data[0] = static_cast<unsigned char>(0xc1 >> 3);  // CAN 驱动器地址0x0c1(11bits)的高 8bits
-        data.Data[1] = static_cast<unsigned char>(0xc1 << 5);  // CAN 驱动器地址的低 3bits，后五位一般设置为 0
+        data.RemoteFlag = 0;                                      // 0为数据帧，1为远程帧
+        data.ExternFlag = 0;                                      // 0为标准帧，1为拓展帧
+        data.DataLen = 8;                                         // 数据长度8字节
+        data.Data[0] = static_cast<unsigned char>(data.ID >> 3);  // CAN 驱动器地址(11bits)的高 8bits
+        data.Data[1] = static_cast<unsigned char>(data.ID << 5);  // CAN 驱动器地址的低 3bits，后五位一般设置为 0
         data.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X13);  // 运行参数保存到内存
     }
     // 小端模式：低地址存放低位
-    std::vector<std::vector<int>> data_vec{ { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 } };
+    std::vector<std::vector<int>> data_vec(8, std::vector<int>{ 0 });
     ros::param::get("/motor_42/operating_param/plus_start_time", data_vec[0]);
     ros::param::get("/motor_42/operating_param/plus_constant_time", data_vec[1]);
     ros::param::get("/motor_42/operating_param/acc_steps", data_vec[2]);
     ros::param::get("/motor_42/operating_param/acc_cof", data_vec[3]);
     ros::param::get("/motor_42/operating_param/sub_divide", data_vec[4]);
     ros::param::get("/motor_42/operating_param/reset_mode", data_vec[5]);
-    for (size_t i = 0; i < 6; ++i)
+    ros::param::get("/motor_42/operating_param/phase_current", data_vec[6]);
+    ros::param::get("/motor_42/operating_param/can_id", data_vec[7]);
+    for (size_t i = 0; i < data_vec.size(); ++i)
     {
         for (size_t j = 0; j < 5; ++j)
         {
@@ -232,6 +235,7 @@ void MotorParam::writeParam()
         pub.publish(data);
         usleep(100000);
     }
+
     ROS_INFO_STREAM("********************************");
     data_arr[0].Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X14);  // 运行参数保存到flash，掉电数据不丢失
     pub.publish(data_arr[0]);
@@ -246,18 +250,18 @@ void MotorParam::readParam()
 {
     ros::NodeHandle nh;
     ros::Publisher pub = nh.advertise<general_file::can_msgs>("/usbcan/motor_42", 100);
-    std::array<general_file::can_msgs, 7> data_arr;  // data_arr[0]:启动周期   data_arr[1]:恒速周期 data_arr[2]:加速步数
+    std::array<general_file::can_msgs, 8> data_arr;  // data_arr[0]:启动周期   data_arr[1]:恒速周期 data_arr[2]:加速步数
                                                      // data_arr[3]:加速系数   data_arr[4]:细分    data_arr[5]：工作模式
-                                                     // data_arr[6]：相电流
+                                                     // data_arr[6]：相电流    data_arr[7]：CAN ID
     for (auto& data : data_arr)
     {
         data.ID = 0xc1;  // 帧ID，与驱动器地址相同
         data.SendType = 1;  // 单次发送（只发送一次，发送失败不会自动重发，总线只产生一帧数据）
-        data.RemoteFlag = 0;                                   // 0为数据帧，1为远程帧
-        data.ExternFlag = 0;                                   // 0为标准帧，1为拓展帧
-        data.DataLen = 8;                                      // 数据长度8字节
-        data.Data[0] = static_cast<unsigned char>(0xc1 >> 3);  // CAN 驱动器地址0x0c1(11bits)的高 8bits
-        data.Data[1] = static_cast<unsigned char>(0xc1 << 5);  // CAN 驱动器地址的低 3bits，后五位一般设置为 0
+        data.RemoteFlag = 0;                                      // 0为数据帧，1为远程帧
+        data.ExternFlag = 0;                                      // 0为标准帧，1为拓展帧
+        data.DataLen = 8;                                         // 数据长度8字节
+        data.Data[0] = static_cast<unsigned char>(data.ID >> 3);  // CAN 驱动器地址(11bits)的高 8bits
+        data.Data[1] = static_cast<unsigned char>(data.ID << 5);  // CAN 驱动器地址的低 3bits，后五位一般设置为 0
         data.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X13);  // 运行参数读取
         for (size_t i = 3; i < data.DataLen; ++i)
         {
@@ -271,8 +275,8 @@ void MotorParam::readParam()
     data_arr[4].Data[7] = 11;
     data_arr[5].Data[7] = 13;
     data_arr[6].Data[7] = 23;
+    data_arr[7].Data[7] = 9;
 
-    ROS_INFO_STREAM("Reading operating parameters!");
     for (auto& data : data_arr)
     {
         pub.publish(data);

@@ -1,0 +1,30 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "${default}",
+                "limitSymbolsToIncludedHeaders": false
+            },
+            "includePath": [
+                "/usr/include",
+                "${workspaceFolder}/src/unitree_motor_a1/include",
+                "${workspaceFolder}/src/unitree_motor_go/include",
+                "${workspaceFolder}/src/stepper_motor_57/include/stepper_motor_57",
+                "${workspaceFolder}/src/stepper_motor_42/include/stepper_motor_42",
+                "${workspaceFolder}/src/motor_re35/include/motor_re35",
+                "${workspaceFolder}/src/general_file/include/general_file",
+                "${workspaceFolder}/src/usb_can/include/usb_can",
+                "${workspaceFolder}/src/tension_sensors/include/tension_sensors",
+                "${workspaceFolder}/devel/include",
+                "/opt/ros/kinetic/include"
+            ],
+            "name": "ROS",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu11",
+            "cppStandard": "c++17",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
+        }
+    ],
+    "version": 4
+}

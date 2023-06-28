@@ -24,8 +24,9 @@ class TensionSensors
     TensionSensors();
     ~TensionSensors();
     int openPort(int& fd, const std::string& dev) const;
-    int setPort(const int& fd, const int& nSpeed, const int& nBits, const char& nEvent, const int& nStop) const;
-    void start_read();
+    int configPort(const int& fd, const int& baud_rate, const int& data_bytes, const char& check_bit,
+                   const int& stop_bits) const;
+    void startRead();
 
   private:
     int fd_;

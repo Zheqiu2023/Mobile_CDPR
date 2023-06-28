@@ -28,7 +28,7 @@ int main(int argc, char** argv)
 
     usb_can::TransferStation transfer_station;
 
-    ros::Rate loop_rate(1500000);
+    ros::Rate loop_rate(10000);
     while (ros::ok())
     {
         transfer_station.publishMsgs();

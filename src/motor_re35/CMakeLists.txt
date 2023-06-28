@@ -11,6 +11,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   general_file
+  std_msgs
 )
 
 ## System dependencies are found with CMake's conventions

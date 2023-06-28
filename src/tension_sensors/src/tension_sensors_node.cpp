@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
     ros::init(argc, argv, "tension_sensors_node");
 
     tension_sensors::TensionSensors tension_sensors;
-    tension_sensors.start_read();
+    tension_sensors.startRead();
 
     return 0;
 }

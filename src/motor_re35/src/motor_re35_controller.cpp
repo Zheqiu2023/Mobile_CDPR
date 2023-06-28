@@ -10,30 +10,24 @@
  *  Use of this source code is governed by the BSD 3-Clause license, see LICENSE.
  *  ***********************************************************************************
  */
-
-#include <pthread.h>
 #include <ros/ros.h>
 
 #include "motor_re35.hpp"
-#include "usb_can.hpp"
 
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "motor_re35");
 
-    can_init::CanInit can_handler;
-    // 打开设备：注意一个设备只能打开一次
-    if (VCI_OpenDevice(VCI_USBCAN2, DEV_IND, 0) != 1)
+    motor_re35::MotorRun m_run;
+
+    ros::Rate loop_rate(1000);
+    m_run.init();
+    while (ros::ok())
     {
-        ROS_ERROR_STREAM("Failed to open USBCAN!");
-        exit(EXIT_FAILURE);
+        m_run.run();
+        ros::spinOnce();
+        loop_rate.sleep();
     }
-    can_handler.initCAN(VCI_USBCAN2, DEV_IND, CAN_IND1, MotorType::MOTOR_RE35);  // 打开CAN通道2
-
-    motor_re35::Re35Run re35_run;
-
-    VCI_CloseDevice(VCI_USBCAN2, DEV_IND);  // 关闭设备
-    ROS_INFO_STREAM("Close USBCAN Successfully!");
 
     return 0;
 }

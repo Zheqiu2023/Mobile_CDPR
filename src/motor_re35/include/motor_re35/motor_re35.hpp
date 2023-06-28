@@ -12,36 +12,46 @@
  */
 #pragma once
 
+#include <ros/ros.h>
+#include <set>
+#include <std_msgs/Float64.h>
+
+#include "general_file/can_msgs.h"
 #include "controlcan.h"
-
-enum class Re35RunMode
-{
-    RESET,           // 复位
-    MODE_SELECTION,  // 模式选择
-    CONFIG,          // 配置指令
-};
-
-constexpr signed short PWM_LIM = 5000;  // pwm限制值
-constexpr signed short VEL_LIM = 6000;  // 速度限制值(RPM)
+#include "ctrl_algorithm.hpp"
 
 namespace motor_re35
 {
-class Re35Sender
-{
-  public:
-    void transmitCmd();                 // 发送指令
-    void setCmd(Re35RunMode cmd_mode);  // 设置指令
-    VCI_CAN_OBJ send_cmd_{};            // 待发送的指令
-};
+constexpr unsigned short PWM_LIM = 5000;  // pwm限制值：0~5000，若供电电压与额定电压一致，设为5000
 
-class Re35Run
+class MsgBox
 {
   public:
-    Re35Run();
-    static void* receiveFunc(void* arg);
-    static void* transmitFunc(void* arg);
+    MsgBox();
+    void publishCmd(const general_file::can_msgs& cmd);
+    void recvCANMsgs(const general_file::can_msgs::ConstPtr& msg);
+    void recvTension(const std_msgs::Float64::ConstPtr& tension);
+    double getTension();
 
   private:
-    Re35Sender sender_{};
+    ros::NodeHandle nh_;
+    ros::Publisher pub_;
+    ros::V_Subscriber subs_;
+    std::vector<double> tension_vec_{};
+    double force_ = 0;
+    int times = 0;
+};
+
+class MotorRun
+{
+  public:
+    MotorRun();
+    void run();
+    void init();
+
+  private:
+    general_file::can_msgs pub_cmd_{};
+    ctrl_algorithm::PID pid_;
+    MsgBox msg_box_;
 };
 }  // namespace motor_re35

@@ -51,7 +51,6 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   can_msgs.msg
-  tension_msgs.msg
 )
 
 ## Generate services in the 'srv' folder

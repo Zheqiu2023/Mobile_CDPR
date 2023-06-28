@@ -73,9 +73,7 @@ MsgBox::~MsgBox()
 
 void MsgBox::recvCallback(const general_file::can_msgs::ConstPtr& msg)
 {
-    general_file::can_msgs temp_msgs_ = *msg;
-    memcpy(&recv_msgs_, &temp_msgs_, sizeof(temp_msgs_));
-    if (recv_msgs_.Data[2] == 0x41 && recv_msgs_.Data[7] == 0)
+    if (msg->Data[2] == 0x41 && msg->Data[7] == 0)
         sem_post(&sem_trans_);
 }
 
@@ -87,37 +85,37 @@ void MsgBox::setCmd(StepperMotorRunMode cmd_mode)
 {
     std::vector<int> data_vec{ 0, 0, 0, 0 };
 
-    send_cmd_.ID = 0xc2;  // 帧ID，与驱动器地址相同
-    send_cmd_.SendType = 1;  // 单次发送（只发送一次，发送失败不会自动重发，总线只产生一帧数据）
-    send_cmd_.RemoteFlag = 0;                                           // 0为数据帧，1为远程帧
-    send_cmd_.ExternFlag = 0;                                           // 0为标准帧，1为拓展帧
-    send_cmd_.DataLen = 8;                                              // 数据长度8字节
-    send_cmd_.Data[0] = static_cast<unsigned char>(send_cmd_.ID >> 3);  // CAN 驱动器地址0x0c1(11bits)的高 8bits
-    send_cmd_.Data[1] = static_cast<unsigned char>(send_cmd_.ID << 5);  // CAN 驱动器地址的低 3bits，后五位一般设置为 0
+    pub_cmd_.ID = 0xc2;  // 帧ID，与驱动器地址相同
+    pub_cmd_.SendType = 1;  // 单次发送（只发送一次，发送失败不会自动重发，总线只产生一帧数据）
+    pub_cmd_.RemoteFlag = 0;                                          // 0为数据帧，1为远程帧
+    pub_cmd_.ExternFlag = 0;                                          // 0为标准帧，1为拓展帧
+    pub_cmd_.DataLen = 8;                                             // 数据长度8字节
+    pub_cmd_.Data[0] = static_cast<unsigned char>(pub_cmd_.ID >> 3);  // CAN 驱动器地址0x0c1(11bits)的高 8bits
+    pub_cmd_.Data[1] = static_cast<unsigned char>(pub_cmd_.ID << 5);  // CAN 驱动器地址的低 3bits，后五位一般设置为 0
     switch (cmd_mode)
     {
         case StepperMotorRunMode::RESET:
-            send_cmd_.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X01);  // 复位命令(需要返回)
-            send_cmd_.Data[7] = 1;                                                      // 复位完毕，返回命令
+            pub_cmd_.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X01);  // 复位命令(需要返回)
+            pub_cmd_.Data[7] = 1;                                                      // 复位完毕，返回命令
             break;
         case StepperMotorRunMode::POS:
             ros::param::get("/motor_57/motor_ctrl_data/goal_pos_arr", data_vec);
-            send_cmd_.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X02);  // 定位命令(需要返回)
-            send_cmd_.Data[7] = 1;                                                      // 到位后，返回命令
+            pub_cmd_.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X02);  // 定位命令(需要返回)
+            pub_cmd_.Data[7] = 1;                                                      // 到位后，返回命令
             break;
         case StepperMotorRunMode::VEL_FORWARD:
             ros::param::get("/motor_57/motor_ctrl_data/goal_vel_forward_arr", data_vec);
-            send_cmd_.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X03);  // 正转命令(需要返回)
-            send_cmd_.Data[7] = 3;  // 正方向转 IntDate 步后命令返回
+            pub_cmd_.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X03);  // 正转命令(需要返回)
+            pub_cmd_.Data[7] = 3;  // 正方向转 IntDate 步后命令返回
             break;
         case StepperMotorRunMode::VEL_REVERSE:
             ros::param::get("/motor_57/motor_ctrl_data/goal_vel_reverse_arr", data_vec);
-            send_cmd_.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X04);  // 反转命令(需要返回)
-            send_cmd_.Data[7] = 3;  // 反方向转 IntDate 步后命令返回
+            pub_cmd_.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X04);  // 反转命令(需要返回)
+            pub_cmd_.Data[7] = 3;  // 反方向转 IntDate 步后命令返回
             break;
         case StepperMotorRunMode::STALL:
-            send_cmd_.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X05);  // 停转命令(需要返回)
-            send_cmd_.Data[7] = 1;                                                      // 减速停止，返回命令
+            pub_cmd_.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X05);  // 停转命令(需要返回)
+            pub_cmd_.Data[7] = 1;                                                      // 减速停止，返回命令
             break;
         default:
             ROS_WARN_STREAM("Motor operating mode error!");
@@ -125,7 +123,7 @@ void MsgBox::setCmd(StepperMotorRunMode cmd_mode)
     }
     for (size_t i = 3; i < 7; ++i)
     {
-        send_cmd_.Data[i] = static_cast<unsigned char>(data_vec[i - 3]);
+        pub_cmd_.Data[i] = static_cast<unsigned char>(data_vec[i - 3]);
     }
 }
 
@@ -134,7 +132,6 @@ void MsgBox::setCmd(StepperMotorRunMode cmd_mode)
  */
 void MsgBox::publishCmd()
 {
-    memcpy(&pub_cmd_, &send_cmd_, sizeof(send_cmd_));
     pub_.publish(pub_cmd_);
 }
 

@@ -10,6 +10,8 @@
  *  Use of this source code is governed by the BSD 3-Clause license, see LICENSE.
  *  ***********************************************************************************
  */
+#pragma once
+
 #include <ros/ros.h>
 #include <semaphore.h>
 
@@ -38,7 +40,6 @@ class MsgBox
 
   private:
     general_file::can_msgs pub_cmd_{};
-    VCI_CAN_OBJ send_cmd_{}, recv_msgs_{};
     sem_t sem_trans_{};
     ros::NodeHandle nh_;
     ros::Publisher pub_;

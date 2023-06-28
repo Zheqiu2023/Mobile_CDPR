@@ -11,169 +11,188 @@
  *  ***********************************************************************************
  */
 #include "motor_re35.hpp"
+#include "usb_can.hpp"
+#include "filter.hpp"
 
 #include <pthread.h>
-#include <ros/ros.h>
-#include <stdio.h>
-
-#include <array>
 #include <vector>
-
-#include "usb_can.hpp"
+#include <unistd.h>
 
 using namespace motor_re35;
 
-Re35Run::Re35Run()
+/**
+ * @brief Construct a new MsgBox::MsgBox object
+ */
+MsgBox::MsgBox()
 {
-    pthread_t thread_rec, thread_trans;
-    int ret_rec = pthread_create(&thread_rec, nullptr, receiveFunc, this);
-    ROS_ASSERT_MSG(ret_rec == 0, "Failed to create a receiving thread!");
-    int ret_trans = pthread_create(&thread_trans, nullptr, transmitFunc, this);
-    ROS_ASSERT_MSG(ret_trans == 0, "Failed to create a sending thread!");
-
-    // 等待线程关闭
-    pthread_join(thread_trans, nullptr);
-    ROS_INFO_STREAM("Sending thread is closed!");
-    pthread_cancel(thread_rec);
-    ROS_INFO_STREAM("Receiving thread is closed!");
+    pub_ = nh_.advertise<general_file::can_msgs>("/usbcan/motor_re35", 100);
+    subs_.push_back(
+        nh_.subscribe<general_file::can_msgs>("/usbcan/can_pub", 100, boost::bind(&MsgBox::recvCANMsgs, this, _1)));
+    subs_.push_back(nh_.subscribe<std_msgs::Float64>("/tension_val", 100, boost::bind(&MsgBox::recvTension, this, _1)));
+    ros::Duration(0.4).sleep();  // 休眠0.4s，保证发出的第一条消息能被usbcan接收
 }
 
 /**
- * @brief 接收线程
- * @param  arg
- * @return void*
+ * @brief 订阅CAN话题回调函数
+ * @param  msg
  */
-void* Re35Run::receiveFunc(void* arg)
+void MsgBox::recvCANMsgs(const general_file::can_msgs::ConstPtr& msg)
 {
-    int16_t reclen = 0;
-    std::array<VCI_CAN_OBJ, 3000> rec_msgs{};  // 接收缓存，设为3000为佳
-    Re35Run* re35_run = (Re35Run*)arg;
+    general_file::can_msgs recv_msgs = *msg;
+}
 
-    while (ros::ok())
+/**
+ * @brief 订阅张力传感器话题，获取张力数据
+ * @param  tension
+ */
+void MsgBox::recvTension(const std_msgs::Float64::ConstPtr& tension)
+{
+    tension_vec_.push_back(tension->data);
+    ++times;
+    if (times == 7)
     {
-        // 调用接收函数，如果有数据，进行数据处理显示。
-        if ((reclen = VCI_Receive(VCI_USBCAN2, DEV_IND, CAN_IND1, rec_msgs.begin(), 3000, 100)) > 0)
-        {
-            for (size_t j = 0; j < reclen; ++j)
-            {
-                printf("CAN%d RX ID:0x%08X", CAN_IND0 + 1, rec_msgs[j].ID);  // ID
-                if (rec_msgs[j].ExternFlag == 0)
-                    printf(" Standard ");                                    // 帧格式：标准帧
-                if (rec_msgs[j].ExternFlag == 1)
-                    printf(" Extend   ");                                    // 帧格式：扩展帧
-                if (rec_msgs[j].RemoteFlag == 0)
-                    printf(" Data   ");                                      // 帧类型：数据帧
-                if (rec_msgs[j].RemoteFlag == 1)
-                    printf(" Remote ");                                      // 帧类型：远程帧
-                printf("DLC:0x%02X", rec_msgs[j].DataLen);                   // 帧长度
-                printf(" data:0x");                                          // 数据
-                for (size_t i = 0; i < rec_msgs[j].DataLen; ++i)
-                {
-                    printf(" %02X", rec_msgs[j].Data[i]);
-                }
-                printf(" TimeStamp:0x%08X\n", rec_msgs[j].TimeStamp);  // 时间标识
-                printf(" Actual current value: %hd", (rec_msgs[j].Data[0] << 8) | rec_msgs[j].Data[1]);
-                printf(" Actual velocity value: %hd", (rec_msgs[j].Data[2] << 8) | rec_msgs[j].Data[3]);
-                printf(" Actual position value: %hd\n", (rec_msgs[j].Data[4] << 24) | (rec_msgs[j].Data[5] << 16) |
-                                                            (rec_msgs[j].Data[6] << 8) | rec_msgs[j].Data[7]);
-            }
-        }
+        force_ = filter::medianMeanFilter(tension_vec_);
+        times = 0;
+        tension_vec_.clear();
+        ROS_INFO("Tension:%.3lf", force_);
     }
-    pthread_exit(0);
+}
+
+double MsgBox::getTension()
+{
+    return force_;
 }
 
 /**
- * @brief 发送线程函数
- * @param  arg
- * @return void*
+ * @brief 发送函数
  */
-void* Re35Run::transmitFunc(void* arg)
+void MsgBox::publishCmd(const general_file::can_msgs& cmd)
 {
-    Re35Run* re35_run = (Re35Run*)arg;
+    pub_.publish(cmd);
+}
+
+MotorRun::MotorRun()
+{
+    float kp, ki, kd, integral_lim, frequency;
+    ros::param::get("/re35/motor_ctrl_data/kp", kp);
+    ros::param::get("/re35/motor_ctrl_data/ki", ki);
+    ros::param::get("/re35/motor_ctrl_data/kd", kd);
+    ros::param::get("/re35/motor_ctrl_data/integral_lim", integral_lim);
+    ros::param::get("/re35/motor_ctrl_data/frequency", frequency);
+
+    pid_.pidConfig(kp, ki, kd, integral_lim, frequency);
+}
+
+/**
+ * @brief 初始化电机
+ */
+void MotorRun::init()
+{
+    pub_cmd_.SendType = 1;  // 单次发送（只发送一次，发送失败不会自动重发，总线只产生一帧数据）
+    pub_cmd_.RemoteFlag = 0;  // 0为数据帧，1为远程帧
+    pub_cmd_.ExternFlag = 0;  // 0为标准帧，1为拓展帧
+    pub_cmd_.DataLen = 8;     // 数据长度8字节
 
     // 发送复位指令
-    re35_run->sender_.setCmd(Re35RunMode::RESET);
-    re35_run->sender_.transmitCmd();
+    pub_cmd_.ID = 0x000;  // 广播复位指令（帧ID，由驱动器编号和功能序号决定）
+    for (auto& data : pub_cmd_.Data)
+        data = 0x55;
+    msg_box_.publishCmd(pub_cmd_);
     usleep(500000);
     // 发送配置指令
-    re35_run->sender_.setCmd(Re35RunMode::CONFIG);
-    re35_run->sender_.transmitCmd();
+    pub_cmd_.ID = 0x00A;  // 广播配置指令
+    for (auto& data : pub_cmd_.Data)
+        data = 0x55;
+    pub_cmd_.Data[0] = 0xc8;  // 以 200 毫秒为周期对外发送电流、速度、位置等信息
+    pub_cmd_.Data[1] = 0x00;
+    msg_box_.publishCmd(pub_cmd_);
     usleep(500000);
     // 发送模式选择指令
-    re35_run->sender_.setCmd(Re35RunMode::MODE_SELECTION);
-    re35_run->sender_.transmitCmd();
+    int run_mode = 0;
+    ros::param::get("/re35/run_mode", run_mode);
+
+    pub_cmd_.ID = 0x001;  // 广播模式选择指令
+    for (auto& data : pub_cmd_.Data)
+        data = 0x55;
+    if (run_mode == 0)
+    {
+        pub_cmd_.Data[0] = 0x03;  // 选择速度模式
+        msg_box_.publishCmd(pub_cmd_);
+    }
+    else if (run_mode == 1)
+    {
+        pub_cmd_.Data[0] = 0x05;  // 选择速度位置模式
+        msg_box_.publishCmd(pub_cmd_);
+    }
     usleep(500000);
-    // 发送数据指令
-    std::vector<int> goal_pos_vec{};
-    int reduction_ratio = 0, encoder_lines_num = 0, temp_pos = 0, history_pos = 0;
-    ros::param::get("/re35/reduction_ratio", reduction_ratio);
-    ros::param::get("/re35/encoder_lines_num", encoder_lines_num);
-    ros::param::get("/re35/motor_ctrl_data/goal_pos_vec", goal_pos_vec);
-
-    re35_run->sender_.send_cmd_.ID = 0x016;  // 速度位置模式下的参数指令，非广播
-    re35_run->sender_.send_cmd_.Data[0] = static_cast<unsigned char>((PWM_LIM >> 8) & 0xff);
-    re35_run->sender_.send_cmd_.Data[1] = static_cast<unsigned char>(PWM_LIM & 0xff);
-    re35_run->sender_.send_cmd_.Data[2] = static_cast<unsigned char>((VEL_LIM >> 8) & 0xff);
-    re35_run->sender_.send_cmd_.Data[3] = static_cast<unsigned char>(VEL_LIM & 0xff);
-    for (auto& temp_pos : goal_pos_vec)
-    {
-        history_pos += temp_pos;
-        temp_pos = history_pos * reduction_ratio * encoder_lines_num / 360;  // °转换为qc
-        re35_run->sender_.send_cmd_.Data[4] = static_cast<unsigned char>((temp_pos >> 24) & 0xff);
-        re35_run->sender_.send_cmd_.Data[5] = static_cast<unsigned char>((temp_pos >> 16) & 0xff);
-        re35_run->sender_.send_cmd_.Data[6] = static_cast<unsigned char>((temp_pos >> 8) & 0xff);
-        re35_run->sender_.send_cmd_.Data[7] = static_cast<unsigned char>(temp_pos & 0xff);
-
-        re35_run->sender_.transmitCmd();
-        sleep(1);
-    }
-    pthread_exit(0);
 }
 
 /**
- * @brief 根据电机运行模式设置相应控制指令
- * @param  cmd_mode
+ * @brief 按指定模式运行电机
  */
-void Re35Sender::setCmd(Re35RunMode cmd_mode)
+void MotorRun::run()
 {
-    this->send_cmd_.SendType = 1;  // 单次发送（只发送一次，发送失败不会自动重发，总线只产生一帧数据）
-    this->send_cmd_.RemoteFlag = 0;  // 0为数据帧，1为远程帧
-    this->send_cmd_.ExternFlag = 0;  // 0为标准帧，1为拓展帧
-    this->send_cmd_.DataLen = 8;     // 数据长度8字节
-    switch (cmd_mode)
-    {
-        case Re35RunMode::RESET:
-            this->send_cmd_.ID = 0x000;  // 广播复位指令（帧ID，由驱动器编号和功能序号决定）
-            for (auto& data : this->send_cmd_.Data)
-                data = 0x55;
-            break;
-        case Re35RunMode::MODE_SELECTION:
-            this->send_cmd_.ID = 0x001;  // 广播模式选择指令
-            for (auto& data : this->send_cmd_.Data)
-                data = 0x55;
-            this->send_cmd_.Data[0] = 0x05;  // 位置速度模式
-            break;
-        case Re35RunMode::CONFIG:
-            this->send_cmd_.ID = 0x00A;  // 广播配置指令
-            for (auto& data : this->send_cmd_.Data)
-                data = 0x55;
-            this->send_cmd_.Data[0] = 0xc8;  // 以 200 毫秒为周期对外发送电流、速度、位置等信息
-            this->send_cmd_.Data[1] = 0x00;
-            break;
-        default:
-            ROS_INFO_STREAM("Motor operating mode error!");
-            break;
-    }
-}
+    int run_mode = 0;
+    ros::param::get("/re35/run_mode", run_mode);
 
-/**
- * @brief 发送指令
- */
-inline void Re35Sender::transmitCmd()
-{
-    if (VCI_Transmit(VCI_USBCAN2, DEV_IND, CAN_IND1, &this->send_cmd_, 1) <= 0)
+    if (run_mode == 0)
     {
-        ROS_ERROR_STREAM("Failed to send command!");
-        exit(EXIT_FAILURE);
+        // 速度模式：力控
+        short temp_vel = 0;
+        float tension = msg_box_.getTension();
+        float goal_force;
+        ros::param::get("/re35/motor_ctrl_data/goal_force", goal_force);
+
+        if (tension != goal_force)
+        {
+            temp_vel = static_cast<short>(pid_.pidProcess(goal_force, tension));
+            temp_vel = temp_vel > 32767 ? 32767 : temp_vel;
+            temp_vel = temp_vel < -32768 ? -32768 : temp_vel;
+        }
+
+        pub_cmd_.ID = 0x014;  // 速度模式下的参数指令，广播
+        pub_cmd_.Data[0] = static_cast<unsigned char>((PWM_LIM >> 8) & 0xff);
+        pub_cmd_.Data[1] = static_cast<unsigned char>(PWM_LIM & 0xff);
+        pub_cmd_.Data[2] = static_cast<unsigned char>((temp_vel >> 8) & 0xff);
+        pub_cmd_.Data[3] = static_cast<unsigned char>(temp_vel & 0xff);
+        for (size_t i = 4; i < 8; ++i)
+        {
+            pub_cmd_.Data[i] = 0x55;
+        }
+
+        msg_box_.publishCmd(pub_cmd_);
+    }
+    else if (run_mode == 1)
+    {
+        // 速度位置模式
+        std::vector<int> goal_pos_vec{};
+        int temp_pos = 0, history_pos = 0, reduction_ratio = 0, encoder_lines_num = 0;
+        unsigned short temp_vel = 10000;  // 速度限制值(RPM)：0~32767
+
+        ros::param::get("/re35/motor_ctrl_data/goal_pos_vec", goal_pos_vec);
+        ros::param::get("/re35/reduction_ratio", reduction_ratio);
+        ros::param::get("/re35/encoder_lines_num", encoder_lines_num);
+
+        pub_cmd_.ID = 0x016;  // 速度位置模式下的参数指令，非广播
+        pub_cmd_.Data[0] = static_cast<unsigned char>((PWM_LIM >> 8) & 0xff);
+        pub_cmd_.Data[1] = static_cast<unsigned char>(PWM_LIM & 0xff);
+        pub_cmd_.Data[2] = static_cast<unsigned char>((temp_vel >> 8) & 0xff);
+        pub_cmd_.Data[3] = static_cast<unsigned char>(temp_vel & 0xff);
+        for (auto& temp_pos : goal_pos_vec)
+        {
+            history_pos += temp_pos;
+            temp_pos = history_pos * reduction_ratio * encoder_lines_num / 360;  // °转换为qc
+            pub_cmd_.Data[4] = static_cast<unsigned char>((temp_pos >> 24) & 0xff);
+            pub_cmd_.Data[5] = static_cast<unsigned char>((temp_pos >> 16) & 0xff);
+            pub_cmd_.Data[6] = static_cast<unsigned char>((temp_pos >> 8) & 0xff);
+            pub_cmd_.Data[7] = static_cast<unsigned char>(temp_pos & 0xff);
+
+            msg_box_.publishCmd(pub_cmd_);
+            sleep(1);
+        }
+    }
+    else
+    {
+        ROS_ERROR("Motor RE35 run mode error!");
     }
 }

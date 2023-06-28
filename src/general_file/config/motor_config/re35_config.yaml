@@ -1,4 +1,10 @@
 reduction_ratio: 35   # 减速比
 encoder_lines_num: 2000   # 4倍频后的编码器线数
 motor_ctrl_data:
+  kp: 100
+  ki: 0.1
+  kd: 0
+  integral_lim: 1000
+  frequency: 100
   goal_pos_vec: [22.5, 45.0, 90.0, 180.0]    # 目标位置(°)
+  goal_force: 30

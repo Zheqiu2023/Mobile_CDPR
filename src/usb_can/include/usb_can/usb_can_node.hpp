@@ -5,10 +5,10 @@
  * @version 0.1
  * @date 2023-06-20
  *
- * *  ***********************************************************************************
- * *  @copyright Copyright (c) 2023  by Zhe Qiu. All rights reserved.
- * *  Use of this source code is governed by the BSD 3-Clause license, see LICENSE.
- * *  ***********************************************************************************
+ * ***********************************************************************************
+ * @copyright Copyright (c) 2023  by Zhe Qiu. All rights reserved.
+ * Use of this source code is governed by the BSD 3-Clause license, see LICENSE.
+ * ***********************************************************************************
  */
 #include <ros/ros.h>
 #include <string>
@@ -99,7 +99,7 @@ void TransferStation::printMsgs(const VCI_CAN_OBJ& msg) const
     printf(" data:0x");                                  // 数据
     for (size_t i = 0; i < msg.DataLen; ++i)
         printf(" %02X", msg.Data[i]);
-    printf(" TimeStamp:0x%08X", msg.TimeStamp);  // 时间标识
+    printf(" TimeStamp:0x%08X", msg.TimeStamp);  // 时间戳
     printf("\n");
 }
 }  // namespace usb_can

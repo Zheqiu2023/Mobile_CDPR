@@ -29,7 +29,7 @@ TensionSensors::TensionSensors()
 {
     ros::param::get("/tension_sensors/port_name", port_name_);
     ros::param::get("/tension_sensors/baud_rate", baud_rate_);
-    pub_ = nh_.advertise<std_msgs::Float64>("/tension_val", 1000);
+    pub_ = nh_.advertise<std_msgs::Float64>("/tension_val", 50);
 }
 
 TensionSensors::~TensionSensors()

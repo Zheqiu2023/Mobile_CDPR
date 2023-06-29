@@ -23,38 +23,6 @@
 using namespace motor_57;
 
 /**
- * @brief 创建发送线程，属性设为可分离
- */
-void MotorRun::creatThread()
-{
-    pthread_t thread_trans;
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-    int ret_trans = pthread_create(&thread_trans, &attr, transmitFunc, &msg_box_);
-    ROS_ASSERT_MSG(ret_trans == 0, "Failed to create a sending thread!");
-}
-
-/**
- * @brief 发送线程函数
- * @param  arg
- * @return void*
- */
-void* MotorRun::transmitFunc(void* arg)
-{
-    MsgBox* msg_box = (MsgBox*)arg;
-    msg_box->run();
-
-    // MotorParam m_param;
-    // m_param.writeParam();
-    // m_param.readParam();
-    // usleep(100000);
-
-    ROS_INFO_STREAM("Sending thread is closed!");
-    pthread_exit(0);
-}
-
-/**
  * @brief Construct a new MsgBox::MsgBox object
  */
 MsgBox::MsgBox()
@@ -78,10 +46,55 @@ void MsgBox::recvCallback(const general_file::can_msgs::ConstPtr& msg)
 }
 
 /**
+ * @brief 发送函数
+ */
+void MsgBox::publishCmd(const general_file::can_msgs& cmd)
+{
+    pub_.publish(cmd);
+}
+
+sem_t& MsgBox::getSemaphore()
+{
+    return sem_trans_;
+}
+
+/**
+ * @brief 创建发送线程，属性设为可分离
+ */
+void MotorRun::creatThread()
+{
+    pthread_t thread_trans;
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    int ret_trans = pthread_create(&thread_trans, &attr, transmitFunc, this);
+    ROS_ASSERT_MSG(ret_trans == 0, "Failed to create a sending thread!");
+}
+
+/**
+ * @brief 发送线程函数
+ * @param  arg
+ * @return void*
+ */
+void* MotorRun::transmitFunc(void* arg)
+{
+    MotorRun* thr_m_run = (MotorRun*)arg;
+    thr_m_run->run();
+
+    // MotorParam m_param;
+    // m_param.writeParam();
+    // m_param.readParam();
+    // usleep(100000);
+
+    ROS_INFO_STREAM("Sending thread is closed!");
+    pthread_exit(0);
+}
+
+/**
  * @brief 根据电机运行模式设置相应控制指令
  * @param  cmd_mode
  */
-void MsgBox::setCmd(StepperMotorRunMode cmd_mode)
+void MotorRun::setCmd(StepperMotorRunMode cmd_mode)
 {
     std::vector<int> data_vec{ 0, 0, 0, 0 };
 
@@ -127,15 +140,7 @@ void MsgBox::setCmd(StepperMotorRunMode cmd_mode)
     }
 }
 
-/**
- * @brief 发送函数
- */
-void MsgBox::publishCmd()
-{
-    pub_.publish(pub_cmd_);
-}
-
-void MsgBox::run()
+void MotorRun::run()
 {
     std::string is_stall{ "" }, cmd_type{ "" };
     ros::param::get("/motor_57/motor_cmd_type", cmd_type);
@@ -145,18 +150,18 @@ void MsgBox::run()
         ROS_INFO_STREAM("Reset before positioning!");
         // 先复位后定位
         setCmd(StepperMotorRunMode::RESET);
-        publishCmd();
-        sem_wait(&sem_trans_);
+        msg_box_.publishCmd(pub_cmd_);
+        sem_wait(&msg_box_.getSemaphore());
         ROS_INFO_STREAM("Reset done!");
         setCmd(StepperMotorRunMode::POS);
-        publishCmd();
+        msg_box_.publishCmd(pub_cmd_);
     }
     else if (cmd_type == "vel_forward")
     {
         ROS_INFO_STREAM("Forward rotation!");
 
         setCmd(StepperMotorRunMode::VEL_FORWARD);
-        publishCmd();
+        msg_box_.publishCmd(pub_cmd_);
         while (ros::ok())
         {
             getline(std::cin, is_stall);
@@ -164,14 +169,14 @@ void MsgBox::run()
                 break;
         }
         setCmd(StepperMotorRunMode::STALL);
-        publishCmd();
+        msg_box_.publishCmd(pub_cmd_);
     }
     else if (cmd_type == "vel_backward")
     {
         ROS_INFO_STREAM("Reverse rotation!");
 
         setCmd(StepperMotorRunMode::VEL_REVERSE);
-        publishCmd();
+        msg_box_.publishCmd(pub_cmd_);
         while (ros::ok())
         {
             getline(std::cin, is_stall);
@@ -179,7 +184,7 @@ void MsgBox::run()
                 break;
         }
         setCmd(StepperMotorRunMode::STALL);
-        publishCmd();
+        msg_box_.publishCmd(pub_cmd_);
     }
     else
     {

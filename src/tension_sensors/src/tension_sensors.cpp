@@ -21,7 +21,6 @@
 #include <ros/ros.h>
 #include <ros/assert.h>
 #include <stdlib.h>
-#include <set>
 #include <std_msgs/Float64.h>
 
 using namespace tension_sensors;
@@ -30,7 +29,7 @@ TensionSensors::TensionSensors()
 {
     ros::param::get("/tension_sensors/port_name", port_name_);
     ros::param::get("/tension_sensors/baud_rate", baud_rate_);
-    pub_ = nh_.advertise<std_msgs::Float64>("/tension_val", 100);
+    pub_ = nh_.advertise<std_msgs::Float64>("/tension_val", 1000);
 }
 
 TensionSensors::~TensionSensors()

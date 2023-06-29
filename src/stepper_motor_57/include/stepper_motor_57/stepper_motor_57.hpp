@@ -33,13 +33,11 @@ class MsgBox
   public:
     MsgBox();
     ~MsgBox();
-    void setCmd(StepperMotorRunMode cmd_mode);
-    void run();
-    void publishCmd();
+    void publishCmd(const general_file::can_msgs& cmd);
     void recvCallback(const general_file::can_msgs::ConstPtr& msg);
+    sem_t& getSemaphore();
 
   private:
-    general_file::can_msgs pub_cmd_{};
     sem_t sem_trans_{};
     ros::NodeHandle nh_;
     ros::Publisher pub_;
@@ -51,8 +49,11 @@ class MotorRun
   public:
     void creatThread();
     static void* transmitFunc(void* arg);
+    void setCmd(StepperMotorRunMode cmd_mode);
+    void run();
 
   private:
     MsgBox msg_box_{};
+    general_file::can_msgs pub_cmd_{};
 };
 }  // namespace motor_57

@@ -11,6 +11,7 @@
  *  ***********************************************************************************
  */
 #include "usb_can_node.hpp"
+#include <boost/thread.hpp>
 
 int main(int argc, char** argv)
 {
@@ -28,11 +29,14 @@ int main(int argc, char** argv)
 
     usb_can::TransferStation transfer_station;
 
-    ros::Rate loop_rate(10000);
+    // 开启3条并发线程处理订阅话题回调函数，保证及时接收到每条消息
+    ros::AsyncSpinner spinner(3);
+    spinner.start();
+
+    ros::Rate loop_rate(2000);
     while (ros::ok())
     {
         transfer_station.publishMsgs();
-        ros::spinOnce();
         loop_rate.sleep();
     }
 

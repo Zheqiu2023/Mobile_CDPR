@@ -25,10 +25,12 @@ using namespace motor_re35;
  */
 MsgBox::MsgBox()
 {
+    tension_vec_.reserve(7);
+    subs_.reserve(2);
     pub_ = nh_.advertise<general_file::can_msgs>("/usbcan/motor_re35", 10);
     subs_.push_back(
         nh_.subscribe<general_file::can_msgs>("/usbcan/can_pub", 100, boost::bind(&MsgBox::recvCANMsgs, this, _1)));
-    subs_.push_back(nh_.subscribe<std_msgs::Float64>("/tension_val", 10, boost::bind(&MsgBox::recvTension, this, _1)));
+    subs_.push_back(nh_.subscribe<std_msgs::Float32>("/tension_val", 10, boost::bind(&MsgBox::recvTension, this, _1)));
     ros::Duration(0.4).sleep();  // 休眠0.4s，保证发出的第一条消息能被usbcan接收
 }
 
@@ -45,20 +47,20 @@ void MsgBox::recvCANMsgs(const general_file::can_msgs::ConstPtr& msg)
  * @brief 订阅张力传感器话题，获取张力数据
  * @param  tension
  */
-void MsgBox::recvTension(const std_msgs::Float64::ConstPtr& tension)
+void MsgBox::recvTension(const std_msgs::Float32::ConstPtr& tension)
 {
     tension_vec_.push_back(tension->data);
-    ++times;
-    if (times == 7)
+    ++times_;
+    if (times_ == 7)
     {
         force_ = filter::medianMeanFilter(tension_vec_);
-        times = 0;
+        times_ = 0;
         tension_vec_.clear();
         ROS_INFO("Tension:%.3lf", force_);
     }
 }
 
-double MsgBox::getTension()
+float MsgBox::getTension()
 {
     return force_;
 }

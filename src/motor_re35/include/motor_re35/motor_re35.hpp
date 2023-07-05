@@ -13,8 +13,7 @@
 #pragma once
 
 #include <ros/ros.h>
-#include <set>
-#include <std_msgs/Float64.h>
+#include <std_msgs/Float32.h>
 
 #include "general_file/can_msgs.h"
 #include "controlcan.h"
@@ -30,16 +29,16 @@ class MsgBox
     MsgBox();
     void publishCmd(const general_file::can_msgs& cmd);
     void recvCANMsgs(const general_file::can_msgs::ConstPtr& msg);
-    void recvTension(const std_msgs::Float64::ConstPtr& tension);
-    double getTension();
+    void recvTension(const std_msgs::Float32::ConstPtr& tension);
+    float getTension();
 
   private:
     ros::NodeHandle nh_;
     ros::Publisher pub_;
     ros::V_Subscriber subs_;
-    std::vector<double> tension_vec_{};
-    double force_ = 0;
-    int times = 0;
+    std::vector<float> tension_vec_{};
+    float force_ = 0;
+    int times_ = 0;
 };
 
 class MotorRun

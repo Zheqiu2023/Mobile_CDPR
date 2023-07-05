@@ -21,7 +21,7 @@
 #include <ros/ros.h>
 #include <ros/assert.h>
 #include <stdlib.h>
-#include <std_msgs/Float64.h>
+#include <std_msgs/Float32.h>
 
 using namespace tension_sensors;
 
@@ -29,7 +29,7 @@ TensionSensors::TensionSensors()
 {
     ros::param::get("/tension_sensors/port_name", port_name_);
     ros::param::get("/tension_sensors/baud_rate", baud_rate_);
-    pub_ = nh_.advertise<std_msgs::Float64>("/tension_val", 50);
+    pub_ = nh_.advertise<std_msgs::Float32>("/tension_val", 50);
 }
 
 TensionSensors::~TensionSensors()
@@ -163,9 +163,9 @@ void TensionSensors::startRead()
     int is_set = configPort(fd_, baud_rate_, 8, 'N', 1);
     ROS_ASSERT(is_set == 0);
 
-    unsigned char buf[10];  // 包括小数点、小数位、换行符在内不超过10位
+    unsigned char buf[11];  // 包括小数点、小数位、换行符在内不超过11位
     bool is_complete_val = false;
-    std_msgs::Float64 tension{};
+    std_msgs::Float32 tension{};
     std::string val = "";
     ros::Rate loop_rate(1000);
     while (ros::ok())
@@ -182,10 +182,10 @@ void TensionSensors::startRead()
                     if (val != "")
                     {
                         // printf("val:%s\n", val.c_str());
-                        tension.data = atof(val.c_str());
+                        tension.data = stof(val, 0);
                         pub_.publish(tension);
                         // printf("%.1lf\n", tension.data);
-                        val = "";
+                        val.clear();
                         break;
                     }
                 }

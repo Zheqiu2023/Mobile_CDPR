@@ -41,6 +41,7 @@ class TransferStation
 
 TransferStation::TransferStation()
 {
+    subs_.reserve(3);
     subs_.push_back(nh_.subscribe<general_file::can_msgs>(
         "/usbcan/motor_42", 100, boost::bind(&TransferStation::canCallback, this, _1, CAN_IND0)));
     subs_.push_back(nh_.subscribe<general_file::can_msgs>(

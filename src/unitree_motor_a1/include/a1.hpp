@@ -38,7 +38,7 @@ class A1Control
 class A1Run
 {
   public:
-    A1Run(int id);
+    explicit A1Run(int id);
     void operator()();
 
   private:

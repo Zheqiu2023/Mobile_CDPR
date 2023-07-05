@@ -41,7 +41,7 @@ class GoControl
 class GoRun
 {
   public:
-    GoRun(int id);
+    explicit GoRun(int id);
     void operator()();
 
   private:

@@ -1,0 +1,17 @@
+port_name: "/dev/ttyUSB0"  # 串口控制权限在/etc/udev/rules.d/70-ttyusb.rules中
+reduction_ratio: 6.33   # 减速比
+motor_ctrl_data:
+  mode: 1 #自定义默认控制方式：刹车==0，FOC闭环==1，电机标定==2
+  ctrl_frequency: 200   # 控制频率
+
+  #FOC闭环控制参数：实际给FOC的指令力矩为：K_P*delta_Pos + K_W*delta_W + T
+  pos_kp_kw: [0.1, 0.01] # 位置模式下的关节刚度、速度系数。PD控制，kp为比例系数，kw为微分系数
+  vel_kp_kw: [0.0, 0.02] # 速度模式下的关节刚度、速度系数。P控制，kp需为0，kw为比例系数
+  trq_kp_kw: [0.0, 0.0] # 力矩模式下的关节刚度、速度系数，均为0，开环
+  traj_kp_kw: [0.5, 0.05] # 轨迹规划模式下的关节刚度、速度系数。PD控制，kp为比例系数，kw为微分系数(kp太小时位置误差较大，kw太高会疯狂震动)
+
+  #目标角度：°    目标速度：rad/s   目标力矩：NM
+  goal_pos_vec: [22.5, 45.0, 90.0, 180.0] 
+  goal_vel: 10
+  goal_trq: 0.2
+  goal_traj: [30, 50, 70, -30, -50, -70]  # 路点

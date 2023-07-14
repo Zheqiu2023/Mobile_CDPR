@@ -1,0 +1,10 @@
+# 与VCI_CAN_OBJ结构相同
+uint32 ID
+uint32 TimeStamp
+uint8 TimeFlag
+uint8 SendType
+uint8 RemoteFlag
+uint8 ExternFlag
+uint8 DataLen
+uint8[8] Data
+uint8[3] Reserved

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <arg name="port_name"  default="/dev/ttyACM0"/>
+    <arg name="baud_rate"  default="115200" doc="type [2400, 4800, 9600, 115200, 460800]"/>
+
+    <node pkg="tension_sensors" type="tension_sensors_node" name="tension_sensors" output="screen">
+        <param name="port_name" type="string" value="$(arg port_name)"/>
+        <param name="baud_rate" type="int" value="$(arg baud_rate)"/>
+    </node>
+</launch>

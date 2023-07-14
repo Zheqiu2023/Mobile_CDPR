@@ -1,0 +1,26 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "/usr/include",
+                "${workspaceFolder}/src/general_file/include/**",
+                "${workspaceFolder}/src/motor_re35/include/**",
+                "${workspaceFolder}/src/stepper_motor_42/include/**",
+                "${workspaceFolder}/src/stepper_motor_57/include/**",
+                "${workspaceFolder}/src/tension_sensors/include/**",
+                "${workspaceFolder}/src/unitree_motor_a1/include/**",
+                "${workspaceFolder}/src/unitree_motor_go/include/**",
+                "${workspaceFolder}/src/usb_can/include/**",
+                "${workspaceFolder}/devel/include",
+                "/opt/ros/noetic/include"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c17",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}

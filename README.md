@@ -6,5 +6,3 @@
 ## Platform
 运行在`ros noetic`上，修改`.vscode`中的配置文件后重新编译即可运行在自己电脑上
 
-## Real-Time Kernel
-`RT Preempt 5.15.119`

@@ -1,0 +1,747 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="robot_urdf">
+
+ 
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-9.6541E-10 8.7142E-08 -0.82799"
+        rpy="0 0 0" />
+      <mass
+        value="15.729" />
+      <inertia
+        ixx="0.5433"
+        ixy="-3.1011E-06"
+        ixz="-6.4506E-13"
+        iyy="0.44995"
+        iyz="8.0282E-08"
+        izz="0.15116" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="LightGrey">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+
+  <link
+    name="link_lf">
+    <inertial>
+      <origin
+        xyz="8.86524847416581E-05 -0.00752803670989477 -0.108847599255012"
+        rpy="0 0 0" />
+      <mass
+        value="0.574731666133538" />
+      <inertia
+        ixx="0.00104182651855022"
+        ixy="2.48297912578613E-07"
+        ixz="-3.04635363260097E-06"
+        iyy="0.00113854145712242"
+        iyz="-9.99169255105371E-05"
+        izz="0.000698916507020147" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/link_lf.STL" />
+      </geometry>
+      <material
+        name="Blue">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/link_lf.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_steer_lf"
+    type="continuous">
+    <origin
+      xyz="0.527 0.80988 -1.2798"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="link_lf" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="1" />
+  </joint>
+  <link
+    name="link_lf_low">
+    <inertial>
+      <origin
+        xyz="-5.05659556684357E-05 -0.0119103704603647 -1.34934649362872E-05"
+        rpy="0 0 0" />
+      <mass
+        value="1.51444384571626" />
+      <inertia
+        ixx="0.00720805455512712"
+        ixy="-2.57180100171516E-07"
+        ixz="1.28054493951554E-06"
+        iyy="0.0136843200341628"
+        iyz="-6.88384179278734E-08"
+        izz="0.00720361780495676" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/link_lf_low.STL" />
+      </geometry>
+      <material
+        name="Orange">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/link_lf_low.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_roll_lf"
+    type="continuous">
+    <origin
+      xyz="0 0.0139998933717689 -0.138000010817314"
+      rpy="0 0 0" />
+    <parent
+      link="link_lf" />
+    <child
+      link="link_lf_low" />
+    <axis
+      xyz="0 0.999999999999701 0" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="1" />
+  </joint>
+  <link
+    name="link_rf">
+    <inertial>
+      <origin
+        xyz="-8.86524847354409E-05 0.00753017187580984 -0.108848887372692"
+        rpy="0 0 0" />
+      <mass
+        value="0.574731666131464" />
+      <inertia
+        ixx="0.00104182651855003"
+        ixy="2.48295558717129E-07"
+        ixz="3.04635382439577E-06"
+        iyy="0.00113854130271696"
+        iyz="9.99172651942668E-05"
+        izz="0.000698916661425254" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/link_rf.STL" />
+      </geometry>
+      <material
+        name="Blue">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/link_rf.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_steer_rf"
+    type="continuous">
+    <origin
+      xyz="0.527 -0.80988 -1.2798"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="link_rf" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="1" />
+  </joint>
+  <link
+    name="link_rf_low">
+    <inertial>
+      <origin
+        xyz="5.05659556626625E-05 0.0119111607870451 -1.36671004951072E-05"
+        rpy="0 0 0" />
+      <mass
+        value="1.51444384571626" />
+      <inertia
+        ixx="0.00720805455512713"
+        ixy="-2.57179110734844E-07"
+        ixz="-1.28054513822929E-06"
+        iyy="0.0136843200340526"
+        iyz="7.38458512020508E-08"
+        izz="0.00720361780506701" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/link_rf_low.STL" />
+      </geometry>
+      <material
+        name="Orange">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/link_rf_low.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_roll_rf"
+    type="continuous">
+    <origin
+      xyz="0 -0.0139985259969949 -0.138001132730464"
+      rpy="0 0 0" />
+    <parent
+      link="link_rf" />
+    <child
+      link="link_rf_low" />
+    <axis
+      xyz="0 -0.999999999999701 0" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="1" />
+  </joint>
+  <link
+    name="link_lb">
+    <inertial>
+      <origin
+        xyz="8.86524847424353E-05 -0.00752948818880272 -0.108847635839087"
+        rpy="0 0 0" />
+      <mass
+        value="0.574731666131463" />
+      <inertia
+        ixx="0.00104182651855002"
+        ixy="2.48295558716922E-07"
+        ixz="-3.04635382439624E-06"
+        iyy="0.00113854130271694"
+        iyz="-9.99172651942643E-05"
+        izz="0.000698916661425248" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/link_lb.STL" />
+      </geometry>
+      <material
+        name="Blue">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/link_lb.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_steer_lb"
+    type="continuous">
+    <origin
+      xyz="-0.527 0.80988 -1.2798"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="link_lb" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="1" />
+  </joint>
+  <link
+    name="link_lb_low">
+    <inertial>
+      <origin
+        xyz="-5.05659556653271E-05 -0.0119111607869915 -1.35907001950208E-05"
+        rpy="0 0 0" />
+      <mass
+        value="1.51444384571626" />
+      <inertia
+        ixx="0.00720805455512713"
+        ixy="-2.57179110738745E-07"
+        ixz="1.28054513823009E-06"
+        iyy="0.0136843200340526"
+        iyz="-7.38458511707389E-08"
+        izz="0.00720361780506701" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/link_lb_low.STL" />
+      </geometry>
+      <material
+        name="Orange">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/link_lb_low.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_roll_lb"
+    type="continuous">
+    <origin
+      xyz="0 0.0139992096839484 -0.137999957597159"
+      rpy="0 0 0" />
+    <parent
+      link="link_lb" />
+    <child
+      link="link_lb_low" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="1" />
+  </joint>
+  <link
+    name="link_rb">
+    <inertial>
+      <origin
+        xyz="-8.865248474621E-05 0.00752880449997484 -0.108848887371632"
+        rpy="0 0 0" />
+      <mass
+        value="0.574731666131464" />
+      <inertia
+        ixx="0.00104182651855003"
+        ixy="2.48295558718291E-07"
+        ixz="3.04635382439423E-06"
+        iyy="0.00113854130271695"
+        iyz="9.99172651942719E-05"
+        izz="0.000698916661425252" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/link_rb.STL" />
+      </geometry>
+      <material
+        name="Blue">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/link_rb.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_steer_rb"
+    type="continuous">
+    <origin
+      xyz="-0.527 -0.80988 -1.2798"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="link_rb" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="1" />
+  </joint>
+  <link
+    name="link_rb_low">
+    <inertial>
+      <origin
+        xyz="5.05659556678806E-05 0.0119111607869505 -1.35374805847466E-05"
+        rpy="0 0 0" />
+      <mass
+        value="1.51444384571626" />
+      <inertia
+        ixx="0.00720805455512713"
+        ixy="-2.57179110735164E-07"
+        ixz="-1.28054513822985E-06"
+        iyy="0.0136843200340526"
+        iyz="7.38458512236012E-08"
+        izz="0.00720361780506701" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/link_rb_low.STL" />
+      </geometry>
+      <material
+        name="Orange">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/link_rb_low.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_roll_rb"
+    type="continuous">
+    <origin
+      xyz="0 -0.0139998933727349 -0.138001262349316"
+      rpy="0 0 0" />
+    <parent
+      link="link_rb" />
+    <child
+      link="link_rb_low" />
+    <axis
+      xyz="0 -0.999999999999702 0" />
+    <limit
+      lower="-3.14"
+      upper="3.14"
+      effort="100"
+      velocity="1" />
+  </joint>
+  <link
+    name="anchor_lf">
+    <inertial>
+      <origin
+        xyz="-0.010935 -0.010262 0.0051064"
+        rpy="0 0 0" />
+      <mass
+        value="0.83913" />
+      <inertia
+        ixx="0.0011132"
+        ixy="1.574E-06"
+        ixz="-1.7731E-05"
+        iyy="0.0020509"
+        iyz="-9.5617E-06"
+        izz="0.0011227" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/anchor_lf.STL" />
+      </geometry>
+      <material
+        name="Green">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/anchor_lf.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_prism_lf"
+    type="prismatic">
+    <origin
+      xyz="0.527 0.70838 -1.106"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="anchor_lf" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="-0.61"
+      upper="0"
+      effort="100"
+      velocity="0.3" />
+  </joint>
+  <link
+    name="anchor_rf">
+    <inertial>
+      <origin
+        xyz="0.010935 0.010262 0.0051064"
+        rpy="0 0 0" />
+      <mass
+        value="0.83913" />
+      <inertia
+        ixx="0.0011132"
+        ixy="1.574E-06"
+        ixz="1.7731E-05"
+        iyy="0.0020509"
+        iyz="9.5624E-06"
+        izz="0.0011227" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/anchor_rf.STL" />
+      </geometry>
+      <material
+        name="Green">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/anchor_rf.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_prism_rf"
+    type="prismatic">
+    <origin
+      xyz="0.527 -0.70838 -1.106"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="anchor_rf" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="-0.61"
+      upper="0"
+      effort="100"
+      velocity="0.3" />
+  </joint>
+  <link
+    name="anchor_lb">
+    <inertial>
+      <origin
+        xyz="-0.010935 -0.010262 0.0051064"
+        rpy="0 0 0" />
+      <mass
+        value="0.83913" />
+      <inertia
+        ixx="0.0011132"
+        ixy="1.574E-06"
+        ixz="-1.7731E-05"
+        iyy="0.0020509"
+        iyz="-9.5624E-06"
+        izz="0.0011227" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/anchor_lb.STL" />
+      </geometry>
+      <material
+        name="Green">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/anchor_lb.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_prism_lb"
+    type="prismatic">
+    <origin
+      xyz="-0.527 0.70838 -1.106"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="anchor_lb" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="-0.61"
+      upper="0"
+      effort="100"
+      velocity="0.3" />
+  </joint>
+  <link
+    name="anchor_rb">
+    <inertial>
+      <origin
+        xyz="0.010935 0.010262 0.0051064"
+        rpy="0 0 0" />
+      <mass
+        value="0.83913" />
+      <inertia
+        ixx="0.0011132"
+        ixy="1.574E-06"
+        ixz="1.7731E-05"
+        iyy="0.0020509"
+        iyz="9.5624E-06"
+        izz="0.0011227" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/anchor_rb.STL" />
+      </geometry>
+      <material
+        name="Green">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://robot_urdf/meshes/anchor_rb.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_prism_rb"
+    type="prismatic">
+    <origin
+      xyz="-0.527 -0.70838 -1.106"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="anchor_rb" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="-0.61"
+      upper="0"
+      effort="100"
+      velocity="0.3" />
+  </joint>
+</robot>

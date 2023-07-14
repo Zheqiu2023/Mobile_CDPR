@@ -2,4 +2,5 @@
 build/
 devel/
 logs/
+Reference/
 .catkin_workspace

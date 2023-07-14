@@ -1,0 +1,53 @@
+<launch>
+  <!-- 加载世界地图 -->
+  <arg name="paused" value="true"/>
+  <arg name="use_sim_time" value="true"/>
+  <arg name="gui" value="true"/>
+  <arg name="recording" value="false"/>
+  <arg name="debug" value="false"/>
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="paused" value="$(arg paused)"/>
+    <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+    <arg name="gui" value="$(arg gui)"/>
+    <arg name="recording" value="$(arg recording)"/>
+    <arg name="debug" value="$(arg debug)"/>
+  </include>
+
+  <node
+    name="tf_footprint_base"
+    pkg="tf"
+    type="static_transform_publisher"
+    args="0 0 0 0 0 0 base_link base_footprint 40" />
+
+  <node
+    name="fake_joint_calibration"
+    pkg="rostopic"
+    type="rostopic"
+    args="pub /calibrated std_msgs/Bool true" />
+
+  <!-- 加载机器人模型 -->
+  <param name="robot_description" command="$(find xacro)/xacro $(find mobile_cdpr_description)/xacro/mobile_cdpr.xacro" />
+  <node name="spawn_model"  pkg="gazebo_ros"  type="spawn_model" args="-param robot_description -urdf -model mobile_cdpr -z 1.56" output="screen" />
+
+  <!-- 加载关节控制器配置参数 -->
+  <rosparam file="$(find gazebo_control)/config/sim_control.yaml" command="load"/>
+
+  <!-- 加载关节控制器 -->
+  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
+	output="screen" ns="/mobile_cdpr" args="joint_state_controller
+					  steer_lf_controller steer_rf_controller steer_lb_controller steer_rb_controller
+					  roll_lf_controller roll_rf_controller roll_lb_controller roll_rb_controller
+            prism_lf_controller prism_rf_controller prism_lb_controller prism_rb_controller"/>
+
+  <!-- 将关节状态转换为TF坐标变换关系 -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
+	respawn="false" output="screen">
+    <remap from="/joint_states" to="/mobile_cdpr/joint_states" />
+  </node> 
+
+  <!-- Load RQT with a pre-setup GUI from a perspective file  -->
+  <node name="cdpr_rqt" pkg="rqt_gui" type="rqt_gui" respawn="false"
+	output="screen" args="--perspective-file $(find gazebo_control)/config/cdpr.perspective"/>
+
+
+</launch>

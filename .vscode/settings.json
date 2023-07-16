@@ -71,8 +71,12 @@
         "variant": "cpp",
         "csignal": "cpp"
     },
-    "ros.distro": "kinetic",
+    "ros.distro": "noetic",
     "python.analysis.extraPaths": [
         "/opt/ros/noetic/lib/python3/dist-packages"
-    ]
+    ],
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.autopep8"
+    },
+    "python.formatting.provider": "none"
 }

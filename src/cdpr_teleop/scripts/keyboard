@@ -61,7 +61,29 @@ def getKey():
 
 
 def vels(speed, turn):
-    return "currently:\tspeed %s\tturn %s " % (speed, turn)
+    return "currently:\tspeed %.3f \tturn %.3f " % (speed, turn)
+
+
+def makeSimpleProfile(output, input, slop):
+    if input > output:
+        output = min(input, output + slop)
+    elif input < output:
+        output = max(input, output - slop)
+    else:
+        output = input
+
+    return output
+
+
+def constrain(input, low, high):
+    if input < low:
+        input = low
+    elif input > high:
+        input = high
+    else:
+        input = input
+
+    return input
 
 
 if __name__ == "__main__":
@@ -74,6 +96,8 @@ if __name__ == "__main__":
     turn = rospy.get_param("~turn", 1.0)
     speed_acc = rospy.get_param("~speed_acc", 0.02)
     turn_acc = rospy.get_param("~turn_acc", 0.1)
+    max_speed = rospy.get_param("~max_speed", 10)
+    max_turn = rospy.get_param("~max_turn", 10)
 
     x = 0
     th = 0
@@ -87,7 +111,8 @@ if __name__ == "__main__":
     try:
         print(msg)
         print(vels(speed, turn))
-        while (1):
+        print("max:\tspeed %s \tturn %s " % (max_speed, max_turn))
+        while not rospy.is_shutdown():
             key = getKey()
             if key in moveBindings.keys():
                 x = moveBindings[key][0]
@@ -97,12 +122,20 @@ if __name__ == "__main__":
                 speed = speed * speedBindings[key][0]
                 turn = turn * speedBindings[key][1]
                 count = 0
+                if speed > max_speed:
+                    print(
+                        "max linear velocity is %s, stop increasing linear velocity!" % (max_speed))
+                    speed = max_speed
+                if turn > max_turn:
+                    print(
+                        "max angular velocity is %s, stop increasing angular velocity!" % (max_turn))
+                    turn = max_turn
 
                 print(vels(speed, turn))
                 if (status == 14):
                     print(msg)
                 status = (status + 1) % 15
-            elif key == ' ' or key == 'k':
+            elif key == ' ' or key == 's':
                 x = 0
                 th = 0
                 control_speed = 0
@@ -115,23 +148,17 @@ if __name__ == "__main__":
                 if (key == '\x03'):
                     break
 
-            target_speed = speed * x
-            target_turn = turn * th
+            # 限速
+            target_speed = constrain(
+                speed * x, -max_speed, max_speed)
+            target_turn = constrain(
+                turn * th, -max_turn, max_turn)
 
             # 速度平滑：当前速度小于目标速度时，当前速度递增，直至相等；当前速度大于目标速度时，当前速度递减，直至相等
-            if target_speed > control_speed:
-                control_speed = min(target_speed, control_speed + speed_acc)
-            elif target_speed < control_speed:
-                control_speed = max(target_speed, control_speed - speed_acc)
-            else:
-                control_speed = target_speed
-
-            if target_turn > control_turn:
-                control_turn = min(target_turn, control_turn + turn_acc)
-            elif target_turn < control_turn:
-                control_turn = max(target_turn, control_turn - turn_acc)
-            else:
-                control_turn = target_turn
+            control_speed = makeSimpleProfile(
+                control_speed, target_speed, speed_acc)
+            control_turn = makeSimpleProfile(
+                control_turn, target_turn, turn_acc)
 
             twist = Twist()
             twist.linear.x = control_speed
@@ -141,10 +168,6 @@ if __name__ == "__main__":
             twist.angular.y = 0
             twist.angular.z = control_turn
             pub.publish(twist)
-
-            # print("loop: {0}".format(count))
-            # print("target: vx: {0}, wz: {1}".format(target_speed, target_turn))
-            # print("publihsed: vx: {0}, wz: {1}".format(twist.linear.x, twist.angular.z))
 
     except Exception as e:
         print(e)

@@ -2,6 +2,8 @@ speed: 0.5
 turn: 1.0
 speed_acc: 0.05
 turn_acc: 0.1
+max_speed: 5
+max_turn: 5
 
 # walk_vel: 1
 # run_vel: 3

@@ -8,24 +8,28 @@ SimControl::SimControl()
 {
     sub_ = nh_.subscribe("/cmd_vel", 10, &SimControl::recvTwist, this);
     pubs_.reserve(8);
-    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/roll_lf_controller/command", 10));
-    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/roll_rf_controller/command", 10));
-    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/roll_lb_controller/command", 10));
-    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/roll_rb_controller/command", 10));
-    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/steer_lf_controller/command", 10));
-    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/steer_rf_controller/command", 10));
-    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/steer_lb_controller/command", 10));
-    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/steer_rb_controller/command", 10));
-    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/LF0_controller/command", 10));
-    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/RF0_controller/command", 10));
-    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/LB0_controller/command", 10));
-    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/RB0_controller/command", 10));
-    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/LF2_controller/command", 10));
-    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/RF2_controller/command", 10));
-    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/LB2_controller/command", 10));
-    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/RB2_controller/command", 10));
+    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/roll_lf_controller/command", 10));
+    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/roll_rf_controller/command", 10));
+    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/roll_lb_controller/command", 10));
+    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/roll_rb_controller/command", 10));
+    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/steer_lf_controller/command", 10));
+    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/steer_rf_controller/command", 10));
+    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/steer_lb_controller/command", 10));
+    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/steer_rb_controller/command", 10));
+    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/LF0_controller/command", 10));
+    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/RF0_controller/command", 10));
+    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/LB0_controller/command", 10));
+    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/RB0_controller/command", 10));
+    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/LF2_controller/command", 10));
+    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/RF2_controller/command", 10));
+    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/LB2_controller/command", 10));
+    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/RB2_controller/command", 10));
 }
 
+/**
+ * @brief 接收键盘输入的速度
+ * @param  msg
+ */
 void SimControl::recvTwist(const geometry_msgs::Twist::ConstPtr& msg)
 {
     linear_vel_ = msg->linear.x;
@@ -33,6 +37,14 @@ void SimControl::recvTwist(const geometry_msgs::Twist::ConstPtr& msg)
     turn_flag_ = msg->angular.x;
 }
 
+/**
+ * @brief 根据车身线速度和角速度计算车轮转速和转角
+ * @param  roll_vec
+ * @param  steer_vec
+ * @param  wheelbase
+ * @param  tread
+ * @param  wheel_radius
+ */
 void SimControl::calcWheelAngVel(std::vector<double>* roll_vec, std::vector<double>* steer_vec, const float& wheelbase,
                                  const float& tread, const float& wheel_radius)
 {
@@ -82,6 +94,9 @@ void SimControl::calcWheelAngVel(std::vector<double>* roll_vec, std::vector<doub
     //          (*roll_vec)[2], (*roll_vec)[3]);
 }
 
+/**
+ * @brief 直行、转弯
+ */
 void SimControl::moveAround()
 {
     // 获取轴距、轮距、轮胎半径
@@ -116,6 +131,9 @@ void SimControl::moveAround()
     }
 }
 
+/**
+ * @brief 横移
+ */
 void SimControl::skew()
 {
     // 获取轮胎半径
@@ -148,6 +166,9 @@ void SimControl::skew()
     }
 }
 
+/**
+ * @brief 自旋
+ */
 void SimControl::spin()
 {
     // 获取轴距、轮距、轮胎半径

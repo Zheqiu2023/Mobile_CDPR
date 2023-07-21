@@ -101,6 +101,7 @@
       effort="100"
       velocity="100" />
   </joint>
+
   <link
     name="link_roll_lf">
     <inertial>
@@ -157,6 +158,7 @@
       effort="100"
       velocity="100" />
   </joint>
+
   <link
     name="link_steer_rf">
     <inertial>
@@ -213,6 +215,7 @@
       effort="100"
       velocity="100" />
   </joint>
+
   <link
     name="link_roll_rf">
     <inertial>
@@ -264,11 +267,12 @@
     <child
       link="link_roll_rf" />
     <axis
-      xyz="0 1 0" />
+      xyz="0 -1 0" />
     <limit
       effort="100"
       velocity="100" />
   </joint>
+
   <link
     name="link_steer_lb">
     <inertial>
@@ -320,11 +324,12 @@
     <child
       link="link_steer_lb" />
     <axis
-      xyz="0 0 -1" />
+      xyz="0 0 1" />
     <limit
       effort="100"
       velocity="100" />
   </joint>
+
   <link
     name="link_roll_lb">
     <inertial>
@@ -381,6 +386,7 @@
       effort="100"
       velocity="100" />
   </joint>
+
   <link
     name="link_steer_rb">
     <inertial>
@@ -437,6 +443,7 @@
       effort="100"
       velocity="100" />
   </joint>
+
   <link
     name="link_roll_rb">
     <inertial>
@@ -488,7 +495,7 @@
     <child
       link="link_roll_rb" />
     <axis
-      xyz="0 1 0" />
+      xyz="0 -1 0" />
     <limit
       effort="100"
       velocity="100" />

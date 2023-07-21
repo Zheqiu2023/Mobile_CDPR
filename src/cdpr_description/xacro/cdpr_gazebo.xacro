@@ -6,81 +6,49 @@
 
   <gazebo reference="link_steer_lf">
     <mu1>0.2</mu1>
-    <mu2>0.2</mu2>
-    <kp>10000000</kp>
-    <kd>1</kd>
-    <minDepth>0.01</minDepth>
-    <maxVel>100</maxVel> 
+    <mu2>0.2</mu2> 
     <material>Gazebo/Blue</material>
   </gazebo>
 
   <gazebo reference="link_steer_rf">
     <mu1>0.2</mu1>
     <mu2>0.2</mu2>
-    <kp>10000000</kp>
-    <kd>1</kd>
-    <minDepth>0.01</minDepth>
-    <maxVel>100</maxVel> 
     <material>Gazebo/Blue</material>
   </gazebo>
 
   <gazebo reference="link_steer_lb">
     <mu1>0.2</mu1>
     <mu2>0.2</mu2>
-    <kp>10000000</kp>
-    <kd>1</kd>
-    <minDepth>0.01</minDepth>
-    <maxVel>100</maxVel> 
     <material>Gazebo/Blue</material>
   </gazebo>
 
   <gazebo reference="link_steer_rb">
     <mu1>0.2</mu1>
     <mu2>0.2</mu2>
-    <kp>10000000</kp>
-    <kd>1</kd>
-    <minDepth>0.01</minDepth>
-    <maxVel>100</maxVel> 
     <material>Gazebo/Blue</material>
   </gazebo>
 
   <gazebo reference="link_roll_lf">
     <mu1>5</mu1>
     <mu2>5</mu2>
-    <kp>10000000</kp>
-    <kd>1</kd>
-    <minDepth>0.01</minDepth>
-    <maxVel>100</maxVel> 
     <material>Gazebo/Orange</material>
   </gazebo>
 
   <gazebo reference="link_roll_rf">
     <mu1>5</mu1>
     <mu2>5</mu2>
-    <kp>10000000</kp>
-    <kd>1</kd>
-    <minDepth>0.01</minDepth>
-    <maxVel>100</maxVel> 
     <material>Gazebo/Orange</material>
   </gazebo>
 
   <gazebo reference="link_roll_lb">
     <mu1>5</mu1>
     <mu2>5</mu2>
-    <kp>10000000</kp>
-    <kd>1</kd>
-    <minDepth>0.01</minDepth>
-    <maxVel>100</maxVel> 
     <material>Gazebo/Orange</material>
   </gazebo>
 
   <gazebo reference="link_roll_rb">
     <mu1>5</mu1>
     <mu2>5</mu2>
-    <kp>10000000</kp>
-    <kd>1</kd>
-    <minDepth>0.01</minDepth>
-    <maxVel>100</maxVel> 
     <material>Gazebo/Orange</material>
   </gazebo>
 

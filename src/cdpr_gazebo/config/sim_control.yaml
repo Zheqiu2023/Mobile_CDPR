@@ -6,64 +6,37 @@ cdpr:
   
   # Controllers ------------------------------------------------
   # 轮毂电机采用速度控制（输入速度，输出力矩），转向电机和锚点座采用位置控制（输入位置，输出力矩）
+  # 如果gazebo软件一加载进去模型，还没有运行控制程序模型就在乱动，一般情况就是PID参数设置有问题（还有可能就是惯性矩阵设置有问题，不过如果是solidworks软件的插件导出来的话，是非常精确没有问题的），重新调整PID参数之后再次载入试试，一直等到载入模型之后关节不乱动为止。
   steer_lf_controller:
     type: effort_controllers/JointPositionController
     joint: joint_steer_lf
-    pid: {p: 10.0, i: 0.01, d: 1.0}
+    pid: {p: 40.0, i: 0.0, d: 0.5}
   steer_rf_controller:
     type: effort_controllers/JointPositionController
     joint: joint_steer_rf
-    pid: {p: 10.0, i: 0.01, d: 1.0}
+    pid: {p: 40.0, i: 0.0, d: 0.5}
   steer_lb_controller:
     type: effort_controllers/JointPositionController
     joint: joint_steer_lb
-    pid: {p: 10.0, i: 0.01, d: 1.0}
+    pid: {p: 40.0, i: 0.0, d: 0.5}
   steer_rb_controller:
     type: effort_controllers/JointPositionController
     joint: joint_steer_rb
-    pid: {p: 10.0, i: 0.01, d: 1.0}
+    pid: {p: 40.0, i: 0.0, d: 0.5}
 
   roll_lf_controller:
     type: effort_controllers/JointVelocityController
     joint: joint_roll_lf
-    pid: {p: 10.0, i: 0.01, d: 1.0}
+    pid: {p: 1.0, i: 0.0, d: 0.0}
   roll_rf_controller:
     type: effort_controllers/JointVelocityController
     joint: joint_roll_rf
-    pid: {p: 10.0, i: 0.01, d: 1.0}
+    pid: {p: 1.0, i: 0.0, d: 0.0}
   roll_lb_controller:
     type: effort_controllers/JointVelocityController
     joint: joint_roll_lb
-    pid: {p: 10.0, i: 0.01, d: 1.0}
+    pid: {p: 1.0, i: 0.0, d: 0.0}
   roll_rb_controller:
     type: effort_controllers/JointVelocityController
     joint: joint_roll_rb
-    pid: {p: 10.0, i: 0.01, d: 1.0}
-
-  # prism_lf_controller:
-  #   type: effort_controllers/JointPositionController
-  #   joint: joint_prism_lf
-  #   pid: {p: 10.0, i: 0.01, d: 1.0}
-  # prism_rf_controller:
-  #   type: effort_controllers/JointPositionController
-  #   joint: joint_prism_rf
-  #   pid: {p: 10.0, i: 0.01, d: 1.0}
-  # prism_lb_controller:
-  #   type: effort_controllers/JointPositionController
-  #   joint: joint_prism_lb
-  #   pid: {p: 10.0, i: 0.01, d: 1.0}
-  # prism_rb_controller:
-  #   type: effort_controllers/JointPositionController
-  #   joint: joint_prism_rb
-  #   pid: {p: 10.0, i: 0.01, d: 1.0}
-
-  # gazebo_ros_control:
-  #   pid_gains:
-  #     rear_right_wheel_joint:
-  #       p: 100.0
-  #       i: 0.5
-  #       d: 0.0
-  #     rear_left_wheel_joint:
-  #       p: 100.0
-  #       i: 0.5
-  #       d: 0.0
+    pid: {p: 1.0, i: 0.0, d: 0.0}

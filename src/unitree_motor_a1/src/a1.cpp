@@ -82,7 +82,7 @@ void A1Control::drive(SerialPort& port, const int& ctrl_frequency)
             // 由于宇树电机使用单圈绝对值编码器，重启后编码器位置不会归零
             // 因此使用给电机上电时的编码器位置作为补偿,即用给电机上电时的电机位置作为零点，发送的角度为零点角度加上目标角度(多圈累加)
             add_goal_position += goal_position;
-            motor_cmd_.Pos = motor_zero_position_ + (add_goal_position * reduction_ratio * PI / 180);
+            motor_cmd_.Pos = motor_zero_position_ + (add_goal_position * reduction_ratio * M_PI / 180.0);
 
             port.sendRecv(&motor_cmd_, &motor_recv_);
             usleep(50000);
@@ -163,7 +163,7 @@ void A1Control::drive(SerialPort& port, const int& ctrl_frequency)
             {
                 goal_position += goal_traj[i];
             }
-            end_pos = motor_zero_position_ + goal_position * reduction_ratio * PI / 180;
+            end_pos = motor_zero_position_ + goal_position * reduction_ratio * M_PI / 180.0;
             phase = (right_now - start_time_ - (per_traj_seg_run_time * (current_traj_point_ - 1))) /
                     per_traj_seg_run_time;  // 此处phase为整段路径中的各段的phase，0~1
 
@@ -186,7 +186,7 @@ void A1Control::drive(SerialPort& port, const int& ctrl_frequency)
         setCmd(control_param_vec);
 
         float total_run_time = 2, goal_position = 360;
-        float end_pos = motor_zero_position_ + goal_position * reduction_ratio * PI / 180;
+        float end_pos = motor_zero_position_ + goal_position * reduction_ratio * M_PI / 180.0;
         std::vector<float> pos{ motor_zero_position_, end_pos }, vel{ 0, 0 }, acc{ 0, 0 };  // 起始，结束位置信息
         int point_num = ceil(ctrl_frequency * total_run_time) + 101;  // 保证控制周期大于每小段轨迹运行时间
         std::vector<std::vector<float>> bezier_plan_result;

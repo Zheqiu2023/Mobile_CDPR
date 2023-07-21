@@ -1,0 +1,7 @@
+<launch>
+  <include file="$(find cdpr_gazebo)/launch/gazebo.launch"/>
+
+  <node pkg="cdpr_gazebo" type="cdpr_gazebo_node" name="cdpr_gazebo" output="screen">
+    <rosparam file="$(find cdpr_gazebo)/config/cdpr_config.yaml" command="load"/>
+  </node>
+</launch>

@@ -1,0 +1,496 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="cdpr_urdf">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="8.455E-12 -1.163E-11 -0.77855"
+        rpy="0 0 0" />
+      <mass
+        value="13.224" />
+      <inertia
+        ixx="0.48681"
+        ixy="-2.9532E-06"
+        ixz="1.6287E-14"
+        iyy="0.39537"
+        iyz="7.8669E-14"
+        izz="0.15201" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cdpr_urdf/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cdpr_urdf/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link
+    name="link_steer_lf">
+    <inertial>
+      <origin
+        xyz="9.4845E-05 -0.0090409 -0.10703"
+        rpy="0 0 0" />
+      <mass
+        value="0.53871" />
+      <inertia
+        ixx="0.0010359"
+        ixy="-1.3123E-06"
+        ixz="-3.0239E-06"
+        iyy="0.0011315"
+        iyz="-9.7581E-05"
+        izz="0.00069015" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cdpr_urdf/meshes/link_steer_lf.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cdpr_urdf/meshes/link_steer_lf.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_steer_lf"
+    type="continuous">
+    <origin
+      xyz="0.527 0.74 -1.3154"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="link_steer_lf" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      effort="100"
+      velocity="100" />
+  </joint>
+  <link
+    name="link_roll_lf">
+    <inertial>
+      <origin
+        xyz="-4.3238E-05 -0.021911 -2.9494E-05"
+        rpy="0 0 0" />
+      <mass
+        value="1.5144" />
+      <inertia
+        ixx="0.0072068"
+        ixy="-2.1993E-07"
+        ixz="2.3853E-06"
+        iyy="0.013684"
+        iyz="-1.5504E-07"
+        izz="0.0072049" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cdpr_urdf/meshes/link_roll_lf.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cdpr_urdf/meshes/link_roll_lf.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_roll_lf"
+    type="continuous">
+    <origin
+      xyz="0 0.024 -0.133"
+      rpy="0 0 0" />
+    <parent
+      link="link_steer_lf" />
+    <child
+      link="link_roll_lf" />
+    <axis
+      xyz="0 -1 0" />
+    <limit
+      effort="100"
+      velocity="100" />
+  </joint>
+  <link
+    name="link_steer_rf">
+    <inertial>
+      <origin
+        xyz="-9.4845E-05 0.0090407 -0.10703"
+        rpy="0 0 0" />
+      <mass
+        value="0.53871" />
+      <inertia
+        ixx="0.0010359"
+        ixy="-1.3123E-06"
+        ixz="3.0239E-06"
+        iyy="0.0011315"
+        iyz="9.7581E-05"
+        izz="0.00069015" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cdpr_urdf/meshes/link_steer_rf.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cdpr_urdf/meshes/link_steer_rf.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_steer_rf"
+    type="continuous">
+    <origin
+      xyz="0.527 -0.74 -1.3154"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="link_steer_rf" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      effort="100"
+      velocity="100" />
+  </joint>
+  <link
+    name="link_roll_rf">
+    <inertial>
+      <origin
+        xyz="4.3238E-05 0.021911 -2.9527E-05"
+        rpy="0 0 0" />
+      <mass
+        value="1.5144" />
+      <inertia
+        ixx="0.0072068"
+        ixy="-2.1993E-07"
+        ixz="-2.3853E-06"
+        iyy="0.013684"
+        iyz="1.4503E-07"
+        izz="0.0072049" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cdpr_urdf/meshes/link_roll_rf.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cdpr_urdf/meshes/link_roll_rf.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_roll_rf"
+    type="continuous">
+    <origin
+      xyz="0 -0.024 -0.133"
+      rpy="0 0 0" />
+    <parent
+      link="link_steer_rf" />
+    <child
+      link="link_roll_rf" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      effort="100"
+      velocity="100" />
+  </joint>
+  <link
+    name="link_steer_lb">
+    <inertial>
+      <origin
+        xyz="9.4845E-05 -0.0090407 -0.10703"
+        rpy="0 0 0" />
+      <mass
+        value="0.53871" />
+      <inertia
+        ixx="0.0010359"
+        ixy="-1.3123E-06"
+        ixz="-3.0239E-06"
+        iyy="0.0011315"
+        iyz="-9.7581E-05"
+        izz="0.00069015" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cdpr_urdf/meshes/link_steer_lb.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cdpr_urdf/meshes/link_steer_lb.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_steer_lb"
+    type="continuous">
+    <origin
+      xyz="-0.527 0.74 -1.3154"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="link_steer_lb" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      effort="100"
+      velocity="100" />
+  </joint>
+  <link
+    name="link_roll_lb">
+    <inertial>
+      <origin
+        xyz="-4.3238E-05 -0.021911 -2.9527E-05"
+        rpy="0 0 0" />
+      <mass
+        value="1.5144" />
+      <inertia
+        ixx="0.0072068"
+        ixy="-2.1993E-07"
+        ixz="2.3853E-06"
+        iyy="0.013684"
+        iyz="-1.4503E-07"
+        izz="0.0072049" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cdpr_urdf/meshes/link_roll_lb.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cdpr_urdf/meshes/link_roll_lb.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_roll_lb"
+    type="continuous">
+    <origin
+      xyz="0 0.024 -0.133"
+      rpy="0 0 0" />
+    <parent
+      link="link_steer_lb" />
+    <child
+      link="link_roll_lb" />
+    <axis
+      xyz="0 -1 0" />
+    <limit
+      effort="100"
+      velocity="100" />
+  </joint>
+  <link
+    name="link_steer_rb">
+    <inertial>
+      <origin
+        xyz="-9.4845E-05 0.0090409 -0.10703"
+        rpy="0 0 0" />
+      <mass
+        value="0.53871" />
+      <inertia
+        ixx="0.0010359"
+        ixy="-1.3123E-06"
+        ixz="3.0239E-06"
+        iyy="0.0011315"
+        iyz="9.7581E-05"
+        izz="0.00069015" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cdpr_urdf/meshes/link_steer_rb.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cdpr_urdf/meshes/link_steer_rb.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_steer_rb"
+    type="continuous">
+    <origin
+      xyz="-0.527 -0.74 -1.3154"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="link_steer_rb" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      effort="100"
+      velocity="100" />
+  </joint>
+  <link
+    name="link_roll_rb">
+    <inertial>
+      <origin
+        xyz="4.3238E-05 0.021911 -2.9494E-05"
+        rpy="0 0 0" />
+      <mass
+        value="1.5144" />
+      <inertia
+        ixx="0.0072068"
+        ixy="-2.1993E-07"
+        ixz="-2.3853E-06"
+        iyy="0.013684"
+        iyz="1.5504E-07"
+        izz="0.0072049" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cdpr_urdf/meshes/link_roll_rb.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cdpr_urdf/meshes/link_roll_rb.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="joint_roll_rb"
+    type="continuous">
+    <origin
+      xyz="0 -0.024 -0.133"
+      rpy="0 0 0" />
+    <parent
+      link="link_steer_rb" />
+    <child
+      link="link_roll_rb" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      effort="100"
+      velocity="100" />
+  </joint>
+</robot>

@@ -1,9 +1,9 @@
-speed: 0.5
-turn: 1.0
-speed_acc: 0.05
-turn_acc: 0.1
+speed: 2
+turn: 0.5
+speed_acc: 0.02
+turn_acc: 0.01
 max_speed: 5
-max_turn: 5
+max_turn: 3
 
 # walk_vel: 1
 # run_vel: 3

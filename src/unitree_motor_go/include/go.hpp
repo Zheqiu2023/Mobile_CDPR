@@ -19,8 +19,6 @@
 
 namespace motor_go
 {
-constexpr float PI = 3.1415926;
-
 class GoControl
 {
   public:

@@ -69,7 +69,9 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp",
-        "csignal": "cpp"
+        "csignal": "cpp",
+        "any": "cpp",
+        "regex": "cpp"
     },
     "ros.distro": "noetic",
     "python.analysis.extraPaths": [

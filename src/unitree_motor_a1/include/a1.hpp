@@ -16,8 +16,6 @@
 
 namespace motor_a1
 {
-constexpr float PI = 3.1415926;
-
 class A1Control
 {
   public:

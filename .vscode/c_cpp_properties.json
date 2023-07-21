@@ -12,6 +12,7 @@
                 "${workspaceFolder}/src/unitree_motor_a1/include/**",
                 "${workspaceFolder}/src/unitree_motor_go/include/**",
                 "${workspaceFolder}/src/usb_can/include/**",
+                "${workspaceFolder}/src/cdpr_gazebo/include/**",
                 "${workspaceFolder}/devel/include",
                 "/opt/ros/noetic/include"
             ],

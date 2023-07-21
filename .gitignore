@@ -3,4 +3,5 @@ build/
 devel/
 logs/
 Reference/
+bags/
 .catkin_workspace

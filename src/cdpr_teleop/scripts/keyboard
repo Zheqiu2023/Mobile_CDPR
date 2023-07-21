@@ -18,10 +18,12 @@ Moving around:
    a    s    d
    z    x    c
 
+q/e/z/c : move & turn
+a/d : turn
 u/j : increase/decrease max speeds by 10%
 i/k : increase/decrease only linear speed by 10%
 o/l : increase/decrease only angular speed by 10%
-space key, s : force stop
+ s  : force stop
 anything else : stop smoothly
 
 CTRL-C to quit
@@ -30,12 +32,16 @@ CTRL-C to quit
 moveBindings = {
     'w': (1, 0),
     'e': (1, -1),
-    'a': (0, 1),
-    'd': (0, -1),
     'q': (1, 1),
     'x': (-1, 0),
     'c': (-1, 1),
     'z': (-1, -1),
+}
+
+# 左右转向键：按下后角速度将作为轮胎转向角度
+turnBindings = {
+    'a': (0, 1),
+    'd': (0, -1),
 }
 
 speedBindings = {
@@ -103,7 +109,7 @@ if __name__ == "__main__":
     th = 0
     status = 0
     count = 0
-    acc = 0.1
+    turn_flag = 0
     target_speed = 0
     target_turn = 0
     control_speed = 0
@@ -118,6 +124,10 @@ if __name__ == "__main__":
                 x = moveBindings[key][0]
                 th = moveBindings[key][1]
                 count = 0
+            elif key in turnBindings.keys():
+                th = turnBindings[key][1]
+                count = 0
+                turn_flag = 1
             elif key in speedBindings.keys():
                 speed = speed * speedBindings[key][0]
                 turn = turn * speedBindings[key][1]
@@ -130,12 +140,13 @@ if __name__ == "__main__":
                     print(
                         "max angular velocity is %s, stop increasing angular velocity!" % (max_turn))
                     turn = max_turn
-
                 print(vels(speed, turn))
                 if (status == 14):
                     print(msg)
                 status = (status + 1) % 15
-            elif key == ' ' or key == 's':
+            elif key == 'r':
+                turn_flag = 0
+            elif key == 's':
                 x = 0
                 th = 0
                 control_speed = 0
@@ -145,26 +156,27 @@ if __name__ == "__main__":
                 if count > 4:
                     x = 0
                     th = 0
-                if (key == '\x03'):
-                    break
+                    if (key == '\x03'):
+                        break
 
             # 限速
-            target_speed = constrain(
-                speed * x, -max_speed, max_speed)
-            target_turn = constrain(
-                turn * th, -max_turn, max_turn)
-
+            target_speed = constrain(speed * x, -max_speed, max_speed)
+            target_turn = constrain(turn * th, -max_turn, max_turn)
             # 速度平滑：当前速度小于目标速度时，当前速度递增，直至相等；当前速度大于目标速度时，当前速度递减，直至相等
             control_speed = makeSimpleProfile(
                 control_speed, target_speed, speed_acc)
-            control_turn = makeSimpleProfile(
-                control_turn, target_turn, turn_acc)
+            if turn_flag == 0:
+                control_turn = makeSimpleProfile(
+                    control_turn, target_turn, turn_acc)
+            else:
+                control_turn += th * turn_acc
+                control_turn = constrain(control_turn, -max_turn, max_turn)
 
             twist = Twist()
             twist.linear.x = control_speed
             twist.linear.y = 0
             twist.linear.z = 0
-            twist.angular.x = 0
+            twist.angular.x = turn_flag
             twist.angular.y = 0
             twist.angular.z = control_turn
             pub.publish(twist)

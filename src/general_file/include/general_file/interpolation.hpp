@@ -38,7 +38,7 @@ y_t lerp(y_t y0, y_t yf, x_t x)
 
 // 以下为三阶贝塞尔曲线插值算法
 // 令三阶贝塞尔的中间控制点P1,P2分别与P0,P3重合,造成的效果为:起点终点速度为0，若想让终点保持一定速度,改变P3
-// 起点处速度为3(P1-P0)/swingend_accime,终点处速度为:3(P3-P2)/swingend_accime
+// 起点处速度为3(P1-P0)/swing_time,终点处速度为:3(P3-P2)/swing_time
 
 /**
  * @brief Cubic bezier interpolation between y0 and yf.  x is between 0 and 1，获取位置

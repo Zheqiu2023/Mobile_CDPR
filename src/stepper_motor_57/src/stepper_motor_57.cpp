@@ -98,7 +98,7 @@ void MotorRun::setCmd(StepperMotorRunMode cmd_mode)
 {
     std::vector<int> data_vec{ 0, 0, 0, 0 };
 
-    pub_cmd_.ID = 0xc2;  // 帧ID，与驱动器地址相同
+    pub_cmd_.ID = 0xc1;  // 帧ID，与驱动器地址相同
     pub_cmd_.SendType = 1;  // 单次发送（只发送一次，发送失败不会自动重发，总线只产生一帧数据）
     pub_cmd_.RemoteFlag = 0;                                          // 0为数据帧，1为远程帧
     pub_cmd_.ExternFlag = 0;                                          // 0为标准帧，1为拓展帧
@@ -204,7 +204,7 @@ void MotorParam::writeParam()
                                                      // data_arr[6]：相电流    data_arr[7]：CAN ID
     for (auto& data : data_arr)
     {
-        data.ID = 0xc2;  // 帧ID，与驱动器地址相同
+        data.ID = 0xc1;  // 帧ID，与驱动器地址相同
         data.SendType = 1;  // 单次发送（只发送一次，发送失败不会自动重发，总线只产生一帧数据）
         data.RemoteFlag = 0;                                      // 0为数据帧，1为远程帧
         data.ExternFlag = 0;                                      // 0为标准帧，1为拓展帧
@@ -257,7 +257,7 @@ void MotorParam::readParam()
                                                      // data_arr[6]：相电流    data_arr[7]：CAN ID
     for (auto& data : data_arr)
     {
-        data.ID = 0xc2;  // 帧ID，与驱动器地址相同
+        data.ID = 0xc1;  // 帧ID，与驱动器地址相同
         data.SendType = 1;  // 单次发送（只发送一次，发送失败不会自动重发，总线只产生一帧数据）
         data.RemoteFlag = 0;                                      // 0为数据帧，1为远程帧
         data.ExternFlag = 0;                                      // 0为标准帧，1为拓展帧

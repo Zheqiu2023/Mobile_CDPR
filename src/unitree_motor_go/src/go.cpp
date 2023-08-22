@@ -152,7 +152,7 @@ void GoControl::drive(SerialPort& port, const int& ctrl_frequency)
             ROS_INFO("Motor Go run complete!");
         }
         else if ((right_now - start_time_) >
-                 (double)(current_traj_point_ * per_traj_seg_run_time))  // 表示一个路点已完成,准备下一个路点
+                 static_cast<double>(current_traj_point_ * per_traj_seg_run_time))  // 表示一个路点已完成,准备下一个路点
         {
             ++current_traj_point_;
             traj_start_pos_ = motor_recv_.Pos;

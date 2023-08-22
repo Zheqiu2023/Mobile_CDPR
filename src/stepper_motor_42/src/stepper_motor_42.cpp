@@ -15,10 +15,10 @@
 
 #include <pthread.h>
 #include <stdio.h>
+
 #include <array>
 #include <string>
 #include <vector>
-
 using namespace motor_42;
 
 /**

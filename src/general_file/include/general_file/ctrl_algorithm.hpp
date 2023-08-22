@@ -1,5 +1,5 @@
 /**
- * @File Name: simple_algorithm.hpp
+ * @File Name: ctrl_algorithm.hpp
  * @brief
  * @author Zhe Qiu (zheqiu2021@163.com)
  * @version 0.1

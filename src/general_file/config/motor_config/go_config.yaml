@@ -14,4 +14,4 @@ motor_ctrl_data:
   goal_pos_vec: [20, -20, 20, -20] 
   goal_vel: 10
   goal_trq: 0.2
-  goal_traj: [20, -20, 20, -20]  # 路点
+  goal_traj: [90, -90, 90, -90]  # 路点

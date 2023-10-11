@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
     <!-- 使用CAN通信时要运行usb_can_node -->
-    <node pkg="usb_can" type="usb_can_node" name="usbcan" output="screen"/>
+    <!-- <node pkg="usb_can" type="usb_can_node" name="usbcan" output="screen"/> -->
     <!-- <include file="$(find general_file)/launch/motor_launch/42_launch.launch"/> -->
-    <include file="$(find general_file)/launch/motor_launch/57_launch.launch"/>
+    <!-- <include file="$(find general_file)/launch/motor_launch/57_launch.launch"/> -->
     <!-- <include file="$(find general_file)/launch/motor_launch/re35_launch.launch"/> -->
 
     <!-- <include file="$(find general_file)/launch/motor_launch/a1_launch.launch"/> -->
-    <!-- <include file="$(find general_file)/launch/motor_launch/go_launch.launch"/> -->
+    <include file="$(find general_file)/launch/motor_launch/go_launch.launch"/>
     <!-- <include file="$(find general_file)/launch/tension_sensors_launch.launch"/> -->
 
     <!-- <include file="$(find general_file)/launch/wit_imu_launch/display_and_imu.launch"/> -->

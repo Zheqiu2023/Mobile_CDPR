@@ -19,7 +19,7 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "unitree_motor_go");
     ros::NodeHandle nh;
 
-    motor_go::GoRun go_run(1);
+    motor_go::GoRun go_run;
     go_run();
 
     return 0;

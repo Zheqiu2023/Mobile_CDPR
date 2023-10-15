@@ -134,6 +134,7 @@ std::vector<std::vector<float>> quinticPolynomial(const float& time, const std::
     std::vector<std::vector<float>> result_vec(point_num, std::vector<float>(3, 0));
     float pos_diff = pos[1] - pos[0];
 
+    // 五次多项式系数
     coef_vec[0] = pos[0];
     coef_vec[1] = vel[0];
     coef_vec[2] = 1.0 / 2 * acc[0];
@@ -145,7 +146,7 @@ std::vector<std::vector<float>> quinticPolynomial(const float& time, const std::
         1.0 / (2 * pow(time, 5)) * (12 * pos_diff - 6 * (vel[1] + vel[0]) * time + (acc[1] - acc[0]) / pow(time, 2));
 
     float per_seg_time = time / (point_num - 1);
-    for (int i = 0; i < point_num; ++i)
+    for (size_t i = 0; i < point_num; ++i)
     {
         // 位置
         result_vec[i][0] = coef_vec[0] + coef_vec[1] * pow(per_seg_time * i, 1) +

@@ -138,7 +138,6 @@ void A1Control::drive(std::vector<SerialPort*>& port)
         // 设置参数K_W、K_P
         ros::param::get("/a1/motor_ctrl_data/trq_kp_kw", control_param_vec);
         setCmd(control_param_vec);
-
         // 设置目标力矩
         std::for_each(motor_cmd_.begin(), motor_cmd_.end(),
                       [](MotorCmd& cmd) { ros::param::get("/a1/motor_ctrl_data/goal_trq", cmd.T); });
@@ -234,12 +233,12 @@ void A1Control::drive(std::vector<SerialPort*>& port)
         int point_num = ceil(ctrl_frequency * total_run_time) + 101;  // 保证控制周期大于每小段轨迹运行时间
         float per_traj_seg_run_time = total_run_time / (point_num - 1);
 
-        std::vector<std::vector<float>> bezier_plan_result;
+        std::vector<std::vector<std::vector<float>>> qp_plan_result{};
         for (size_t i = 0; i < motor_num_; ++i)
         {
             float end_pos = motor_zero_position_[i] + goal_position * reduction_ratio * M_PI / 180.0;
             std::vector<float> pos{ motor_zero_position_[i], end_pos }, vel{ 0, 0 }, acc{ 0, 0 };  // 起始，结束位置信息
-            bezier_plan_result = interpolate::quinticPolynomial(total_run_time, pos, vel, acc, point_num);
+            qp_plan_result.push_back(interpolate::quinticPolynomial(total_run_time, pos, vel, acc, point_num));
         }
 
         // 获取开始运行时间
@@ -258,7 +257,7 @@ void A1Control::drive(std::vector<SerialPort*>& port)
                 else if (current_traj_point[i] >= point_num)  // 表示整条路径已经走完
                 {
                     ROS_INFO("Motor A1[%lu] run complete!", i);
-                    motor_cmd_[i].Pos = bezier_plan_result.back()[0];
+                    motor_cmd_[i].Pos = qp_plan_result[i].back()[0];
                 }
                 // 若在while(ros::ok())内不使用定时器，需用时间判断路点是否完成；若使用定时器，无需判断路点是否完成，但需保证控制周期大于每小段轨迹运行时间
                 // else if ((right_now - start_time) > static_cast<double>(current_traj_point *
@@ -269,8 +268,8 @@ void A1Control::drive(std::vector<SerialPort*>& port)
 
                 if (current_traj_point[i] < point_num)
                 {
-                    motor_cmd_[i].Pos = bezier_plan_result[current_traj_point[i]][0];
-                    motor_cmd_[i].W = bezier_plan_result[current_traj_point[i]][1];
+                    motor_cmd_[i].Pos = qp_plan_result[i][current_traj_point[i]][0];
+                    motor_cmd_[i].W = qp_plan_result[i][current_traj_point[i]][1];
                     // 不用规划的速度，用每段速度平均值
                     // motor_cmd_.W = (motor_cmd_.Pos - motor_recv_.Pos) / per_traj_seg_run_time;
                 }
@@ -303,7 +302,7 @@ void A1Control::stall(std::vector<SerialPort*>& port)
         ROS_DEBUG_STREAM("position: " << motor_recv_[i].Pos << motor_recv_[i].T);
     }
 
-    ROS_INFO("End of run!");
+    ROS_INFO("End of motor A1 operation!");
 }
 
 /**

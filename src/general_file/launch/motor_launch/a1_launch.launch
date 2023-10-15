@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
     <!-- 控制模式：0：位置，1：速度，2：力矩，3：贝塞尔轨迹规划，4：五次多项式轨迹规划 -->
-    <arg name="cmd_type" default="3" doc="type [0,1,2,3,4]"/>
+    <arg name="cmd_type" default="4" doc="type [0,1,2,3,4]"/>
 
     <node pkg="unitree_motor_a1" type="unitree_motor_a1_node" name="a1" output="screen">
         <param name="cmd_type" type="int" value="$(arg cmd_type)"/>

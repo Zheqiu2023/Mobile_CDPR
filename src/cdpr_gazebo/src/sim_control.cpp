@@ -7,23 +7,23 @@ using namespace sim_control;
 SimControl::SimControl()
 {
     sub_ = nh_.subscribe("/cmd_vel", 10, &SimControl::recvTwist, this);
-    pubs_.reserve(8);
-    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/roll_lf_controller/command", 10));
-    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/roll_rf_controller/command", 10));
-    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/roll_lb_controller/command", 10));
-    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/roll_rb_controller/command", 10));
-    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/steer_lf_controller/command", 10));
-    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/steer_rf_controller/command", 10));
-    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/steer_lb_controller/command", 10));
-    pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cdpr/steer_rb_controller/command", 10));
-    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/LF0_controller/command", 10));
-    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/RF0_controller/command", 10));
-    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/LB0_controller/command", 10));
-    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/RB0_controller/command", 10));
-    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/LF2_controller/command", 10));
-    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/RF2_controller/command", 10));
-    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/LB2_controller/command", 10));
-    // pubs_.push_back(nh_.advertise<std_msgs::Float64>("/RB2_controller/command", 10));
+    pubs_.resize(8);
+    pubs_[0] = nh_.advertise<std_msgs::Float64>("/cdpr/roll_lf_controller/command", 10);
+    pubs_[1] = nh_.advertise<std_msgs::Float64>("/cdpr/roll_rf_controller/command", 10);
+    pubs_[2] = nh_.advertise<std_msgs::Float64>("/cdpr/roll_lb_controller/command", 10);
+    pubs_[3] = nh_.advertise<std_msgs::Float64>("/cdpr/roll_rb_controller/command", 10);
+    pubs_[4] = nh_.advertise<std_msgs::Float64>("/cdpr/steer_lf_controller/command", 10);
+    pubs_[5] = nh_.advertise<std_msgs::Float64>("/cdpr/steer_rf_controller/command", 10);
+    pubs_[6] = nh_.advertise<std_msgs::Float64>("/cdpr/steer_lb_controller/command", 10);
+    pubs_[7] = nh_.advertise<std_msgs::Float64>("/cdpr/steer_rb_controller/command", 10);
+    // pubs_[0] = nh_.advertise<std_msgs::Float64>("/LF0_controller/command", 10);
+    // pubs_[1] = nh_.advertise<std_msgs::Float64>("/RF0_controller/command", 10);
+    // pubs_[2] = nh_.advertise<std_msgs::Float64>("/LB0_controller/command", 10);
+    // pubs_[3] = nh_.advertise<std_msgs::Float64>("/RB0_controller/command", 10);
+    // pubs_[4] = nh_.advertise<std_msgs::Float64>("/LF2_controller/command", 10);
+    // pubs_[5] = nh_.advertise<std_msgs::Float64>("/RF2_controller/command", 10);
+    // pubs_[6] = nh_.advertise<std_msgs::Float64>("/LB2_controller/command", 10);
+    // pubs_[7] = nh_.advertise<std_msgs::Float64>("/RB2_controller/command", 10);
 }
 
 /**

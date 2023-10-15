@@ -41,13 +41,13 @@ class TransferStation
 
 TransferStation::TransferStation()
 {
-    subs_.reserve(3);
-    subs_.push_back(nh_.subscribe<general_file::can_msgs>(
-        "/usbcan/motor_42", 100, boost::bind(&TransferStation::canCallback, this, _1, CAN_IND0)));
-    subs_.push_back(nh_.subscribe<general_file::can_msgs>(
-        "/usbcan/motor_57", 100, boost::bind(&TransferStation::canCallback, this, _1, CAN_IND0)));
-    subs_.push_back(nh_.subscribe<general_file::can_msgs>(
-        "/usbcan/motor_re35", 100, boost::bind(&TransferStation::canCallback, this, _1, CAN_IND1)));
+    subs_.resize(3);
+    subs_[0] = nh_.subscribe<general_file::can_msgs>("/usbcan/motor_42", 100,
+                                                     boost::bind(&TransferStation::canCallback, this, _1, CAN_IND0));
+    subs_[1] = nh_.subscribe<general_file::can_msgs>("/usbcan/motor_57", 100,
+                                                     boost::bind(&TransferStation::canCallback, this, _1, CAN_IND0));
+    subs_[2] = nh_.subscribe<general_file::can_msgs>("/usbcan/motor_re35", 100,
+                                                     boost::bind(&TransferStation::canCallback, this, _1, CAN_IND1));
     pub_ = nh_.advertise<general_file::can_msgs>("/usbcan/can_pub", 50);
 }
 
@@ -89,15 +89,15 @@ void TransferStation::printMsgs(const VCI_CAN_OBJ& msg) const
 {
     printf("CAN%d RX ID:0x%08X", CAN_IND0 + 1, msg.ID);  // ID
     if (msg.ExternFlag == 0)
-        printf(" Standard ");                            // 帧格式：标准帧
+        printf(" Standard ");  // 帧格式：标准帧
     if (msg.ExternFlag == 1)
-        printf(" Extend   ");                            // 帧格式：扩展帧
+        printf(" Extend   ");  // 帧格式：扩展帧
     if (msg.RemoteFlag == 0)
-        printf(" Data   ");                              // 帧类型：数据帧
+        printf(" Data   ");  // 帧类型：数据帧
     if (msg.RemoteFlag == 1)
-        printf(" Remote ");                              // 帧类型：远程帧
-    printf("DLC:0x%02X", msg.DataLen);                   // 帧长度
-    printf(" data:0x");                                  // 数据
+        printf(" Remote ");             // 帧类型：远程帧
+    printf("DLC:0x%02X", msg.DataLen);  // 帧长度
+    printf(" data:0x");                 // 数据
     for (size_t i = 0; i < msg.DataLen; ++i)
         printf(" %02X", msg.Data[i]);
     printf(" TimeStamp:0x%08X", msg.TimeStamp);  // 时间戳

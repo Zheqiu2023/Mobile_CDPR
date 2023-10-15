@@ -26,11 +26,11 @@ using namespace motor_re35;
 MsgBox::MsgBox()
 {
     tension_vec_.reserve(7);
-    subs_.reserve(2);
+    subs_.resize(2);
     pub_ = nh_.advertise<general_file::can_msgs>("/usbcan/motor_re35", 10);
-    subs_.push_back(
-        nh_.subscribe<general_file::can_msgs>("/usbcan/can_pub", 100, boost::bind(&MsgBox::recvCANMsgs, this, _1)));
-    subs_.push_back(nh_.subscribe<std_msgs::Float32>("/tension_val", 10, boost::bind(&MsgBox::recvTension, this, _1)));
+    subs_[0] =
+        nh_.subscribe<general_file::can_msgs>("/usbcan/can_pub", 100, boost::bind(&MsgBox::recvCANMsgs, this, _1));
+    subs_[1] = nh_.subscribe<std_msgs::Float32>("/tension_val", 10, boost::bind(&MsgBox::recvTension, this, _1));
     ros::Duration(0.4).sleep();  // 休眠0.4s，保证发出的第一条消息能被usbcan接收
 }
 

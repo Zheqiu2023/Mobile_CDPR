@@ -8,9 +8,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
+find_package(Eigen3 REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  geometry_msgs
   message_generation
 )
 
@@ -50,7 +52,11 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  can_msgs.msg
+  CanFrame.msg
+  UnitreeMotorCmd.msg
+  UnitreeMotorState.msg
+  ChassisCmd.msg 
+  ActuatorState.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -71,6 +77,7 @@ add_message_files(
 generate_messages(
   DEPENDENCIES
   std_msgs  # Or other packages containing msgs
+  geometry_msgs
 )
 
 ################################################
@@ -103,7 +110,7 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
- INCLUDE_DIRS include/general_file
+ INCLUDE_DIRS include ${EIGEN3_INCLUDE_DIR}
 #  LIBRARIES general_file
  CATKIN_DEPENDS roscpp std_msgs message_runtime
 #  DEPENDS system_lib
@@ -112,13 +119,12 @@ catkin_package(
 ###########
 ## Build ##
 ###########
-SET(CMAKE_BUILD_TYPE "Debug")
-
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-  include/general_file
+  include
   ${catkin_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIR}
 )
 
 # link_directories(
@@ -127,9 +133,8 @@ include_directories(
 # )
 
 ## Declare a C++ library
-# add_library(usb_can
-#   src/start_usb_can.cpp
-# )
+file(GLOB_RECURSE sources "src/*.cpp" "src/filters/*.cpp")
+add_library(${PROJECT_NAME} SHARED ${sources} )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

@@ -15,8 +15,8 @@
 #include <ros/ros.h>
 #include <semaphore.h>
 
-#include "controlcan.h"
-#include "general_file/can_msgs.h"
+#include "general_file/usb_can/controlcan.h"
+#include "general_file/CanFrame.h"
 #include "stepper_motor.hpp"
 
 namespace motor_57
@@ -33,8 +33,8 @@ class MsgBox
   public:
     MsgBox();
     ~MsgBox();
-    void publishCmd(const general_file::can_msgs& cmd);
-    void recvCallback(const general_file::can_msgs::ConstPtr& msg);
+    void publishCmd(const general_file::CanFrame& cmd);
+    void recvCallback(const general_file::CanFrame::ConstPtr& msg);
     sem_t& getSemaphore();
 
   private:
@@ -54,6 +54,6 @@ class MotorRun
 
   private:
     MsgBox msg_box_{};
-    general_file::can_msgs pub_cmd_{};
+    general_file::CanFrame pub_cmd_{};
 };
 }  // namespace motor_57

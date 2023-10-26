@@ -15,7 +15,7 @@
 // 现实中客户编程中，发送与接收函数不能同时调用（不支持多线程），如果在多线程中，一定需要互锁。需要客户自行完善代码。
 #include <ros/ros.h>
 
-#include "stepper_motor_57.hpp"
+#include "stepper_motor_57/stepper_motor_57.hpp"
 
 int main(int argc, char** argv)
 {

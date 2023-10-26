@@ -71,7 +71,11 @@
         "variant": "cpp",
         "csignal": "cpp",
         "any": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "*.ipp": "cpp",
+        "future": "cpp",
+        "codecvt": "cpp",
+        "valarray": "cpp"
     },
     "ros.distro": "noetic",
     "python.analysis.extraPaths": [

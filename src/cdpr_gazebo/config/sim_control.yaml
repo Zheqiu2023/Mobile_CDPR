@@ -2,7 +2,7 @@ cdpr:
   # Publish all joint states -----------------------------------
   joint_state_controller:
     type: joint_state_controller/JointStateController
-    publish_rate: 100
+    publish_rate: 1000
   
   # Controllers ------------------------------------------------
   # 轮毂电机采用速度控制（输入速度，输出力矩），转向电机和锚点座采用位置控制（输入位置，输出力矩）

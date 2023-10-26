@@ -69,7 +69,6 @@ def getKey():
 def vels(speed, turn):
     return "currently:\tspeed %.3f \tturn %.3f " % (speed, turn)
 
-
 def makeSimpleProfile(output, input, slop):
     if input > output:
         output = min(input, output + slop)

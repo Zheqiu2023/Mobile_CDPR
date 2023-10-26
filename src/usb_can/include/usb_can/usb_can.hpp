@@ -12,13 +12,9 @@
  */
 #pragma once
 
-#include "controlcan.h"
+#include "general_file/usb_can/controlcan.h"
 
 #include <ros/ros.h>
-
-constexpr int DEV_IND = 0;   // 设备索引：1个USB-CAN适配器就是0
-constexpr int CAN_IND0 = 0;  // CAN1
-constexpr int CAN_IND1 = 1;  // CAN2
 
 enum class MotorType
 {

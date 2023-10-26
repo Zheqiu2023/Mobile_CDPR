@@ -11,7 +11,7 @@
  *  ***********************************************************************************
  */
 #include "go.hpp"
-#include "interpolation.hpp"
+#include "general_file/interpolation.hpp"
 
 #include <ros/ros.h>
 #include <vector>

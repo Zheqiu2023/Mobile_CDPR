@@ -15,9 +15,9 @@
 #include <ros/ros.h>
 #include <std_msgs/Float32.h>
 
-#include "general_file/can_msgs.h"
-#include "controlcan.h"
-#include "ctrl_algorithm.hpp"
+#include "general_file/CanFrame.h"
+#include "general_file/usb_can/controlcan.h"
+#include "general_file/ctrl_algorithm.hpp"
 
 namespace motor_re35
 {
@@ -27,8 +27,8 @@ class MsgBox
 {
   public:
     MsgBox();
-    void publishCmd(const general_file::can_msgs& cmd);
-    void recvCANMsgs(const general_file::can_msgs::ConstPtr& msg);
+    void publishCmd(const general_file::CanFrame& cmd);
+    void recvCANMsgs(const general_file::CanFrame::ConstPtr& msg);
     void recvTension(const std_msgs::Float32::ConstPtr& tension);
     float getTension();
 
@@ -49,7 +49,7 @@ class MotorRun
     void init();
 
   private:
-    general_file::can_msgs pub_cmd_{};
+    general_file::CanFrame pub_cmd_{};
     ctrl_algorithm::PID pid_;
     MsgBox msg_box_;
 };

@@ -11,7 +11,7 @@
  *  ***********************************************************************************
  */
 #include "a1.hpp"
-#include "interpolation.hpp"
+#include "general_file/interpolation.hpp"
 
 #include <vector>
 #include <array>
@@ -308,10 +308,11 @@ void A1Control::stall(std::vector<SerialPort*>& port)
 /**
  * @brief 开串口并驱动电机
  */
-void A1Run::operator()()
+void A1Control::operator()()
 {
-    // if (!ros::param::get("/a1/port_name", serial_port_))
-    //     ROS_ERROR("The serial port isn't set in the launch file!");
+    if (!ros::param::get("/a1/port_name", serial_port_))
+        ROS_ERROR("The serial port isn't set in the launch file!");
+
     // 打开串口
     std::array<SerialPort, 4> serial_port{ SerialPort("/dev/ttyUSB0"), SerialPort("/dev/ttyUSB1"),
                                            SerialPort("/dev/ttyUSB2"), SerialPort("/dev/ttyUSB3") };
@@ -323,9 +324,9 @@ void A1Run::operator()()
     }
 
     // 电机初始化
-    a1_control_.init(serial);
+    init(serial);
     // 运行电机
-    a1_control_.drive(serial);
+    drive(serial);
     // 电机停转
-    a1_control_.stall(serial);
+    stall(serial);
 }

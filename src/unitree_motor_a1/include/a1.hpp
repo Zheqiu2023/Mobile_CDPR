@@ -22,6 +22,7 @@ class A1Control
     void init(std::vector<SerialPort*>& port);
     void drive(std::vector<SerialPort*>& port);
     void stall(std::vector<SerialPort*>& port);
+    void operator()();
 
   private:
     void setCmd(const std::vector<float>& cmd);
@@ -30,15 +31,6 @@ class A1Control
     std::vector<float> motor_zero_position_{};
     std::vector<MotorCmd> init_param_{}, motor_cmd_{};
     std::vector<MotorData> motor_recv_{};
-};
-
-class A1Run
-{
-  public:
-    void operator()();
-
-  private:
-    // std::vector<std::string> serial_port_{};
-    A1Control a1_control_{};
+    std::vector<std::string> serial_port_{};
 };
 }  // namespace motor_a1

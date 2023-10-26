@@ -1,0 +1,36 @@
+<launch>
+  <!-- GDB functionality -->
+  <arg name="debug" default="false" />
+  <arg unless="$(arg debug)" name="launch_prefix" value="" />
+  <arg     if="$(arg debug)" name="launch_prefix" value="gdb --ex run --args" />
+
+  <!-- Load hw interface real settings -->
+  <rosparam file="$(find cdpr_hw)/config/hardware.yaml" command="load"/>
+  <rosparam file="$(find cdpr_hw)/config/controller.yaml" command="load"/>
+  <rosparam file="$(find cdpr_hw)/config/joint_limit.yaml" command="load"/>
+
+  <!-- Load URDF -->
+  <param name="robot_description" command="$(find xacro)/xacro $(find cdpr_description)/xacro/cdpr.xacro"/>
+
+  <!-- Load hardware interface real -->
+  <node name="chassis_hardware_interface" pkg="cdpr_hw" type="cdpr_chassis_hw_node"
+        output="screen" launch-prefix="$(arg launch_prefix)"/>
+
+  <!-- Convert joint states to /tf tranforms -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher"/ >
+
+  <!-- Load controller manager -->
+  <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen"
+        ns="/cdpr" args="joint_state_controller 
+                        steer_lf_controller 
+                        steer_rf_controller 
+                        steer_lb_controller 
+                        steer_rb_controller
+                        roll_lf_controller 
+                        roll_rf_controller 
+                        roll_lb_controller 
+                        roll_rb_controller
+                        "/>
+
+
+</launch>

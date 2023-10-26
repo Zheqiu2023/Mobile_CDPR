@@ -19,8 +19,8 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "unitree_motor_a1");
     ros::NodeHandle nh;
 
-    motor_a1::A1Run a1_run;
-    a1_run();
+    motor_a1::A1Control a1_control;
+    a1_control();
 
     return 0;
 }

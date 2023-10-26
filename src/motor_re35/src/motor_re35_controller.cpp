@@ -13,7 +13,7 @@
 #include <ros/ros.h>
 #include <boost/thread.hpp>
 
-#include "motor_re35.hpp"
+#include "motor_re35/motor_re35.hpp"
 
 int main(int argc, char** argv)
 {

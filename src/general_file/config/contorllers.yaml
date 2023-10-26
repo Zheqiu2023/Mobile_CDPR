@@ -1,0 +1,48 @@
+controllers:
+  joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 100
+
+  chassis_controller:
+    type: cdpr_chassis_controller/ChassisController
+    publish_rate: 100
+    timeout: 0.1
+    pid_follow: { p: 5.0, i: 0, d: 0.3, i_max: 0.0, i_min: 0.0, antiwindup: true, publish_state: true }
+
+    wheelsets:    # TODO: some parameters need to modify
+      left_front:
+        position: [ 0.175, 0.175 ]    
+        steer:
+          joint: joint_steer_lf
+          <<: &steer_setting
+            offset: 0.
+            pid: { p: 5, i: 50, d: 0, i_clamp_max: 0.4, i_clamp_min: -0.4, antiwindup: true, publish_state: true }
+        roll:
+          joint: joint_roll_lf
+          <<: &roll_setting
+            radius: 0.049
+            pid: { p: 0.4, i: 0, d: 0.0, i_max: 0.0, i_min: 0.0, antiwindup: true, publish_state: true }
+      right_front:
+        position: [ 0.175, -0.175 ]
+        steer:
+          joint: joint_steer_rf
+          <<: *steer_setting
+        roll:
+          joint: joint_roll_rf
+          <<: *roll_setting
+      left_back:
+        position: [ -0.175, 0.175 ]
+        steer:
+          joint: joint_steer_lb
+          <<: *steer_setting
+        roll:
+          joint: joint_roll_rb
+          <<: *roll_setting
+      right_back:
+        position: [ -0.175, -0.175 ]
+        steer:
+          joint: joint_steer_rb
+          <<: *steer_setting
+        roll:
+          joint: joint_roll_rb
+          <<: *roll_setting

@@ -1,4 +1,4 @@
-# 与VCI_CAN_OBJ结构相同
+# same with VCI_CAN_OBJ in controlcan.h
 uint32 ID
 uint32 TimeStamp
 uint8 TimeFlag

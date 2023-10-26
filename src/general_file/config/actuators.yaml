@@ -1,0 +1,147 @@
+cdpr_hw:
+  usb_port: # for RS485
+    - /dev/ttyUSB0
+    - /dev/ttyUSB1
+    - /dev/ttyUSB2
+    - /dev/ttyUSB3
+    - /dev/ttyUSB4
+    - /dev/ttyUSB5
+    - /dev/ttyUSB6
+    - /dev/ttyUSB7
+  can_bus:  # for CAN
+    dev_ind: [0, 1]  # CAN device 0/1, each device has two can indexes(0,1)
+    can_ind: {[0, 125000], [1,1000000]}  # CAN1 : baud_rate is 125K   CAN2 : baud_rate is 1M
+    usb_port: # usb port for the CAN device
+      - /dev/ttyUSB8
+      - /dev/ttyUSB9 
+
+  loop_frequency: 500
+  cycle_time_error_threshold: 0.001
+
+  # Configurations of the actuators
+  actuators:
+    motor_cable_lf:
+      comm_protocol: CAN
+      dev_ind: 0
+      can_ind: 0
+      id: 0
+      type: maxon_re35
+    motor_cable_rf:
+      comm_protocol: CAN
+      dev_ind: 0
+      can_ind: 0
+      id: 1
+      type: maxon_re35        
+    motor_cable_lb:
+      comm_protocol: CAN
+      dev_ind: 1
+      can_ind: 0
+      id: 2
+      type: maxon_re35       
+    motor_cable_rb:
+      comm_protocol: CAN
+      dev_ind: 1
+      can_ind: 0
+      id: 3
+      type: maxon_re35
+
+    motor_anchor_lf:
+      comm_protocol: CAN
+      dev_ind: 0
+      can_ind: 1
+      id: 0xc1
+      type: stepper57
+    motor_anchor_rf:
+      comm_protocol: CAN
+      dev_ind: 0
+      can_ind: 1
+      id: 0xc2
+      type: stepper57        
+    motor_anchor_lb:
+      comm_protocol: CAN
+      dev_ind: 1
+      can_ind: 1
+      id: 0xc3
+      type: stepper57       
+    motor_anchor_rb:
+      comm_protocol: CAN
+      dev_ind: 1
+      can_ind: 1
+      id: 0xc4
+      type: stepper57
+
+    motor_steer_lf:
+      comm_protocol: RS485
+      usb_port: 4   # means "/dev/ttyUSB4"
+      id: 0
+      type: unitree_motor_go
+    motor_steer_rf:
+      comm_protocol: RS485       
+      usb_port: 5
+      id: 0
+      type: unitree_motor_go
+    motor_steer_lb:
+      comm_protocol: RS485
+      usb_port: 6
+      id: 0
+      type: unitree_motor_go  
+    motor_steer_rb:
+      comm_protocol: RS485
+      usb_port: 7
+      id: 0
+      type: unitree_motor_go
+        
+    motor_roll_lf:
+      comm_protocol: RS485
+      usb_port: 0
+      id: 0
+      type: unitree_motor_a1
+    motor_roll_rf:
+      comm_protocol: RS485
+      usb_port: 1
+      id: 0
+      type: unitree_motor_a1  
+    motor_roll_lb:
+      comm_protocol: RS485
+      usb_port: 2
+      id: 0
+      type: unitree_motor_a1    
+    motor_roll_rb:
+      comm_protocol: RS485
+      usb_port: 3
+      id: 0
+      type: unitree_motor_a1
+         
+
+  actuator_coefficient:
+    maxon_re35: 
+      act2pos: 0.0007669903  # 2PI/8192
+      act2vel: 0.1047197551   # 2PI/60
+      act2effort: 1.90702994e-5  # 20/16384*0.0156223893
+      effort2act: 52437.561519   # 1/act2effort
+      max_out: 16384
+    stepper57:
+      act2pos: 0.0007670840  # 2PI/8192
+      act2vel: 0.1047197551   # 2PI/60
+      act2effort: 5.880969e-5  # special coefficient identify by hands...
+      effort2act: 25000   #
+      max_out: 30000
+    unitree_motor_go:
+      act2pos: 2.13078897e-5  # 2PI/8192*(1/36)
+      act2vel: 0.0029088820   # 2PI/60*(1/36)
+      act2effort: 0.00018  #10/10000*0.18
+      effort2act: 5555.5555555   # 1/act2effort
+      max_out: 10000
+    unitree_motor_a1:
+      act2pos: 3.81475547e-4  # 25/65535
+      act2vel: 0.0317446031   # 130/4095
+      act2effort: 0.008791208  # 36/4095
+      pos2act: 2621.4         # 65535/25
+      vel2act: 31.5           # 4095/130
+      effort2act: 113.75      # 4095/36
+      max_out: 0
+      act2pos_offset: -12.5
+      act2vel_offset: -65.0
+      act2effort_offset: -18.0
+      kp2act: 8.19            # 4095/500
+      kd2act: 819             # 4095/5

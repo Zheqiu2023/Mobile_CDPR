@@ -14,8 +14,8 @@
 #include <string>
 #include <array>
 
-#include "general_file/can_msgs.h"
-#include "controlcan.h"
+#include "general_file/CanFrame.h"
+#include "general_file/usb_can/controlcan.h"
 #include "usb_can.hpp"
 
 namespace usb_can
@@ -28,7 +28,7 @@ class TransferStation
 {
   public:
     TransferStation();
-    void canCallback(const general_file::can_msgs::ConstPtr& msg, const int& can_ind);
+    void canCallback(const general_file::CanFrame::ConstPtr& msg, const int& can_ind);
     void printMsgs(const VCI_CAN_OBJ& msg) const;
     void publishMsgs();
 
@@ -41,24 +41,22 @@ class TransferStation
 
 TransferStation::TransferStation()
 {
-    subs_.resize(3);
-    subs_[0] = nh_.subscribe<general_file::can_msgs>("/usbcan/motor_42", 100,
+    subs_.resize(2);
+    subs_[0] = nh_.subscribe<general_file::CanFrame>("/usbcan/motor_57", 100,
                                                      boost::bind(&TransferStation::canCallback, this, _1, CAN_IND0));
-    subs_[1] = nh_.subscribe<general_file::can_msgs>("/usbcan/motor_57", 100,
-                                                     boost::bind(&TransferStation::canCallback, this, _1, CAN_IND0));
-    subs_[2] = nh_.subscribe<general_file::can_msgs>("/usbcan/motor_re35", 100,
+    subs_[1] = nh_.subscribe<general_file::CanFrame>("/usbcan/motor_re35", 100,
                                                      boost::bind(&TransferStation::canCallback, this, _1, CAN_IND1));
-    pub_ = nh_.advertise<general_file::can_msgs>("/usbcan/can_pub", 50);
+    pub_ = nh_.advertise<general_file::CanFrame>("/usbcan/can_pub", 50);
 }
 
-void TransferStation::canCallback(const general_file::can_msgs::ConstPtr& msg, const int& can_ind)
+void TransferStation::canCallback(const general_file::CanFrame::ConstPtr& msg, const int& can_ind)
 {
     VCI_CAN_OBJ send_msgs{};  // 待发送消息(接收其他节点的消息然后发给电机)
-    general_file::can_msgs temp_msgs{};
+    general_file::CanFrame temp_msgs{};
 
     temp_msgs = *msg;
     memcpy(&send_msgs, &temp_msgs, sizeof(temp_msgs));
-    if (VCI_Transmit(VCI_USBCAN2, DEV_IND, can_ind, &send_msgs, 1) <= 0)
+    if (VCI_Transmit(VCI_USBCAN2, DEV_IND0, can_ind, &send_msgs, 1) <= 0)
     {
         ROS_ERROR_STREAM("Failed to send command!");
     }
@@ -67,9 +65,9 @@ void TransferStation::canCallback(const general_file::can_msgs::ConstPtr& msg, c
 void TransferStation::publishMsgs()
 {
     int recv_len = 0;                   // 接收到的消息长度
-    general_file::can_msgs pub_msgs{};  // 待发布消息(接收电机的消息然后发布给其他节点)
+    general_file::CanFrame pub_msgs{};  // 待发布消息(接收电机的消息然后发布给其他节点)
 
-    if ((recv_len = VCI_Receive(VCI_USBCAN2, DEV_IND, CAN_IND0, recv_msgs_.begin(), 3000, 100)) > 0)
+    if ((recv_len = VCI_Receive(VCI_USBCAN2, DEV_IND0, CAN_IND0, recv_msgs_.begin(), 3000, 100)) > 0)
     {
         for (size_t j = 0; j < recv_len; ++j)
         {

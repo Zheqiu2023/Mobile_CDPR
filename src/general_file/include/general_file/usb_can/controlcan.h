@@ -2,6 +2,12 @@
 #define CONTROLCAN_H
 
 ////文件版本：v2.02 20190609
+
+#define DEV_IND0 0  // device index：0 means first device
+#define DEV_IND1 1  // device index：1 means second device
+#define CAN_IND0 0  // CAN1
+#define CAN_IND1 1  // CAN2
+
 // 接口卡类型定义
 
 #define VCI_USBCAN1 3
@@ -31,7 +37,8 @@
 #define FALSE 0
 
 // 1.ZLGCAN系列接口卡信息的数据类型。
-typedef struct _VCI_BOARD_INFO {
+typedef struct _VCI_BOARD_INFO
+{
     USHORT hw_Version;
     USHORT fw_Version;
     USHORT dr_Version;
@@ -44,7 +51,8 @@ typedef struct _VCI_BOARD_INFO {
 } VCI_BOARD_INFO, *PVCI_BOARD_INFO;
 
 // 2.定义CAN信息帧的数据类型。
-typedef struct _VCI_CAN_OBJ {
+typedef struct _VCI_CAN_OBJ
+{
     UINT ID;
     UINT TimeStamp;
     BYTE TimeFlag;
@@ -57,7 +65,8 @@ typedef struct _VCI_CAN_OBJ {
 } VCI_CAN_OBJ, *PVCI_CAN_OBJ;
 
 // 3.定义初始化CAN的数据类型
-typedef struct _INIT_CONFIG {
+typedef struct _INIT_CONFIG
+{
     DWORD AccCode;
     DWORD AccMask;
     DWORD Reserved;
@@ -68,7 +77,8 @@ typedef struct _INIT_CONFIG {
 } VCI_INIT_CONFIG, *PVCI_INIT_CONFIG;
 
 ///////// new add struct for filter /////////
-typedef struct _VCI_FILTER_RECORD {
+typedef struct _VCI_FILTER_RECORD
+{
     DWORD ExtFrame;  // 是否为扩展帧
     DWORD Start;
     DWORD End;

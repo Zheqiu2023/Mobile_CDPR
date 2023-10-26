@@ -1,0 +1,42 @@
+cdpr:
+  # Publish all joint states -----------------------------------
+  joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 1000
+  
+  # Controllers ------------------------------------------------
+  # 轮毂电机采用速度控制（输入速度，输出速度），转向电机和锚点座采用位置控制（输入位置，输出位置）
+  steer_lf_controller:                                          # Name of the controller
+    type: position_controllers/JointPositionController
+    joint: joint_steer_lf                                       # Name of the joint for which this controller belongs to.
+    # No PID values defined since this controller simply passes the input position command to the actuators.
+    # pid: {p: 40.0, i: 0.0, d: 0.5}                        
+  steer_rf_controller:
+    type: position_controllers/JointPositionController
+    joint: joint_steer_rf
+    # pid: {p: 40.0, i: 0.0, d: 0.5}
+  steer_lb_controller:
+    type: position_controllers/JointPositionController
+    joint: joint_steer_lb
+    # pid: {p: 40.0, i: 0.0, d: 0.5}
+  steer_rb_controller:
+    type: position_controllers/JointPositionController
+    joint: joint_steer_rb
+    # pid: {p: 40.0, i: 0.0, d: 0.5}
+
+  roll_lf_controller:
+    type: position_controllers/JointPositionController
+    joint: joint_roll_lf
+    # pid: {p: 1.0, i: 0.0, d: 0.0}
+  roll_rf_controller:
+    type: position_controllers/JointPositionController
+    joint: joint_roll_rf
+    # pid: {p: 1.0, i: 0.0, d: 0.0}
+  roll_lb_controller:
+    type: position_controllers/JointPositionController
+    joint: joint_roll_lb
+    # pid: {p: 1.0, i: 0.0, d: 0.0}
+  roll_rb_controller:
+    type: position_controllers/JointPositionController
+    joint: joint_roll_rb
+    # pid: {p: 1.0, i: 0.0, d: 0.0}

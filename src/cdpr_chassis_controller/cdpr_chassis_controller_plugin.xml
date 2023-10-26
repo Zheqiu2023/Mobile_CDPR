@@ -1,0 +1,10 @@
+<library path="lib/libcdpr_chassis_controller">
+    <class name="cdpr_chassis_controller/ChassisController"
+           type="cdpr_chassis_controller::ChassisController"
+           base_class_type="controller_interface::ControllerBase">
+        <description>
+            The Controller is swerve drive Chassis controller. It expects a EffortJointInterface
+            type of hardware interface.
+        </description>
+    </class>
+</library>

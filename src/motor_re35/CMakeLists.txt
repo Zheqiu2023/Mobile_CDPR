@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   general_file
   std_msgs
+  usb_can
 )
 
 ## System dependencies are found with CMake's conventions
@@ -118,7 +119,7 @@ set(CMAKE_BUILD_TYPE Debug)
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-  include/motor_re35
+  include
   ${catkin_INCLUDE_DIRS}
 )
 

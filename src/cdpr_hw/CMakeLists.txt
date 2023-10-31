@@ -2,22 +2,23 @@ cmake_minimum_required(VERSION 3.0.2)
 project(cdpr_hw)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
-
+add_compile_options(-std=c++14)
+SET(CMAKE_BUILD_TYPE "Debug")
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  control_msgs
-  control_toolbox
-  controller_manager
   hardware_interface
+  controller_interface
+  controller_manager
   joint_limits_interface
-  pluginlib
-  roscpp
-  trajectory_msgs
   transmission_interface
+  urdf
+  roscpp
+  sensor_msgs
   general_file
+  unitree_motor_a1
+  unitree_motor_go
 )
 
 ## System dependencies are found with CMake's conventions
@@ -110,9 +111,21 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+ INCLUDE_DIRS 
+ include
 #  LIBRARIES cdpr_hw
-#  CATKIN_DEPENDS control_msgs control_toolbox controller_manager hardware_interface joint_limits_interface pluginlib roscpp trajectory_msgs transmission_interface
+ CATKIN_DEPENDS 
+ hardware_interface
+ controller_interface
+ controller_manager
+ joint_limits_interface
+ transmission_interface
+ urdf
+ roscpp
+ sensor_msgs
+ general_file
+ unitree_motor_a1
+ unitree_motor_go
 #  DEPENDS system_lib
 )
 
@@ -126,12 +139,17 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
 )
+link_directories(
+  ${catkin_LIB_DIRS} 
+  ../general_file/lib
+  ../unitree_motor_a1/lib
+  ../unitree_motor_go/lib
+)
 
 ## Declare a C++ library
-aux_source_directory(./src/hw SRC_LIST)
-add_library(${PROJECT_NAME}
-  ${SRC_LIST}
-)
+# add_library(${PROJECT_NAME}
+#   src/control_loop.cpp
+# )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -141,7 +159,14 @@ add_library(${PROJECT_NAME}
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/cdpr_hw_node.cpp)
+add_executable(${PROJECT_NAME}_node 
+        src/${PROJECT_NAME}_node.cpp
+        src/hw/cdpr_hw.cpp
+        src/hw/parse.cpp
+        src/hw/can_bus.cpp
+        src/hw/unitree_motor_a1.cpp
+        src/hw/unitree_motor_go.cpp
+        src/control_loop.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -156,7 +181,9 @@ add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catk
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
   ${catkin_LIBRARIES}
-  ${PROJECT_NAME}
+  libcontrolcan.so
+  libunitreeMotorSDK_Linux64.so
+  libUnitreeMotorSDK_M80106_amd64.so
 )
 
 #############

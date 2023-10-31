@@ -10,7 +10,7 @@
  *  Use of this source code is governed by the BSD 3-Clause license, see LICENSE.
  *  ***********************************************************************************
  */
-#include "go.hpp"
+#include "unitree_motor_go/go.hpp"
 #include "general_file/interpolation.hpp"
 
 #include <ros/ros.h>

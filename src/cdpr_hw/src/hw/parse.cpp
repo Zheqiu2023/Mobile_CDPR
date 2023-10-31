@@ -3,12 +3,9 @@
 #include <joint_limits_interface/joint_limits_rosparam.h>
 
 #include "cdpr_hw/hw/cdpr_hw.hpp"
-#include "cdpr_hw/hw/types.hpp"
 #include "general_file/ros_utilities.hpp"
 
 using namespace cdpr_hw;
-
-// Lots of ugly parse xml code...
 
 bool CdprHW::parseActCoeffs(XmlRpc::XmlRpcValue& act_coeffs)
 {
@@ -62,14 +59,18 @@ bool CdprHW::parseActCoeffs(XmlRpc::XmlRpcValue& act_coeffs)
                 act_coeff.act2effort_offset = xmlRpcGetDouble(act_coeffs[it->first], "act2effort_offset", -18.0);
             else
                 ROS_DEBUG_STREAM("Actuator type " << it->first << " has no associated act2effort_offset.");
-            if (it->second.hasMember("kp2act"))
-                act_coeff.kp2act = xmlRpcGetDouble(act_coeffs[it->first], "kp2act", 8.19);
+            if (it->second.hasMember("kp"))
+                act_coeff.kp = xmlRpcGetDouble(act_coeffs[it->first], "kp", 0.1);
             else
-                ROS_DEBUG_STREAM("Actuator type " << it->first << " has no associated kp2act.");
-            if (it->second.hasMember("kp2act"))
-                act_coeff.kp2act = xmlRpcGetDouble(act_coeffs[it->first], "kd2act", 819);
+                ROS_DEBUG_STREAM("Actuator type " << it->first << " has no associated kp.");
+            if (it->second.hasMember("kw"))
+                act_coeff.kw = xmlRpcGetDouble(act_coeffs[it->first], "kw", 0.1);
             else
-                ROS_DEBUG_STREAM("Actuator type " << it->first << " has no associated kd2act.");
+                ROS_DEBUG_STREAM("Actuator type " << it->first << " has no associated kw.");
+            if (it->second.hasMember("mode"))
+                act_coeff.mode = xmlRpcGetDouble(act_coeffs[it->first], "mode", 0);
+            else
+                ROS_DEBUG_STREAM("Actuator type " << it->first << " has no associated mode.");
 
             std::string type = it->first;
             if (type2act_coeffs_.find(type) == type2act_coeffs_.end())
@@ -95,12 +96,7 @@ bool CdprHW::parseActData(XmlRpc::XmlRpcValue& act_datas, ros::NodeHandle& robot
     {
         for (auto it = act_datas.begin(); it != act_datas.end(); ++it)
         {
-            if (!it->second.hasMember("usb_port"))
-            {
-                ROS_ERROR_STREAM("Actuator " << it->first << " has no associated usb port.");
-                continue;
-            }
-            else if (!it->second.hasMember("id"))
+            if (!it->second.hasMember("id"))
             {
                 ROS_ERROR_STREAM("Actuator " << it->first << " has no associated ID.");
                 continue;
@@ -117,16 +113,21 @@ bool CdprHW::parseActData(XmlRpc::XmlRpcValue& act_datas, ros::NodeHandle& robot
             }
             else
             {
-                if (it->second["comm_protocol"] == "CAN" &&
-                    (!it->second.hasMember("can_ind") || !it->second.hasMember("dev_ind")))
+                if (it->second["comm_protocol"] == "CAN")
                 {
-                    ROS_ERROR_STREAM("Actuator " << it->first << " has no associated can bus.");
-                    continue;
+                    if (!(it->second.hasMember("can_ind") && it->second.hasMember("dev_ind")))
+                    {
+                        ROS_ERROR_STREAM("Actuator " << it->first << " has no associated can bus.");
+                        continue;
+                    }
                 }
-                else if (it->second["comm_protocol"] == "RS485" && !it->second.hasMember("usb_port"))
+                else if (it->second["comm_protocol"] == "RS485")
                 {
-                    ROS_ERROR_STREAM("Actuator " << it->first << " has no associated usb port.");
-                    continue;
+                    if (!it->second.hasMember("usb_port"))
+                    {
+                        ROS_ERROR_STREAM("Actuator " << it->first << " has no associated usb port.");
+                        continue;
+                    }
                 }
                 else
                 {
@@ -145,7 +146,7 @@ bool CdprHW::parseActData(XmlRpc::XmlRpcValue& act_datas, ros::NodeHandle& robot
                 return false;
             }
 
-            int dev_ind = 0, can_ind = 0, usb_port = 0;
+            int dev_ind = 0, can_ind = 0, port_num = 0;
             std::vector<int> comm{};
             if (comm_protocol == "CAN")
             {
@@ -157,9 +158,10 @@ bool CdprHW::parseActData(XmlRpc::XmlRpcValue& act_datas, ros::NodeHandle& robot
             }
             else if (comm_protocol == "RS485")
             {
-                ROS_ASSERT(it->second["usb_port"].getType() == XmlRpc::XmlRpcValue::TypeInt);
-                usb_port = static_cast<int>(it->second["usb_port"]);
-                comm = { usb_port };
+                ROS_ASSERT(it->second["usb_port"].getType() == XmlRpc::XmlRpcValue::TypeString);
+                std::string usb_port = it->second["usb_port"];
+                port_num = usb_port.back() - '0';
+                comm = { port_num };
             }
 
             if (comm_id2act_data_.find(comm) == comm_id2act_data_.end())
@@ -174,27 +176,21 @@ bool CdprHW::parseActData(XmlRpc::XmlRpcValue& act_datas, ros::NodeHandle& robot
             }
             else
             {
-                comm_id2act_data_[comm].insert(std::make_pair(id, ActData{
-                                                                      .name = it->first,
-                                                                      .type = type,
-                                                                      .stamp = ros::Time::now(),
-                                                                      .seq = 0,
-                                                                      .halted = false,
-                                                                      .q_raw = 0,
-                                                                      .qd_raw = 0,
-                                                                      .temp = 0,
-                                                                      .q_circle = 0,
-                                                                      .q_last = 0,
-                                                                      .frequency = 0,
-                                                                      .pos = 0,
-                                                                      .vel = 0,
-                                                                      .effort = 0,
-                                                                      .cmd_pos = 0,
-                                                                      .cmd_vel = 0,
-                                                                      .cmd_effort = 0,
-                                                                      .exe_effort = 0,
-                                                                      .offset = 0,
-                                                                  }));
+                comm_id2act_data_[comm].insert(std::make_pair(id, ActData{ .name = it->first,
+                                                                           .type = type,
+                                                                           .stamp = ros::Time::now(),
+                                                                           .halted = false,
+                                                                           .seq = 0,
+                                                                           .temp = 0,
+                                                                           .frequency = 0,
+                                                                           .pos = 0,
+                                                                           .vel = 0,
+                                                                           .effort = 0,
+                                                                           .cmd_pos = 0,
+                                                                           .cmd_vel = 0,
+                                                                           .cmd_effort = 0,
+                                                                           .exe_effort = 0,
+                                                                           .zero_point = 0 }));
             }
 
             // for ros_control interface
@@ -311,10 +307,10 @@ bool CdprHW::setupJointLimit(ros::NodeHandle& root_nh)
         std::string name = joint_handle.getName();
 
         // Check if URDF is loaded
-        if (urdf_model_ == NULL)
+        if (urdf_model_ == nullptr)
         {
             ROS_WARN_STREAM_NAMED(name_, "No URDF model loaded, unable to get joint limits");
-            return;
+            return false;
         }
         // Check if joints match
         urdf::JointConstSharedPtr urdf_joint = urdf_model_->getJoint(joint_handle.getName());
@@ -363,13 +359,6 @@ bool CdprHW::setupJointLimit(ros::NodeHandle& root_nh)
                 ROS_DEBUG_STREAM_NAMED(name_, "Joint " << name
                                                        << " does not have soft joint "
                                                           "limits");
-        }
-
-        // Quit if we haven't found any limits in URDF or rosparam server
-        if (!has_joint_limits)
-        {
-            ROS_DEBUG_STREAM_NAMED(name_, "No joint limits provided for joint " << name);
-            return;
         }
 
         // Slightly reduce the joint limits to prevent floating point errors

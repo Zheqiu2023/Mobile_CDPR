@@ -85,22 +85,6 @@
       </geometry>
     </collision>
   </link>
-  <joint
-    name="joint_steer_lf"
-    type="continuous">
-    <origin
-      xyz="0.527 0.74 -1.3154"
-      rpy="0 0 0" />
-    <parent
-      link="base_link" />
-    <child
-      link="link_steer_lf" />
-    <axis
-      xyz="0 0 1" />
-    <limit
-      effort="100"
-      velocity="100" />
-  </joint>
 
   <link
     name="link_roll_lf">
@@ -142,22 +126,6 @@
       </geometry>
     </collision>
   </link>
-  <joint
-    name="joint_roll_lf"
-    type="continuous">
-    <origin
-      xyz="0 0.024 -0.133"
-      rpy="0 0 0" />
-    <parent
-      link="link_steer_lf" />
-    <child
-      link="link_roll_lf" />
-    <axis
-      xyz="0 -1 0" />
-    <limit
-      effort="100"
-      velocity="100" />
-  </joint>
 
   <link
     name="link_steer_rf">
@@ -199,22 +167,6 @@
       </geometry>
     </collision>
   </link>
-  <joint
-    name="joint_steer_rf"
-    type="continuous">
-    <origin
-      xyz="0.527 -0.74 -1.3154"
-      rpy="0 0 0" />
-    <parent
-      link="base_link" />
-    <child
-      link="link_steer_rf" />
-    <axis
-      xyz="0 0 1" />
-    <limit
-      effort="100"
-      velocity="100" />
-  </joint>
 
   <link
     name="link_roll_rf">
@@ -256,22 +208,6 @@
       </geometry>
     </collision>
   </link>
-  <joint
-    name="joint_roll_rf"
-    type="continuous">
-    <origin
-      xyz="0 -0.024 -0.133"
-      rpy="0 0 0" />
-    <parent
-      link="link_steer_rf" />
-    <child
-      link="link_roll_rf" />
-    <axis
-      xyz="0 -1 0" />
-    <limit
-      effort="100"
-      velocity="100" />
-  </joint>
 
   <link
     name="link_steer_lb">
@@ -313,22 +249,6 @@
       </geometry>
     </collision>
   </link>
-  <joint
-    name="joint_steer_lb"
-    type="continuous">
-    <origin
-      xyz="-0.527 0.74 -1.3154"
-      rpy="0 0 0" />
-    <parent
-      link="base_link" />
-    <child
-      link="link_steer_lb" />
-    <axis
-      xyz="0 0 1" />
-    <limit
-      effort="100"
-      velocity="100" />
-  </joint>
 
   <link
     name="link_roll_lb">
@@ -370,22 +290,6 @@
       </geometry>
     </collision>
   </link>
-  <joint
-    name="joint_roll_lb"
-    type="continuous">
-    <origin
-      xyz="0 0.024 -0.133"
-      rpy="0 0 0" />
-    <parent
-      link="link_steer_lb" />
-    <child
-      link="link_roll_lb" />
-    <axis
-      xyz="0 -1 0" />
-    <limit
-      effort="100"
-      velocity="100" />
-  </joint>
 
   <link
     name="link_steer_rb">
@@ -427,22 +331,6 @@
       </geometry>
     </collision>
   </link>
-  <joint
-    name="joint_steer_rb"
-    type="continuous">
-    <origin
-      xyz="-0.527 -0.74 -1.3154"
-      rpy="0 0 0" />
-    <parent
-      link="base_link" />
-    <child
-      link="link_steer_rb" />
-    <axis
-      xyz="0 0 1" />
-    <limit
-      effort="100"
-      velocity="100" />
-  </joint>
 
   <link
     name="link_roll_rb">
@@ -484,20 +372,4 @@
       </geometry>
     </collision>
   </link>
-  <joint
-    name="joint_roll_rb"
-    type="continuous">
-    <origin
-      xyz="0 -0.024 -0.133"
-      rpy="0 0 0" />
-    <parent
-      link="link_steer_rb" />
-    <child
-      link="link_roll_rb" />
-    <axis
-      xyz="0 -1 0" />
-    <limit
-      effort="100"
-      velocity="100" />
-  </joint>
 </robot>

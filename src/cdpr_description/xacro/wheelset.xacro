@@ -1,0 +1,61 @@
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <xacro:macro name="wheelset" params="prefix steer_x_offset steer_y_offset steer_z_offset roll_x_offset roll_y_offset roll_z_offset">
+        <joint name="joint_steer_${prefix}" type="revolute">
+            <origin xyz="${steer_x_offset} ${steer_y_offset} ${steer_z_offset}" rpy="0 0 0" />
+            <parent link="base_link" />
+            <child link="link_steer_${prefix}" />
+            <axis xyz="0 0 1" />
+            <limit effort="10" velocity="21" lower="-2e15" upper="2e15"/>
+            <!-- Soft limits -->
+            <safety_controller k_position="50" k_velocity="10" soft_lower_limit="-2e14" soft_upper_limit="2e14" />
+        </joint>
+
+        <joint name="joint_roll_${prefix}" type="revolute">
+            <origin xyz="${roll_x_offset} ${roll_y_offset} ${roll_z_offset}" rpy="0 0 0" />
+            <parent link="link_steer_${prefix}" />
+            <child link="link_roll_${prefix}" />
+            <axis xyz="0 -1 0" />
+            <limit effort="10" velocity="30" lower="-2e15" upper="2e15"/>
+            <!-- Soft limits -->
+            <safety_controller k_position="50" k_velocity="10" soft_lower_limit="-2e14" soft_upper_limit="2e14" />
+        </joint>
+    </xacro:macro>
+
+    <xacro:macro name="wheelset_transmission" params="prefix steer_reduction roll_reduction">
+        <transmission name="trans_steer_${prefix}">
+            <type>transmission_interface/SimpleTransmission</type>
+            <actuator name="motor_steer_${prefix}">
+                <mechanicalReduction>${steer_reduction}</mechanicalReduction>
+            </actuator>
+            <joint name="joint_steer_${prefix}">
+                <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            </joint>
+        </transmission>
+
+        <transmission name="trans_roll_${prefix}">
+            <type>transmission_interface/SimpleTransmission</type>
+            <actuator name="motor_roll_${prefix}">
+                <mechanicalReduction>${roll_reduction}</mechanicalReduction>
+            </actuator>
+            <joint name="joint_roll_${prefix}">
+                <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            </joint>
+        </transmission>
+    </xacro:macro>
+
+    <xacro:macro name="wheelset_gazebo" params="prefix">
+        <gazebo reference="link_steer_${prefix}">
+            <mu1>0.2</mu1>
+            <mu2>0.2</mu2> 
+            <material>Gazebo/Blue</material>
+        </gazebo>
+
+        <gazebo reference="link_roll_${prefix}">
+            <mu1>5</mu1>
+            <mu2>5</mu2>
+            <material>Gazebo/Orange</material>
+        </gazebo>
+    </xacro:macro>
+    
+</robot>

@@ -11,7 +11,8 @@
  *  ***********************************************************************************
  */
 
-#include "go.hpp"
+#include "unitree_motor_go/go.hpp"
+
 #include <ros/ros.h>
 
 int main(int argc, char** argv)

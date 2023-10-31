@@ -18,12 +18,14 @@
 #include <joint_limits_interface/joint_limits_interface.h>
 
 #include "general_file/ActuatorState.h"
-#include "comm_protocol.hpp"
+#include "can_bus.hpp"
 #include "types.hpp"
+#include "unitree_motor_a1.hpp"
+#include "unitree_motor_go.hpp"
 
 namespace cdpr_hw
 {
-/// \brief Hardware interface for cdpr chassis
+/// \brief Hardware interface for cdpr
 class CdprHW : public hardware_interface::RobotHW
 {
   public:
@@ -97,14 +99,18 @@ class CdprHW : public hardware_interface::RobotHW
     // Short name of this class
     std::string name_;
 
+    // Startup and shutdown of the internal node inside a roscpp program
+    ros::NodeHandle nh_;
+
     // Configuration
-    std::string urdf_string_{};
+    std::string urdf_string_;
     urdf::Model* urdf_model_;
 
     // Modes
     bool use_rosparam_joint_limits_;
     bool use_soft_limits_if_available_;
 
+    // hardware_interface::JointStateInterface joint_state_interface_;
     hardware_interface::ActuatorStateInterface act_state_interface_;
     hardware_interface::EffortActuatorInterface effort_act_interface_;
 
@@ -119,7 +125,8 @@ class CdprHW : public hardware_interface::RobotHW
     // Actuator
     bool is_actuator_specified_ = false;
     std::vector<CanBus*> can_buses_{};
-    std::vector<ModBus*> mod_buses_{};
+    std::vector<UnitreeMotorA1*> unitree_a1_{};
+    std::vector<UnitreeMotorGo*> unitree_go_{};
     std::unordered_map<std::string, ActCoeff> type2act_coeffs_{};
     std::unordered_map<std::vector<int>, std::unordered_map<int, ActData>, VectorHasher> comm_id2act_data_{};
 

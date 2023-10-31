@@ -1,0 +1,6 @@
+<launch>
+    <rosparam file="$(find cdpr_chassis_controller)/test/test.yaml" command="load"/>
+
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" ns="/controllers"
+        args="chassis_controller"/>
+</launch>

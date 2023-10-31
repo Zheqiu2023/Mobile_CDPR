@@ -15,6 +15,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <ros/node_handle.h>
 #include <geometry_msgs/Twist.h>
+#include <sensor_msgs/JointState.h>
 
 #include <control_toolbox/pid.h>
 #include <realtime_tools/realtime_buffer.h>
@@ -42,12 +43,13 @@ class ChassisController : public controller_interface::Controller<hardware_inter
   public:
     ChassisController() = default;
     ~ChassisController();
-    bool init(hardware_interface::EffortJointInterface* robot, ros::NodeHandle& n);
-    void update(const ros::Time& time, const ros::Duration& period);
-    void cmdChassisCallback(const general_file::ChassisCmd::ConstPtr& msg);
+    bool init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh);
+    void update(const ros::Time& time, const ros::Duration& period) override;
 
   private:
     void moveJoint(const ros::Time& time, const ros::Duration& period);
+    void cmdChassisCallback(const general_file::ChassisCmd::ConstPtr& msg);
+    void publishJointState(const ros::Time& time);
 
     double wheel_radius_{}, publish_rate_{}, timeout_{};
     std::string name_space_;
@@ -60,9 +62,11 @@ class ChassisController : public controller_interface::Controller<hardware_inter
     ros::Subscriber cmd_chassis_sub_;
 
     control_toolbox::Pid pid_follow_;
-    hardware_interface::EffortJointInterface* effort_joint_interface_{};
+    sensor_msgs::JointState joint_state_;
     std::vector<hardware_interface::JointHandle> joint_handles_{};
-    // boost::scoped_ptr<realtime_tools::RealtimePublisher<general_file::UnitreeMotorState> >
-    // controller_state_publisher_;
+    hardware_interface::EffortJointInterface* effort_joint_interface_{};
+
+    ros::Time last_publish_time_;
+    boost::scoped_ptr<realtime_tools::RealtimePublisher<sensor_msgs::JointState>> chassis_state_publisher_;
 };
 }  // namespace cdpr_chassis_controller

@@ -1,2 +1,2 @@
-### 最初使用前需修改控制权限
-例如：`sudo chmod 777 ./unisp ./changeid ./swboot`
+### Modify the control permissions before the first use
+E.g. `sudo chmod 777 ./unisp ./changeid ./swboot ./swmotor`

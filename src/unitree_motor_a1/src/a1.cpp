@@ -10,7 +10,7 @@
  *  Use of this source code is governed by the BSD 3-Clause license, see LICENSE.
  *  ***********************************************************************************
  */
-#include "a1.hpp"
+#include "unitree_motor_a1/a1.hpp"
 #include "general_file/interpolation.hpp"
 
 #include <vector>

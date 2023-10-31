@@ -1,0 +1,35 @@
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="chassis">
+
+    <xacro:include filename="$(find cdpr_description)/xacro/wheelset.xacro"/>
+    <!-- https://upload.wikimedia.org/wikipedia/commons/5/52/Wheelbase_and_Track.png -->
+    <xacro:property name="wheel_track" value="1.054"/>
+    <xacro:property name="wheel_base" value="1.48"/>
+    <xacro:property name="steer_z_offset" value="-1.3154"/>
+    <xacro:property name="roll_x_offset" value="0"/>
+    <xacro:property name="roll_y_offset" value="0.024"/>
+    <xacro:property name="roll_z_offset" value="-0.133"/>
+
+    <xacro:macro name="chassis"> 
+
+        <xacro:wheelset prefix="lf" steer_x_offset="${wheel_track/2}" steer_y_offset="${wheel_base/2}" steer_z_offset="${steer_z_offset}"
+                        roll_x_offset="${roll_x_offset}" roll_y_offset="${roll_y_offset}" roll_z_offset="${roll_z_offset}"/>
+        <xacro:wheelset prefix="rf" steer_x_offset="${wheel_track/2}" steer_y_offset="-${wheel_base/2}" steer_z_offset="${steer_z_offset}"
+                        roll_x_offset="${roll_x_offset}" roll_y_offset="-${roll_y_offset}" roll_z_offset="${roll_z_offset}"/>
+        <xacro:wheelset prefix="lb" steer_x_offset="-${wheel_track/2}" steer_y_offset="${wheel_base/2}" steer_z_offset="${steer_z_offset}"
+                        roll_x_offset="-${roll_x_offset}" roll_y_offset="${roll_y_offset}" roll_z_offset="${roll_z_offset}"/>
+        <xacro:wheelset prefix="rb" steer_x_offset="-${wheel_track/2}" steer_y_offset="-${wheel_base/2}" steer_z_offset="${steer_z_offset}"
+                        roll_x_offset="-${roll_x_offset}" roll_y_offset="-${roll_y_offset}" roll_z_offset="${roll_z_offset}"/>
+
+        <xacro:wheelset_transmission prefix="lf" roll_reduction="9" steer_reduction="6.33" />
+        <xacro:wheelset_transmission prefix="rf" roll_reduction="9" steer_reduction="6.33" />
+        <xacro:wheelset_transmission prefix="lb" roll_reduction="9" steer_reduction="6.33" />
+        <xacro:wheelset_transmission prefix="rb" roll_reduction="9" steer_reduction="6.33" />
+
+        <xacro:wheelset_gazebo prefix="lf" />
+        <xacro:wheelset_gazebo prefix="rf" />
+        <xacro:wheelset_gazebo prefix="lb" />
+        <xacro:wheelset_gazebo prefix="rb" />
+
+    </xacro:macro>
+
+</robot>

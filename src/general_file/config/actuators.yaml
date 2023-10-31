@@ -9,12 +9,15 @@ cdpr_hw:
     - /dev/ttyUSB6
     - /dev/ttyUSB7
   can_bus:  # for CAN
-    dev_ind: [0, 1]  # CAN device 0/1, each device has two can indexes(0,1)
-    can_ind: {[0, 125000], [1,1000000]}  # CAN1 : baud_rate is 125K   CAN2 : baud_rate is 1M
-    usb_port: # usb port for the CAN device
-      - /dev/ttyUSB8
-      - /dev/ttyUSB9 
-
+    dev_ind0:  # CAN device 0/1, each device has two can indexes(0,1)
+      can_ind0: 125000    # CAN1 : baud_rate is 125K
+      can_ind1: 1000000   # CAN2 : baud_rate is 1M
+      usb_port: /dev/ttyUSB8  # usb port for the USB_CAN device
+    dev_ind1: 
+      can_ind0: 125000    # CAN1 : baud_rate is 125K
+      can_ind1: 1000000   # CAN2 : baud_rate is 1M
+      usb_port: /dev/ttyUSB8  # usb port for the USB_CAN device
+    
   loop_frequency: 500
   cycle_time_error_threshold: 0.001
 
@@ -72,43 +75,43 @@ cdpr_hw:
 
     motor_steer_lf:
       comm_protocol: RS485
-      usb_port: 4   # means "/dev/ttyUSB4"
+      usb_port: /dev/ttyUSB4 
       id: 0
       type: unitree_motor_go
     motor_steer_rf:
       comm_protocol: RS485       
-      usb_port: 5
+      usb_port: /dev/ttyUSB5
       id: 0
       type: unitree_motor_go
     motor_steer_lb:
       comm_protocol: RS485
-      usb_port: 6
+      usb_port: /dev/ttyUSB6
       id: 0
       type: unitree_motor_go  
     motor_steer_rb:
       comm_protocol: RS485
-      usb_port: 7
+      usb_port: /dev/ttyUSB7
       id: 0
       type: unitree_motor_go
         
     motor_roll_lf:
       comm_protocol: RS485
-      usb_port: 0
+      usb_port: /dev/ttyUSB0
       id: 0
       type: unitree_motor_a1
     motor_roll_rf:
       comm_protocol: RS485
-      usb_port: 1
+      usb_port: /dev/ttyUSB1
       id: 0
       type: unitree_motor_a1  
     motor_roll_lb:
       comm_protocol: RS485
-      usb_port: 2
+      usb_port: /dev/ttyUSB2
       id: 0
       type: unitree_motor_a1    
     motor_roll_rb:
       comm_protocol: RS485
-      usb_port: 3
+      usb_port: /dev/ttyUSB3
       id: 0
       type: unitree_motor_a1
          
@@ -143,5 +146,6 @@ cdpr_hw:
       act2pos_offset: -12.5
       act2vel_offset: -65.0
       act2effort_offset: -18.0
-      kp2act: 8.19            # 4095/500
-      kd2act: 819             # 4095/5
+      kp: 0.1          
+      kw: 0.1
+      mode: 10          

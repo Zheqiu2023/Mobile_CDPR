@@ -1,7 +1,7 @@
 #ifndef __UNITREEMOTOR_H
 #define __UNITREEMOTOR_H
 
-#include "unitreeMotor/include/motor_msg.h"  // 电机通信协议
+#include "unitree_motor_a1/unitreeMotor/include/motor_msg.h"  // 电机通信协议
 #include <stdint.h>
 #include <iostream>
 
@@ -47,9 +47,9 @@ struct MotorData
     bool correct = false;    // 接收数据是否完整（true完整，false不完整）
     bool extract_data(MotorData* motor_r);
     uint8_t* get_motor_recv_data();
-    float LW;                         // 当前实际电机速度（低速）
-    int Acc;                          // 电机转子加速度
-    float gyro[3];                    // 电机驱动板6轴传感器数据
+    float LW;       // 当前实际电机速度（低速）
+    int Acc;        // 电机转子加速度
+    float gyro[3];  // 电机驱动板6轴传感器数据
     float acc[3];
     ServoComdDataV3 motor_recv_data;  // 电机接收数据结构体，详见motor_msg_A1B1.h
 };

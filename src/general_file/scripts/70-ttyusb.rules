@@ -1,0 +1,12 @@
+# set control permissions for usb_can device
+ACTION=="add",SUBSYSTEMS=="usb", ATTRS{idVendor}=="04d8", ATTRS{idProduct}=="0053", GROUP="users", MODE="0777"
+
+# set control permissions alias for unitree usb_port
+ACTION=="add",KERNELS=="1-1.3:1.0",SUBSYSTEMS=="usb",MODE:="0777",SYMLINK+="unitree_usb0"
+ACTION=="add",KERNELS=="1-2.3:1.0",SUBSYSTEMS=="usb",MODE:="0777",SYMLINK+="unitree_usb1"
+ACTION=="add",KERNELS=="1-2.3:1.0",SUBSYSTEMS=="usb",MODE:="0777",SYMLINK+="unitree_usb2"
+ACTION=="add",KERNELS=="1-2.3:1.0",SUBSYSTEMS=="usb",MODE:="0777",SYMLINK+="unitree_usb3"
+ACTION=="add",KERNELS=="1-2.3:1.0",SUBSYSTEMS=="usb",MODE:="0777",SYMLINK+="unitree_usb4"
+ACTION=="add",KERNELS=="1-2.3:1.0",SUBSYSTEMS=="usb",MODE:="0777",SYMLINK+="unitree_usb5"
+ACTION=="add",KERNELS=="1-2.3:1.0",SUBSYSTEMS=="usb",MODE:="0777",SYMLINK+="unitree_usb6"
+ACTION=="add",KERNELS=="1-2.3:1.0",SUBSYSTEMS=="usb",MODE:="0777",SYMLINK+="unitree_usb7"

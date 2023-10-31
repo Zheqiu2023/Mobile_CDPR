@@ -3,7 +3,7 @@
 
 import rospy
 
-from geometry_msgs.msg import Twist
+from general_file.msg import ChassisCmd
 
 import sys
 import select
@@ -18,39 +18,33 @@ Moving around:
    a    s    d
    z    x    c
 
-q/e/z/c : move & turn
-a/d : turn
-u/j : increase/decrease max speeds by 10%
-i/k : increase/decrease only linear speed by 10%
-o/l : increase/decrease only angular speed by 10%
- s  : force stop
-anything else : stop smoothly
+q/e : turn anti-clockwise/clockwise
+w/s : move forward/retreat
+a/d : move left/right
+u/j : increase/decrease speed of moving forward and retreat by 10%
+i/k : increase/decrease speed of moving left and right by 10%
+o/l : increase/decrease angular speed by 10%
+ c  : force stop
 
 CTRL-C to quit
 """
 
 moveBindings = {
-    'w': (1, 0),
-    'e': (1, -1),
-    'q': (1, 1),
-    'x': (-1, 0),
-    'c': (-1, 1),
-    'z': (-1, -1),
-}
-
-# 左右转向键：按下后角速度将作为轮胎转向角度
-turnBindings = {
-    'a': (0, 1),
-    'd': (0, -1),
+    'w': (1, 0, 0),
+    's': (-1, 0, 0),
+    'a': (0, -1, 0),
+    'd': (0, 1, 0),
+    'e': (0, 0, -1),
+    'q': (0, 0, 1),
 }
 
 speedBindings = {
-    'u': (1.1, 1.1),
-    'j': (.9, .9),
-    'i': (1.1, 1),
-    'k': (.9, 1),
-    'o': (1, 1.1),
-    'l': (1, .9),
+    'u': (1.1, 1, 1),
+    'j': (.9, 1, 1),
+    'i': (1, 1.1, 1),
+    'k': (1, .9, 1),
+    'o': (1, 1, 1.1),
+    'l': (1, 1, .9),
 }
 
 
@@ -66,8 +60,9 @@ def getKey():
     return key
 
 
-def vels(speed, turn):
-    return "currently:\tspeed %.3f \tturn %.3f " % (speed, turn)
+def vels(x_vel, y_vel, turn):
+    return "currently:\tspeed in x axis %.3f, in y axis %.3f\tturn speed %.3f " % (x_vel, y_vel, turn)
+
 
 def makeSimpleProfile(output, input, slop):
     if input > output:
@@ -76,7 +71,6 @@ def makeSimpleProfile(output, input, slop):
         output = max(input, output - slop)
     else:
         output = input
-
     return output
 
 
@@ -87,7 +81,6 @@ def constrain(input, low, high):
         input = high
     else:
         input = input
-
     return input
 
 
@@ -95,102 +88,136 @@ if __name__ == "__main__":
     settings = termios.tcgetattr(sys.stdin)
 
     rospy.init_node('cdpr_keyboard_teleop')
-    pub = rospy.Publisher('cmd_vel', Twist, queue_size=5)
+    pub = rospy.Publisher('/cmd_chassis', ChassisCmd, queue_size=5)
 
-    speed = rospy.get_param("~speed", 0.2)
-    turn = rospy.get_param("~turn", 1.0)
-    speed_acc = rospy.get_param("~speed_acc", 0.02)
-    turn_acc = rospy.get_param("~turn_acc", 0.1)
-    max_speed = rospy.get_param("~max_speed", 10)
-    max_turn = rospy.get_param("~max_turn", 10)
+    x_vel = rospy.get_param("~x_vel", 1)
+    y_vel = rospy.get_param("~y_vel", 1)
+    turn = rospy.get_param("~turn", 0.2)
+    max_x_vel = rospy.get_param("~max_x_vel", 5)
+    max_y_vel = rospy.get_param("~max_y_vel", 5)
+    max_turn = rospy.get_param("~max_turn", 2)
+    x_acc = rospy.get_param("~x_acc", 0.1)
+    y_acc = rospy.get_param("~y_acc", 0.1)
+    turn_acc = rospy.get_param("~turn_acc", 0.02)
 
     x = 0
-    th = 0
+    y = 0
+    t = 0
     status = 0
     count = 0
-    turn_flag = 0
-    target_speed = 0
+
+    target_x_vel = 0
+    target_y_vel = 0
     target_turn = 0
-    control_speed = 0
+    control_x_vel = 0
+    control_y_vel = 0
     control_turn = 0
+
     try:
         print(msg)
-        print(vels(speed, turn))
-        print("max:\tspeed %s \tturn %s " % (max_speed, max_turn))
+        print(vels(x_vel, y_vel, turn))
+        print("max:\tx_vel %s \ty_vel %s \tturn %s " %
+              (max_x_vel, max_y_vel, max_turn))
         while not rospy.is_shutdown():
             key = getKey()
             if key in moveBindings.keys():
                 x = moveBindings[key][0]
-                th = moveBindings[key][1]
+                y = moveBindings[key][1]
+                t = moveBindings[key][2]
                 count = 0
-            elif key in turnBindings.keys():
-                th = turnBindings[key][1]
-                count = 0
-                turn_flag = 1
             elif key in speedBindings.keys():
-                speed = speed * speedBindings[key][0]
-                turn = turn * speedBindings[key][1]
+                x_vel = x_vel * speedBindings[key][0]
+                y_vel = y_vel * speedBindings[key][1]
+                turn = turn * speedBindings[key][2]
                 count = 0
-                if speed > max_speed:
+                if x_vel > max_x_vel:
                     print(
-                        "max linear velocity is %s, stop increasing linear velocity!" % (max_speed))
-                    speed = max_speed
+                        "x velocity has increased to its maximum, stop increasing!")
+                    x_vel = max_x_vel
+                if y_vel > max_y_vel:
+                    print(
+                        "y velocity has increased to its maximum, stop increasing!")
+                    y_vel = max_y_vel
                 if turn > max_turn:
                     print(
-                        "max angular velocity is %s, stop increasing angular velocity!" % (max_turn))
+                        "turn velocity has increased to its maximum, stop increasing!")
                     turn = max_turn
-                print(vels(speed, turn))
+                print(vels(x_vel, y_vel, turn))
                 if (status == 14):
                     print(msg)
                 status = (status + 1) % 15
-            elif key == 'r':
-                turn_flag = 0
-            elif key == 's':
+            elif key == 'c':
                 x = 0
-                th = 0
-                control_speed = 0
+                y = 0
+                t = 0
+                control_x_vel = 0
+                control_y_vel = 0
                 control_turn = 0
             else:
                 count = count + 1
                 if count > 4:
                     x = 0
-                    th = 0
+                    y = 0
+                    t = 0
                     if (key == '\x03'):
                         break
 
             # 限速
-            target_speed = constrain(speed * x, -max_speed, max_speed)
-            target_turn = constrain(turn * th, -max_turn, max_turn)
-            # 速度平滑：当前速度小于目标速度时，当前速度递增，直至相等；当前速度大于目标速度时，当前速度递减，直至相等
-            control_speed = makeSimpleProfile(
-                control_speed, target_speed, speed_acc)
-            if turn_flag == 0:
-                control_turn = makeSimpleProfile(
-                    control_turn, target_turn, turn_acc)
-            else:
-                control_turn += th * turn_acc
-                control_turn = constrain(control_turn, -max_turn, max_turn)
+            target_x_vel = constrain(x_vel * x, -max_x_vel, max_x_vel)
+            target_y_vel = constrain(y_vel * y, -max_y_vel, max_y_vel)
+            target_turn = constrain(turn * t, -max_turn, max_turn)
 
-            twist = Twist()
-            twist.linear.x = control_speed
-            twist.linear.y = 0
-            twist.linear.z = 0
-            twist.angular.x = turn_flag
-            twist.angular.y = 0
-            twist.angular.z = control_turn
-            pub.publish(twist)
+            # 速度平滑：当前速度小于目标速度时，当前速度递增，直至相等；当前速度大于目标速度时，当前速度递减，直至相等
+            # control_x_vel = makeSimpleProfile(
+            #     control_x_vel, target_x_vel, x_acc)
+            #  = makeSimpleProfile(
+            #     control_y_vel, target_y_vel, y_acc)
+            # control_turn = makeSimpleProfile(
+            #         control_turn, target_turn, turn_acc)
+            control_x_vel = target_x_vel
+            control_y_vel = target_y_vel
+            control_turn = target_turn
+
+            chassis_cmd = ChassisCmd()
+            chassis_cmd.Twist.linear.x = 1
+            chassis_cmd.Twist.linear.y = control_y_vel
+            chassis_cmd.Twist.linear.z = 0
+            chassis_cmd.Twist.angular.x = 0
+            chassis_cmd.Twist.angular.y = 0
+            chassis_cmd.Twist.angular.z = control_turn
+
+            chassis_cmd.Accel.linear.x = x_acc
+            chassis_cmd.Accel.linear.y = y_acc
+            chassis_cmd.Accel.linear.z = 0
+            chassis_cmd.Accel.angular.x = 0
+            chassis_cmd.Accel.angular.y = 0
+            chassis_cmd.Accel.angular.z = turn_acc
+
+            chassis_cmd.stamp = rospy.Time.now()
+
+            pub.publish(chassis_cmd)
 
     except Exception as e:
         print(e)
 
     finally:
-        twist = Twist()
-        twist.linear.x = 0
-        twist.linear.y = 0
-        twist.linear.z = 0
-        twist.angular.x = 0
-        twist.angular.y = 0
-        twist.angular.z = 0
-        pub.publish(twist)
+        chassis_cmd = ChassisCmd()
+        chassis_cmd.Twist.linear.x = 0
+        chassis_cmd.Twist.linear.y = 0
+        chassis_cmd.Twist.linear.z = 0
+        chassis_cmd.Twist.angular.x = 0
+        chassis_cmd.Twist.angular.y = 0
+        chassis_cmd.Twist.angular.z = 0
+
+        chassis_cmd.Accel.linear.x = 0
+        chassis_cmd.Accel.linear.y = 0
+        chassis_cmd.Accel.linear.z = 0
+        chassis_cmd.Accel.angular.x = 0
+        chassis_cmd.Accel.angular.y = 0
+        chassis_cmd.Accel.angular.z = 0
+
+        chassis_cmd.stamp = rospy.Time.now()
+
+        pub.publish(chassis_cmd)
 
     termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)

@@ -1,0 +1,8 @@
+<launch>
+    <rosparam file="$(find general_file)/config/controllers.yaml" command="load"/>
+
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" ns="/controllers"
+          args="joint_state_controller
+                chassis_controller
+                "/>
+</launch>

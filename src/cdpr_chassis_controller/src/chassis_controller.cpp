@@ -37,24 +37,28 @@ void ChassisController::cmdChassisCallback(const general_file::ChassisCmd::Const
 
 /**
  * @brief Controller initialization in non-realtime
- * @param  robot
- * @param  nh
+ * @param  robot_hw
+ * @param  root_nh
+ * @param  controller_nh
  * @return true
  * @return false
  */
-bool ChassisController::init(hardware_interface::EffortJointInterface* robot, ros::NodeHandle& nh)
+bool ChassisController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& root_nh,
+                             ros::NodeHandle& controller_nh)
 {
     XmlRpc::XmlRpcValue wheelsets;
-    name_space_ = nh.getNamespace();
+    name_space_ = controller_nh.getNamespace();
+    ROS_INFO_STREAM("ChassisController namespace: " << name_space_);
 
-    if (!nh.getParam("publish_rate", publish_rate_) || nh.getParam("wheelsets", wheelsets) ||
-        !nh.getParam("timeout", timeout_))
+    if (!controller_nh.getParam("publish_rate", publish_rate_) || controller_nh.getParam("wheelsets", wheelsets) ||
+        !controller_nh.getParam("timeout", timeout_))
     {
         ROS_ERROR("Some chassis params doesn't given in namespace: '%s')", name_space_.c_str());
         return false;
     }
     ROS_ASSERT(wheelsets.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
+    effort_joint_interface_ = robot_hw->get<hardware_interface::EffortJointInterface>();
     for (const auto& wheelset : wheelsets)
     {
         ROS_ASSERT(wheelset.second.hasMember("position"));
@@ -73,8 +77,8 @@ bool ChassisController::init(hardware_interface::EffortJointInterface* robot, ro
                     .ctrl_steer_ = new effort_controllers::JointPositionController(),
                     .ctrl_roll_ = new effort_controllers::JointVelocityController() };
 
-        ros::NodeHandle nh_steer = ros::NodeHandle(nh, "wheelsets/" + wheelset.first + "/steer");
-        ros::NodeHandle nh_roll = ros::NodeHandle(nh, "wheelsets/" + wheelset.first + "/roll");
+        ros::NodeHandle nh_steer = ros::NodeHandle(controller_nh, "wheelsets/" + wheelset.first + "/steer");
+        ros::NodeHandle nh_roll = ros::NodeHandle(controller_nh, "wheelsets/" + wheelset.first + "/roll");
 
         if (!w.ctrl_steer_->init(effort_joint_interface_, nh_steer) ||
             !w.ctrl_roll_->init(effort_joint_interface_, nh_roll))
@@ -87,20 +91,32 @@ bool ChassisController::init(hardware_interface::EffortJointInterface* robot, ro
         wheelsets_.push_back(w);
     }
 
-    if (nh.hasParam("pid_follow"))
-        if (!pid_follow_.init(ros::NodeHandle(nh, "pid_follow")))
+    if (controller_nh.hasParam("pid_follow"))
+        if (!pid_follow_.init(ros::NodeHandle(controller_nh, "pid_follow")))
             return false;
 
     ramp_x_ = new RampFilter<double>(0, 0.001);
     ramp_y_ = new RampFilter<double>(0, 0.001);
     ramp_w_ = new RampFilter<double>(0, 0.001);
 
+    // connect the joint state interface
+    // joint_state_.position.resize(joint_handles_.size());
+    // joint_state_.velocity.resize(joint_handles_.size());
+    // joint_state_.effort.resize(joint_handles_.size());
+    // for (size_t i = 0; i < joint_handles_.size(); ++i)
+    // {
+    //     std::string joint_name = joint_handles_[i].getName();
+    //     joint_state_.name.push_back(joint_name);
+    //     robot_hw->get<hardware_interface::JointStateInterface>()->registerHandle(hardware_interface::JointStateHandle(
+    //         joint_name, &joint_state_.position[i], &joint_state_.velocity[i], &joint_state_.effort[i]));
+    // }
+
     // Start command subscriber
-    cmd_chassis_sub_ =
-        nh.subscribe<general_file::ChassisCmd>("/cmd_chassis", 1, &ChassisController::cmdChassisCallback, this);
+    cmd_chassis_sub_ = controller_nh.subscribe<general_file::ChassisCmd>("/cmd_chassis", 1,
+                                                                         &ChassisController::cmdChassisCallback, this);
     // Start realtime state publisher
-    // controller_state_publisher_.reset(
-    //     new realtime_tools::RealtimePublisher<general_file::UnitreeMotorState>(nh, name_space_ + "/state", 1));
+    chassis_state_publisher_.reset(
+        new realtime_tools::RealtimePublisher<sensor_msgs::JointState>(controller_nh, "/chassis_state", 1));
 
     return true;
 }
@@ -131,6 +147,7 @@ void ChassisController::update(const ros::Time& time, const ros::Duration& perio
     }
 
     moveJoint(time, period);
+    // publishJointState(time);
 }
 
 // Ref: https://dominik.win/blog/programming-swerve-drive/
@@ -151,6 +168,20 @@ void ChassisController::moveJoint(const ros::Time& time, const ros::Duration& pe
         wheelset.ctrl_roll_->setCommand(vel.norm() / wheelset.wheel_radius_ * std::cos(a));
         wheelset.ctrl_steer_->update(time, period);
         wheelset.ctrl_roll_->update(time, period);
+    }
+}
+
+void ChassisController::publishJointState(const ros::Time& time)
+{
+    if (last_publish_time_ + ros::Duration(1.0 / publish_rate_) < time)
+    {
+        if (chassis_state_publisher_->trylock())
+        {
+            joint_state_.header.stamp = ros::Time::now();
+            chassis_state_publisher_->msg_ = joint_state_;
+        }
+        last_publish_time_ = time;
+        chassis_state_publisher_->unlockAndPublish();
     }
 }
 

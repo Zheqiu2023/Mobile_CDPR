@@ -5,21 +5,20 @@
 High frequency serial communication,
 Not that common, but useful for motor communication.
 */
-#include <fcntl.h>
-#include <linux/serial.h>
-#include <stdint.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <sys/select.h>
 #include <termios.h>
-#include <unistd.h>
-
-#include <iostream>
+#include <sys/select.h>
 #include <string>
+#include <string.h>
+#include <stdint.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <linux/serial.h>
+#include <unistd.h>
+#include <iostream>
 
-#include "IOPort/IOPort.h"
-#include "serialPort/include/errorClass.h"
-#include "unitreeMotor/unitreeMotor.h"
+#include "unitree_motor_go/serialPort/include/errorClass.h"
+#include "unitree_motor_go/unitreeMotor/unitreeMotor.h"
+#include "unitree_motor_go/IOPort/IOPort.h"
 
 enum class bytesize_t
 {
@@ -55,12 +54,12 @@ enum class flowcontrol_t
 class SerialPort : public IOPort
 {
   public:
-    SerialPort(const std::string& portName, size_t recvLength = 78, uint32_t baudrate = 4800000,
+    SerialPort(const std::string& portName, size_t recvLength = 16, uint32_t baudrate = 4000000,
                size_t timeOutUs = 20000, BlockYN blockYN = BlockYN::NO, bytesize_t bytesize = bytesize_t::eightbits,
                parity_t parity = parity_t::parity_none, stopbits_t stopbits = stopbits_t::stopbits_one,
                flowcontrol_t flowcontrol = flowcontrol_t::flowcontrol_none);
     virtual ~SerialPort();
-    void resetSerial(size_t recvLength = 78, uint32_t baudrate = 4800000, size_t timeOutUs = 20000,
+    void resetSerial(size_t recvLength = 16, uint32_t baudrate = 4000000, size_t timeOutUs = 20000,
                      BlockYN blockYN = BlockYN::NO, bytesize_t bytesize = bytesize_t::eightbits,
                      parity_t parity = parity_t::parity_none, stopbits_t stopbits = stopbits_t::stopbits_one,
                      flowcontrol_t flowcontrol = flowcontrol_t::flowcontrol_none);

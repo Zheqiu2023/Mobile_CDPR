@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(stepper_motor_57)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++14)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 ## Find catkin macros and libraries

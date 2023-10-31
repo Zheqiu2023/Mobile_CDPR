@@ -1,0 +1,24 @@
+<launch>
+    <arg name="debug" default="false"/>
+    <arg name="load_chassis" default="true"/>
+    <arg name="load_anchor_module" default="true"/>
+    <arg name="load_cable_module" default="true"/>
+
+    <arg unless="$(arg debug)" name="launch_prefix" value=""/>
+    <arg if="$(arg debug)" name="launch_prefix" value="gdbserver :1234"/>
+
+    <rosparam file="$(find general_file)/config/actuators.yaml" command="load"/>
+    <rosparam file="$(find general_file)/config/controllers.yaml" command="load"/> 
+
+    <param name="robot_description" command="$(find xacro)/xacro $(find cdpr_description)/xacro/cdpr.xacro"/>
+
+    <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen"
+          args="controllers/joint_state_controller
+                controllers/chassis_controller"/>
+
+    <node name="cdpr_hw" launch-prefix="$(arg launch_prefix)" pkg="cdpr_hw" type="cdpr_hw_node" respawn="false"
+          clear_params="true"/>
+
+    <!-- <include file="$(find general_file)/launch/load_controllers.launch"/> -->
+
+</launch>

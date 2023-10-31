@@ -11,7 +11,8 @@
  *  ***********************************************************************************
  */
 
-#include "a1.hpp"
+#include "unitree_motor_a1/a1.hpp"
+
 #include <ros/ros.h>
 
 int main(int argc, char** argv)

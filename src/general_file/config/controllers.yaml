@@ -7,23 +7,23 @@ controllers:
     type: cdpr_chassis_controller/ChassisController
     publish_rate: 100
     timeout: 0.1
-    pid_follow: { p: 5.0, i: 0, d: 0.3, i_max: 0.0, i_min: 0.0, antiwindup: true, publish_state: true }
+    pid_follow: { p: 1.0, i: 0, d: 0.3, i_max: 0.0, i_min: 0.0, antiwindup: true, publish_state: true }
 
-    wheelsets:    # TODO: some parameters need to modify
+    wheelsets:
       left_front:
-        position: [ 0.175, 0.175 ]    
+        position: [ 0.585, 0.557 ]    
         steer:
           joint: joint_steer_lf
           <<: &steer_setting
             offset: 0.
-            pid: { p: 5, i: 50, d: 0, i_clamp_max: 0.4, i_clamp_min: -0.4, antiwindup: true, publish_state: true }
+            pid: { p: 1., i: 0.5, d: 0, i_clamp_max: 0.4, i_clamp_min: -0.4, antiwindup: true, publish_state: true }
         roll:
           joint: joint_roll_lf
           <<: &roll_setting
-            radius: 0.049
+            radius: 0.1175
             pid: { p: 0.4, i: 0, d: 0.0, i_max: 0.0, i_min: 0.0, antiwindup: true, publish_state: true }
       right_front:
-        position: [ 0.175, -0.175 ]
+        position: [ 0.585, -0.557 ]
         steer:
           joint: joint_steer_rf
           <<: *steer_setting
@@ -31,7 +31,7 @@ controllers:
           joint: joint_roll_rf
           <<: *roll_setting
       left_back:
-        position: [ -0.175, 0.175 ]
+        position: [ -0.585, 0.557 ]
         steer:
           joint: joint_steer_lb
           <<: *steer_setting
@@ -39,7 +39,7 @@ controllers:
           joint: joint_roll_rb
           <<: *roll_setting
       right_back:
-        position: [ -0.175, -0.175 ]
+        position: [ -0.585, -0.557 ]
         steer:
           joint: joint_steer_rb
           <<: *steer_setting

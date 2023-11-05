@@ -23,7 +23,7 @@ namespace motor_go
 class GoControl
 {
   public:
-    GoControl(ros::NodeHandle nh);
+    GoControl(ros::NodeHandle& nh);
     void init(std::vector<SerialPort*>& port);
     void drive(std::vector<SerialPort*>& port);
     void stall(std::vector<SerialPort*>& port);

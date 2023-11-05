@@ -1,10 +1,10 @@
 # unit：m/s
-x_vel: 1
-y_vel: 1
+x_vel: 0.5
+y_vel: 0.5
 turn: 0.2
-max_x_vel: 5
-max_y_vel: 5
-max_turn: 2
+max_x_vel: 2
+max_y_vel: 2
+max_turn: 1
 x_acc: 0.1
 y_acc: 0.1
 turn_acc: 0.02

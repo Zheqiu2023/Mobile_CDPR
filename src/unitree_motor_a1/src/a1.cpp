@@ -22,7 +22,7 @@ using namespace motor_a1;
 
 A1Control::A1Control(ros::NodeHandle nh) : nh_(nh)
 {
-    sub_ = nh_.subscribe<std_msgs::Float64MultiArray>("/steer_pos_cmd", 10,
+    sub_ = nh_.subscribe<std_msgs::Float64MultiArray>("/roll_vel_cmd", 10,
                                                       boost::bind(&A1Control::setCommandCB, this, _1));
     // get motor parameters
     if (!(nh_.getParam("id", id_) && nh_.getParam("port_name", serial_port_)))
@@ -36,8 +36,7 @@ A1Control::A1Control(ros::NodeHandle nh) : nh_(nh)
  */
 void A1Control::setCommandCB(const std_msgs::Float64MultiArray::ConstPtr& cmd_vel)
 {
-    float reduction_ratio = 0.0;
-    nh_.getParam("reduction_ratio", reduction_ratio);
+    float reduction_ratio = nh_.param("reduction_ratio", 9.0);
     for (size_t i = 0; i < motor_num_; ++i)
     {
         motor_cmd_[i].W = cmd_vel->data.at(i) * reduction_ratio;
@@ -95,11 +94,9 @@ void A1Control::init(std::vector<SerialPort*>& port)
 void A1Control::drive(std::vector<SerialPort*>& port)
 {
     std::vector<float> control_param_vec(2, 0);
-    float reduction_ratio = 0.0;
-    int cmd_type = 0, ctrl_frequency = 0;
-    nh_.getParam("cmd_type", cmd_type);
-    nh_.getParam("reduction_ratio", reduction_ratio);
-    nh_.getParam("motor_ctrl_data/ctrl_frequency", ctrl_frequency);
+    float reduction_ratio = nh_.param("reduction_ratio", 9.0);
+    int cmd_type = nh_.param("cmd_type", 0);
+    int ctrl_frequency = nh_.param("motor_ctrl_data/ctrl_frequency", 200);
     ros::Rate loop_rate(ctrl_frequency);
 
     if (cmd_type == 0)

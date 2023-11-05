@@ -12,7 +12,7 @@ namespace chassis_ctrl
 struct Wheelset
 {
     Vec2<double> position_;
-    double steer_offset_, wheel_radius_;
+    double roll_direction_, steer_direction_, steer_offset_, wheel_radius_;
 };
 
 class ChassisCtrl

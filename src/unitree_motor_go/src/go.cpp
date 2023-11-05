@@ -20,9 +20,9 @@
 
 using namespace motor_go;
 
-GoControl::GoControl(ros::NodeHandle nh) : nh_(nh)
+GoControl::GoControl(ros::NodeHandle& nh) : nh_(nh)
 {
-    sub_ = nh_.subscribe<std_msgs::Float64MultiArray>("/steer_cmd_pos", 10,
+    sub_ = nh_.subscribe<std_msgs::Float64MultiArray>("/steer_pos_cmd", 10,
                                                       boost::bind(&GoControl::setCommandCB, this, _1));
     pub_ = nh_.advertise<std_msgs::Float64MultiArray>("/steer_pos_state", 10);
     // get motor parameters
@@ -33,15 +33,14 @@ GoControl::GoControl(ros::NodeHandle nh) : nh_(nh)
 
 /**
  * @brief receive and set target position
- * @param  cmd_vel
+ * @param  cmd_pos
  */
-void GoControl::setCommandCB(const std_msgs::Float64MultiArray::ConstPtr& cmd_vel)
+void GoControl::setCommandCB(const std_msgs::Float64MultiArray::ConstPtr& cmd_pos)
 {
-    float reduction_ratio = 0.0;
-    nh_.getParam("reduction_ratio", reduction_ratio);
+    float reduction_ratio = nh_.param("reduction_ratio", 6.33);
     for (size_t i = 0; i < motor_num_; ++i)
     {
-        motor_cmd_[i].W = cmd_vel->data.at(i) * reduction_ratio;
+        motor_cmd_[i].Pos = motor_zero_position_[i] + cmd_pos->data[i] * reduction_ratio;
     }
 }
 
@@ -95,12 +94,10 @@ void GoControl::init(std::vector<SerialPort*>& port)
  */
 void GoControl::drive(std::vector<SerialPort*>& port)
 {
-    std::vector<float> control_param_vec(2, 0);
-    float reduction_ratio = 0.0;
-    int cmd_type = 0, ctrl_frequency = 0;
-    nh_.getParam("cmd_type", cmd_type);
-    nh_.getParam("reduction_ratio", reduction_ratio);
-    nh_.getParam("motor_ctrl_data/ctrl_frequency", ctrl_frequency);
+    std::vector<float> control_param_vec(2, 0.0);
+    float reduction_ratio = nh_.param("reduction_ratio", 6.33);
+    int cmd_type = nh_.param("cmd_type", 0);
+    int ctrl_frequency = nh_.param("motor_ctrl_data/ctrl_frequency", 200);
     ros::Rate loop_rate(ctrl_frequency);
 
     if (cmd_type == 0)

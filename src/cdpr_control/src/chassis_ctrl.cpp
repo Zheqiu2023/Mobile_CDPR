@@ -35,26 +35,30 @@ ChassisCtrl::ChassisCtrl(ros::NodeHandle& nh) : nh_(nh)
     ROS_ASSERT(accel.getType() == XmlRpc::XmlRpcValue::TypeStruct);
     for (const auto& wheelset : wheelsets)
     {
-        ROS_INFO("Added: %s", wheelset.first.c_str());
         ROS_ASSERT(wheelset.second.hasMember("position"));
         ROS_ASSERT(wheelset.second["position"].getType() == XmlRpc::XmlRpcValue::TypeArray);
         ROS_ASSERT(wheelset.second["position"].size() == 2);
-        ROS_ASSERT(wheelset.second.hasMember("steer_offset"));
-        ROS_ASSERT(wheelset.second["steer_offset"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
-        ROS_ASSERT(wheelset.second.hasMember("wheel_radius"));
-        ROS_ASSERT(wheelset.second["wheel_radius"].getType() == XmlRpc::XmlRpcValue::TypeDouble);
+        ROS_ASSERT(wheelset.second.hasMember("steer"));
+        ROS_ASSERT(wheelset.second["steer"].getType() == XmlRpc::XmlRpcValue::TypeStruct);
+        ROS_ASSERT(wheelset.second["steer"].hasMember("offset"));
+        ROS_ASSERT(wheelset.second["steer"].hasMember("direction"));
+        ROS_ASSERT(wheelset.second.hasMember("roll"));
+        ROS_ASSERT(wheelset.second["roll"].getType() == XmlRpc::XmlRpcValue::TypeStruct);
+        ROS_ASSERT(wheelset.second["roll"].hasMember("direction"));
+        ROS_ASSERT(wheelset.second["roll"].hasMember("radius"));
 
         wheelsets_.push_back(Wheelset{
             .position_ = Vec2<double>{ (double)wheelset.second["position"][0], (double)wheelset.second["position"][1] },
-            .steer_offset_ = wheelset.second["steer_offset"],
-            .wheel_radius_ = wheelset.second["wheel_radius"] });
+            .roll_direction_ = wheelset.second["roll"]["direction"],
+            .steer_direction_ = wheelset.second["steer"]["direction"],
+            .steer_offset_ = wheelset.second["steer"]["offset"],
+            .wheel_radius_ = wheelset.second["roll"]["radius"] });
     }
-    ROS_INFO("Added: %d", wheelsets.size());
     steer_state_.data.resize(wheelsets_.size());
 
-    ramp_x_ = new RampFilter<double>(accel["x"], 0.01);
-    ramp_y_ = new RampFilter<double>(accel["y"], 0.01);
-    ramp_w_ = new RampFilter<double>(accel["w"], 0.01);
+    ramp_x_ = new RampFilter<double>(accel["x"], 0.005);
+    ramp_y_ = new RampFilter<double>(accel["y"], 0.005);
+    ramp_w_ = new RampFilter<double>(accel["w"], 0.005);
 
     // Start command subscriber and publisher
     cmd_chassis_sub_ =
@@ -67,13 +71,13 @@ ChassisCtrl::ChassisCtrl(ros::NodeHandle& nh) : nh_(nh)
 
 void ChassisCtrl::update(const ros::Time& time)
 {
-    // if ((time - chassis_cmd_.stamp).toSec() > timeout_)
-    // {
-    //     cmd_vel_.x = 0.;
-    //     cmd_vel_.y = 0.;
-    //     cmd_vel_.z = 0.;
-    // }
-    // else
+    if ((time - chassis_cmd_.stamp).toSec() > timeout_)
+    {
+        cmd_vel_.x = 0.;
+        cmd_vel_.y = 0.;
+        cmd_vel_.z = 0.;
+    }
+    else
     {
         ramp_x_->input(chassis_cmd_.Twist.linear.x);
         ramp_y_->input(chassis_cmd_.Twist.linear.y);
@@ -102,7 +106,8 @@ void ChassisCtrl::moveJoint()
         double a = angles::shortest_angular_distance(steer_state_.data[i], vel_angle);
         double b = angles::shortest_angular_distance(steer_state_.data[i], vel_angle + M_PI);
         steer_cmd_.data.push_back(std::abs(a) < std::abs(b) ? vel_angle : vel_angle + M_PI);
-        roll_cmd_.data.push_back(vel.norm() / wheelsets_[i].wheel_radius_ * std::cos(a));
+        roll_cmd_.data.push_back(vel.norm() / wheelsets_[i].wheel_radius_ * std::cos(a) *
+                                 wheelsets_[i].roll_direction_);
     }
     cmd_wheelset_pubs_[0].publish(steer_cmd_);
     cmd_wheelset_pubs_[1].publish(roll_cmd_);

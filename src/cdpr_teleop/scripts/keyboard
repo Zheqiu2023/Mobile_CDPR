@@ -179,7 +179,7 @@ if __name__ == "__main__":
             control_turn = target_turn
 
             chassis_cmd = ChassisCmd()
-            chassis_cmd.Twist.linear.x = 1
+            chassis_cmd.Twist.linear.x = control_x_vel
             chassis_cmd.Twist.linear.y = control_y_vel
             chassis_cmd.Twist.linear.z = 0
             chassis_cmd.Twist.angular.x = 0

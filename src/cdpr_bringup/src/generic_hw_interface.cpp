@@ -1,5 +1,5 @@
 #include <limits>
-#include "general_file/hw_inetrface_template/generic_hw_interface.hpp"
+#include "cdpr_bringup/hw_inetrface_template/generic_hw_interface.hpp"
 
 using namespace generic_hardware_interface;
 

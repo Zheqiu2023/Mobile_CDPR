@@ -26,7 +26,7 @@ ChassisController::~ChassisController()
  * @brief set the chassis command
  * @param  msg
  */
-void ChassisController::cmdChassisCallback(const general_file::ChassisCmd::ConstPtr& msg)
+void ChassisController::cmdChassisCallback(const cdpr_bringup::ChassisCmd::ConstPtr& msg)
 {
     chassis_cmd_ = *msg;
     // the writeFromNonRT can be used in RT, if you have the guarantee that
@@ -112,7 +112,7 @@ bool ChassisController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHan
     // }
 
     // Start command subscriber
-    cmd_chassis_sub_ = controller_nh.subscribe<general_file::ChassisCmd>("/cmd_chassis", 1,
+    cmd_chassis_sub_ = controller_nh.subscribe<cdpr_bringup::ChassisCmd>("/cmd_chassis", 1,
                                                                          &ChassisController::cmdChassisCallback, this);
     // Start realtime state publisher
     chassis_state_publisher_.reset(

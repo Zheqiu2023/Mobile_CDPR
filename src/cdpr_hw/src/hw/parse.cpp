@@ -3,7 +3,7 @@
 #include <joint_limits_interface/joint_limits_rosparam.h>
 
 #include "cdpr_hw/hw/cdpr_hw.hpp"
-#include "general_file/ros_utilities.hpp"
+#include "cdpr_bringup/ros_utilities.hpp"
 
 using namespace cdpr_hw;
 

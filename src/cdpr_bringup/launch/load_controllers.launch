@@ -1,5 +1,5 @@
 <launch>
-    <rosparam file="$(find general_file)/config/controllers.yaml" command="load"/>
+    <rosparam file="$(find cdpr_bringup)/config/controllers.yaml" command="load"/>
 
     <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" output="screen" ns="/controllers"
           args="joint_state_controller

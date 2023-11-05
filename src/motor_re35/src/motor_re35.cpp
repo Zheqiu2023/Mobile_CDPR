@@ -12,7 +12,7 @@
  */
 #include "motor_re35/motor_re35.hpp"
 #include "usb_can/usb_can.hpp"
-#include "general_file/filters/filters.hpp"
+#include "cdpr_bringup/filters/filters.hpp"
 
 #include <pthread.h>
 #include <vector>
@@ -27,9 +27,9 @@ MsgBox::MsgBox()
 {
     tension_vec_.reserve(7);
     subs_.resize(2);
-    pub_ = nh_.advertise<general_file::CanFrame>("/usbcan/motor_re35", 10);
+    pub_ = nh_.advertise<cdpr_bringup::CanFrame>("/usbcan/motor_re35", 10);
     subs_[0] =
-        nh_.subscribe<general_file::CanFrame>("/usbcan/can_pub", 100, boost::bind(&MsgBox::recvCANMsgs, this, _1));
+        nh_.subscribe<cdpr_bringup::CanFrame>("/usbcan/can_pub", 100, boost::bind(&MsgBox::recvCANMsgs, this, _1));
     subs_[1] = nh_.subscribe<std_msgs::Float32>("/tension_val", 10, boost::bind(&MsgBox::recvTension, this, _1));
     ros::Duration(0.4).sleep();  // 休眠0.4s，保证发出的第一条消息能被usbcan接收
 }
@@ -38,9 +38,9 @@ MsgBox::MsgBox()
  * @brief 订阅CAN话题回调函数
  * @param  msg
  */
-void MsgBox::recvCANMsgs(const general_file::CanFrame::ConstPtr& msg)
+void MsgBox::recvCANMsgs(const cdpr_bringup::CanFrame::ConstPtr& msg)
 {
-    general_file::CanFrame recv_msgs = *msg;
+    cdpr_bringup::CanFrame recv_msgs = *msg;
 }
 
 /**
@@ -68,7 +68,7 @@ float MsgBox::getTension()
 /**
  * @brief 发送函数
  */
-void MsgBox::publishCmd(const general_file::CanFrame& cmd)
+void MsgBox::publishCmd(const cdpr_bringup::CanFrame& cmd)
 {
     pub_.publish(cmd);
 }

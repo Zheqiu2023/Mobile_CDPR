@@ -13,14 +13,12 @@
 
 #include "unitree_motor_a1/a1.hpp"
 
-#include <ros/ros.h>
-
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "unitree_motor_a1");
-    ros::NodeHandle nh;
+    ros::NodeHandle nh("~");
 
-    motor_a1::A1Control a1_control;
+    motor_a1::A1Control a1_control(nh);
     a1_control();
 
     return 0;

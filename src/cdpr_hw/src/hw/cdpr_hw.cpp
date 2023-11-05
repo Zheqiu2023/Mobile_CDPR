@@ -47,7 +47,7 @@ bool CdprHW::init(ros::NodeHandle& root_nh, ros::NodeHandle& robot_hw_nh)
     // registerInterface(&joint_state_interface_);
 
     actuator_state_pub_.reset(
-        new realtime_tools::RealtimePublisher<general_file::ActuatorState>(root_nh, "/actuator_states", 100));
+        new realtime_tools::RealtimePublisher<cdpr_bringup::ActuatorState>(root_nh, "/actuator_states", 100));
 
     // CAN Bus
     if (!robot_hw_nh.getParam("can_bus", xml_rpc_value))
@@ -191,7 +191,7 @@ void CdprHW::publishActuatorState(const ros::Time& time)
     {
         if (actuator_state_pub_->trylock())
         {
-            general_file::ActuatorState actuator_state;
+            cdpr_bringup::ActuatorState actuator_state;
             for (const auto& comm_id2act_data : comm_id2act_data_)
                 for (const auto& id2act_data : comm_id2act_data.second)
                 {

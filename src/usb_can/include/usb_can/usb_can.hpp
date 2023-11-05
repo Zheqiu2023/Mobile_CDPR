@@ -12,7 +12,7 @@
  */
 #pragma once
 
-#include "general_file/usb_can/controlcan.h"
+#include "cdpr_bringup/usb_can/controlcan.h"
 
 #include <ros/ros.h>
 

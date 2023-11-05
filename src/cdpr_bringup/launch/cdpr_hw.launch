@@ -7,8 +7,8 @@
     <arg unless="$(arg debug)" name="launch_prefix" value=""/>
     <arg if="$(arg debug)" name="launch_prefix" value="gdbserver :1234"/>
 
-    <rosparam file="$(find general_file)/config/actuators.yaml" command="load"/>
-    <rosparam file="$(find general_file)/config/controllers.yaml" command="load"/> 
+    <rosparam file="$(find cdpr_bringup)/config/actuators.yaml" command="load"/>
+    <rosparam file="$(find cdpr_bringup)/config/controllers.yaml" command="load"/> 
 
     <param name="robot_description" command="$(find xacro)/xacro $(find cdpr_description)/xacro/cdpr.xacro"/>
 
@@ -19,6 +19,6 @@
     <node name="cdpr_hw" launch-prefix="$(arg launch_prefix)" pkg="cdpr_hw" type="cdpr_hw_node" respawn="false"
           clear_params="true"/>
 
-    <!-- <include file="$(find general_file)/launch/load_controllers.launch"/> -->
+    <!-- <include file="$(find cdpr_bringup)/launch/load_controllers.launch"/> -->
 
 </launch>

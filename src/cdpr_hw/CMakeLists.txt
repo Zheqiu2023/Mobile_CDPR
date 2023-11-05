@@ -16,7 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   urdf
   roscpp
   sensor_msgs
-  general_file
+  cdpr_bringup
   unitree_motor_a1
   unitree_motor_go
 )
@@ -123,7 +123,7 @@ catkin_package(
  urdf
  roscpp
  sensor_msgs
- general_file
+ cdpr_bringup
  unitree_motor_a1
  unitree_motor_go
 #  DEPENDS system_lib
@@ -141,7 +141,7 @@ include_directories(
 )
 link_directories(
   ${catkin_LIB_DIRS} 
-  ../general_file/lib
+  ../cdpr_bringup/lib
   ../unitree_motor_a1/lib
   ../unitree_motor_go/lib
 )

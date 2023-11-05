@@ -13,15 +13,13 @@
 
 #include "unitree_motor_go/go.hpp"
 
-#include <ros/ros.h>
-
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "unitree_motor_go");
-    ros::NodeHandle nh;
+    ros::NodeHandle nh("~");
 
-    motor_go::GoRun go_run;
-    go_run();
+    motor_go::GoControl go_control(nh);
+    go_control();
 
     return 0;
 }

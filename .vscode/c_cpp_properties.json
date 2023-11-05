@@ -4,9 +4,9 @@
             "name": "Linux",
             "includePath": [
                 "/usr/include/**",
-                "${workspaceFolder}/devel/include/**",
                 "/opt/ros/noetic/include/**",
-                "${workspaceFolder}/src/general_file/include/**",
+                "${workspaceFolder}/devel/include/**",
+                "${workspaceFolder}/src/cdpr_bringup/include/**",
                 "${workspaceFolder}/src/motor_re35/include/**",
                 "${workspaceFolder}/src/stepper_motor_57/include/**",
                 "${workspaceFolder}/src/unitree_motor_a1/include/**",
@@ -15,7 +15,8 @@
                 "${workspaceFolder}/src/cdpr_gazebo/include/**",
                 "${workspaceFolder}/src/cdpr_hw/include/**",
                 "${workspaceFolder}/src/cdpr_chassis_controller/include/**",
-                "/usr/include/eigen3/Eigen"
+                "/usr/include/eigen3/Eigen",
+                "${workspaceFolder}/src/cdpr_control/include/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

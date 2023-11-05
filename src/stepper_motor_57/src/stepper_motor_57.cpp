@@ -28,8 +28,8 @@ using namespace motor_57;
 MsgBox::MsgBox()
 {
     sem_init(&sem_trans_, 0, 0);  // 将信号量sem_trans设为线程间通信，初值为0
-    pub_ = nh_.advertise<general_file::CanFrame>("/usbcan/motor_57", 100);
-    sub_ = nh_.subscribe<general_file::CanFrame>("/usbcan/can_pub", 100, boost::bind(&MsgBox::recvCallback, this, _1));
+    pub_ = nh_.advertise<cdpr_bringup::CanFrame>("/usbcan/motor_57", 100);
+    sub_ = nh_.subscribe<cdpr_bringup::CanFrame>("/usbcan/can_pub", 100, boost::bind(&MsgBox::recvCallback, this, _1));
 
     ros::Duration(0.4).sleep();  // 休眠0.4s，保证发出的第一条消息能被usbcan接收
 }
@@ -39,7 +39,7 @@ MsgBox::~MsgBox()
     sem_destroy(&sem_trans_);
 }
 
-void MsgBox::recvCallback(const general_file::CanFrame::ConstPtr& msg)
+void MsgBox::recvCallback(const cdpr_bringup::CanFrame::ConstPtr& msg)
 {
     if (msg->Data[2] == 0x41 && msg->Data[7] == 0)
         sem_post(&sem_trans_);
@@ -48,7 +48,7 @@ void MsgBox::recvCallback(const general_file::CanFrame::ConstPtr& msg)
 /**
  * @brief 发送函数
  */
-void MsgBox::publishCmd(const general_file::CanFrame& cmd)
+void MsgBox::publishCmd(const cdpr_bringup::CanFrame& cmd)
 {
     pub_.publish(cmd);
 }
@@ -198,8 +198,8 @@ void MotorRun::run()
 void MotorParam::writeParam()
 {
     ros::NodeHandle nh;
-    ros::Publisher pub = nh.advertise<general_file::CanFrame>("/usbcan/motor_57", 100);
-    std::array<general_file::CanFrame, 8> data_arr;  // data_arr[0]:启动周期   data_arr[1]:恒速周期 data_arr[2]:加速步数
+    ros::Publisher pub = nh.advertise<cdpr_bringup::CanFrame>("/usbcan/motor_57", 100);
+    std::array<cdpr_bringup::CanFrame, 8> data_arr;  // data_arr[0]:启动周期   data_arr[1]:恒速周期 data_arr[2]:加速步数
                                                      // data_arr[3]:加速系数   data_arr[4]:细分    data_arr[5]：工作模式
                                                      // data_arr[6]：相电流    data_arr[7]：CAN ID
     for (auto& data : data_arr)
@@ -251,8 +251,8 @@ void MotorParam::writeParam()
 void MotorParam::readParam()
 {
     ros::NodeHandle nh;
-    ros::Publisher pub = nh.advertise<general_file::CanFrame>("/usbcan/motor_57", 100);
-    std::array<general_file::CanFrame, 8> data_arr;  // data_arr[0]:启动周期   data_arr[1]:恒速周期 data_arr[2]:加速步数
+    ros::Publisher pub = nh.advertise<cdpr_bringup::CanFrame>("/usbcan/motor_57", 100);
+    std::array<cdpr_bringup::CanFrame, 8> data_arr;  // data_arr[0]:启动周期   data_arr[1]:恒速周期 data_arr[2]:加速步数
                                                      // data_arr[3]:加速系数   data_arr[4]:细分    data_arr[5]：工作模式
                                                      // data_arr[6]：相电流    data_arr[7]：CAN ID
     for (auto& data : data_arr)

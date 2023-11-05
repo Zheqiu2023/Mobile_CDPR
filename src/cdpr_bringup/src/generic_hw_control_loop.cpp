@@ -1,4 +1,4 @@
-#include "general_file/hw_inetrface_template/generic_hw_control_loop.hpp"
+#include "cdpr_bringup/hw_inetrface_template/generic_hw_control_loop.hpp"
 
 using namespace generic_hw_control_loop;
 

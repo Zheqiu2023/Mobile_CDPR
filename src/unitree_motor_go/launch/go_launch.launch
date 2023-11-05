@@ -6,6 +6,6 @@
     <node pkg="unitree_motor_go" type="unitree_motor_go_node" name="go" output="screen">
         <param name="cmd_type" type="int" value="$(arg cmd_type)"/>
         <rosparam command="load" file="$(find unitree_motor_go)/config/go_config.yaml"/>
-        <rosparam command="load" file="$(find general_file)/config/interpolation_config.yaml"/>
+        <rosparam command="load" file="$(find cdpr_bringup)/config/interpolation_config.yaml"/>
     </node>
 </launch>

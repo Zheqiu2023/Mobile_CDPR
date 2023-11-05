@@ -17,7 +17,7 @@
 #include <transmission_interface/transmission_interface_loader.h>
 #include <joint_limits_interface/joint_limits_interface.h>
 
-#include "general_file/ActuatorState.h"
+#include "cdpr_bringup/ActuatorState.h"
 #include "can_bus.hpp"
 #include "types.hpp"
 #include "unitree_motor_a1.hpp"
@@ -131,7 +131,7 @@ class CdprHW : public hardware_interface::RobotHW
     std::unordered_map<std::vector<int>, std::unordered_map<int, ActData>, VectorHasher> comm_id2act_data_{};
 
     ros::Time last_publish_time_;
-    std::shared_ptr<realtime_tools::RealtimePublisher<general_file::ActuatorState>> actuator_state_pub_;
+    std::shared_ptr<realtime_tools::RealtimePublisher<cdpr_bringup::ActuatorState>> actuator_state_pub_;
 };
 
 }  // namespace cdpr_hw

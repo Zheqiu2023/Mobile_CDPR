@@ -24,9 +24,9 @@
 #include <effort_controllers/joint_position_controller.h>
 #include <effort_controllers/joint_velocity_controller.h>
 
-#include "general_file/ChassisCmd.h"
-#include "general_file/eigen_types.hpp"
-#include "general_file/filters/filters.hpp"
+#include "cdpr_bringup/ChassisCmd.h"
+#include "cdpr_bringup/eigen_types.hpp"
+#include "cdpr_bringup/filters/filters.hpp"
 
 namespace cdpr_chassis_controller
 {
@@ -48,7 +48,7 @@ class ChassisController : public controller_interface::Controller<hardware_inter
 
   private:
     void moveJoint(const ros::Time& time, const ros::Duration& period);
-    void cmdChassisCallback(const general_file::ChassisCmd::ConstPtr& msg);
+    void cmdChassisCallback(const cdpr_bringup::ChassisCmd::ConstPtr& msg);
     void publishJointState(const ros::Time& time);
 
     double wheel_radius_{}, publish_rate_{}, timeout_{};
@@ -57,8 +57,8 @@ class ChassisController : public controller_interface::Controller<hardware_inter
     RampFilter<double>*ramp_x_{}, *ramp_y_{}, *ramp_w_{};
 
     geometry_msgs::Vector3 cmd_vel_{};
-    general_file::ChassisCmd chassis_cmd_;
-    realtime_tools::RealtimeBuffer<general_file::ChassisCmd> cmd_rt_buffer_;
+    cdpr_bringup::ChassisCmd chassis_cmd_;
+    realtime_tools::RealtimeBuffer<cdpr_bringup::ChassisCmd> cmd_rt_buffer_;
     ros::Subscriber cmd_chassis_sub_;
 
     control_toolbox::Pid pid_follow_;

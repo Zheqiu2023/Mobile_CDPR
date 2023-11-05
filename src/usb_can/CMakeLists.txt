@@ -10,7 +10,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  general_file
+  cdpr_bringup
   std_msgs
 )
 
@@ -122,7 +122,7 @@ include_directories(
 )
 link_directories(
   ${catkin_LIB_DIRS} 
-  ../general_file/lib
+  ../cdpr_bringup/lib
 )
 
 ## Declare a C++ library

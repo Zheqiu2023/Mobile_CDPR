@@ -1,5 +1,5 @@
 #include "cdpr_hw/hw/can_bus.hpp"
-#include "general_file/math_utilities.hpp"
+#include "cdpr_bringup/math_utilities.hpp"
 
 #include <string>
 #include <ros/ros.h>
@@ -52,6 +52,6 @@ void CanBus::write()
 {
 }
 
-void CanBus::frameCallback(const general_file::CanFrame& frame)
+void CanBus::frameCallback(const cdpr_bringup::CanFrame& frame)
 {
 }

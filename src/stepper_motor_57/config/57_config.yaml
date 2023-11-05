@@ -1,8 +1,8 @@
 # 导程5mm
 motor_ctrl_data:
   goal_pos_arr: [0, 0x59, 0, 0] 
-  goal_vel_forward_arr: [0, 0, 0, 0xff] 
-  goal_vel_reverse_arr: [0, 0, 0, 0xff]
+  goal_vel_forward_arr: [0, 0, 0x0, 0x0f] 
+  goal_vel_reverse_arr: [0, 0, 0, 0x0f]
 operating_param:    # 运行参数：启动周期   恒速周期    加速步数    加速系数   细分    工作模式    相电流    模块ID
   plus_start_time: [0xf4, 0x01, 0, 0, 0x10] 
   plus_constant_time: [0x3c, 0, 0, 0, 0x0e] 

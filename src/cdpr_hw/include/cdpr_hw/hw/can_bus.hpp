@@ -1,8 +1,8 @@
 #pragma once
 
-#include "general_file/CanFrame.h"
+#include "cdpr_bringup/CanFrame.h"
 #include "cdpr_hw/hw/types.hpp"
-#include "general_file/usb_can/controlcan.h"
+#include "cdpr_bringup/usb_can/controlcan.h"
 
 #include <chrono>
 #include <mutex>
@@ -42,14 +42,14 @@ class CanBus
      *
      * @param frame The frame which socketcan receive.
      */
-    void frameCallback(const general_file::CanFrame& frame);
+    void frameCallback(const cdpr_bringup::CanFrame& frame);
 
     const int dev_ind_ = 0, can_ind_ = 0, baud_rate_ = 0;
     VCI_INIT_CONFIG config_;
 
     ActDataPtr data_ptr_;
-    general_file::CanFrame cmd_frame_{};
-    std::vector<general_file::CanFrame> read_buffer_;
+    cdpr_bringup::CanFrame cmd_frame_{};
+    std::vector<cdpr_bringup::CanFrame> read_buffer_;
 
     mutable std::mutex mutex_;
 };

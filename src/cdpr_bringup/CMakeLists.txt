@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(general_file)
+project(cdpr_bringup)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++14)
@@ -109,7 +109,7 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
  INCLUDE_DIRS include ${EIGEN3_INCLUDE_DIR}
-#  LIBRARIES general_file
+ LIBRARIES cdpr_bringup
  CATKIN_DEPENDS roscpp std_msgs message_runtime
 #  DEPENDS system_lib
 )
@@ -125,13 +125,8 @@ include_directories(
   ${EIGEN3_INCLUDE_DIR}
 )
 
-# link_directories(
-#   ${catkin_LIB_DIRS} 
-#   lib
-# )
-
 ## Declare a C++ library
-file(GLOB_RECURSE sources "src/*.cpp" "src/filters/*.cpp")
+file(GLOB_RECURSE sources "src/filters/*.cpp")
 add_library(${PROJECT_NAME} SHARED ${sources} )
 
 ## Add cmake target dependencies of the library

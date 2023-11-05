@@ -15,7 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   effort_controllers
   pluginlib
   roscpp
-  general_file
+  cdpr_bringup
   geometry_msgs
 )
 
@@ -111,7 +111,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
  INCLUDE_DIRS include ${EIGEN3_INCLUDE_DIRS}
  LIBRARIES ${PROJECT_NAME}
- CATKIN_DEPENDS controller_interface roscpp  effort_controllers pluginlib roscpp general_file geometry_msgs
+ CATKIN_DEPENDS controller_interface roscpp  effort_controllers pluginlib roscpp cdpr_bringup geometry_msgs
 #  DEPENDS system_lib
 )
 

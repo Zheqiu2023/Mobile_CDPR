@@ -1,0 +1,23 @@
+chassis:
+  update_rate: 500
+  timeout: 0.1
+  accel:
+    x: 1.0
+    y: 1.0
+    w: 1.0
+
+  wheelsets:
+    left_front:
+      position: [ 0.585, 0.557 ]  
+      <<: &default
+        steer_offset: 0.0
+        wheel_radius: 0.1175
+    right_front:
+      position: [ 0.585, -0.557 ]
+      <<: *default
+    left_back:
+      position: [ -0.585, 0.557 ]
+      <<: *default
+    right_back:
+      position: [ -0.585, -0.557 ]
+      <<: *default

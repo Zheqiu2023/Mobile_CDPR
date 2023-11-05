@@ -1,4 +1,3 @@
-motor_num: 4
 id: [0, 0, 0, 0]
 # 4个port分别对应LF RF LB RB
 port_name: ["/dev/ttyUSB0","/dev/ttyUSB1","/dev/ttyUSB2","/dev/ttyUSB3"]  # 串口控制权限在/etc/udev/rules.d/70-ttyusb.rules中

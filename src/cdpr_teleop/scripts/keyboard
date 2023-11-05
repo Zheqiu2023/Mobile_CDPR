@@ -3,7 +3,7 @@
 
 import rospy
 
-from general_file.msg import ChassisCmd
+from cdpr_bringup.msg import ChassisCmd
 
 import sys
 import select

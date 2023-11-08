@@ -26,7 +26,8 @@ GoControl::GoControl(ros::NodeHandle& nh) : nh_(nh)
                                                       boost::bind(&GoControl::setCommandCB, this, _1));
     pub_ = nh_.advertise<std_msgs::Float64MultiArray>("/steer_pos_state", 10);
     // get motor parameters
-    if (!(nh_.getParam("id", id_) && nh_.getParam("port_name", serial_port_)))
+    if (!(nh_.getParam("id", id_) && nh_.getParam("port_name", serial_port_) &&
+          nh_.getParam("reduction_ratio", reduction_ratio_)))
         ROS_ERROR("Some motor params doesn't given in namespace: '%s')", nh_.getNamespace().c_str());
     motor_num_ = id_.size();
 }
@@ -37,10 +38,9 @@ GoControl::GoControl(ros::NodeHandle& nh) : nh_(nh)
  */
 void GoControl::setCommandCB(const std_msgs::Float64MultiArray::ConstPtr& cmd_pos)
 {
-    float reduction_ratio = nh_.param("reduction_ratio", 6.33);
     for (size_t i = 0; i < motor_num_; ++i)
     {
-        motor_cmd_[i].Pos = motor_zero_position_[i] + cmd_pos->data[i] * reduction_ratio;
+        motor_cmd_[i].Pos = motor_zero_position_[i] + cmd_pos->data[i] * reduction_ratio_;
     }
 }
 
@@ -50,8 +50,7 @@ void GoControl::setCommandCB(const std_msgs::Float64MultiArray::ConstPtr& cmd_po
  */
 void GoControl::setCmd(const std::vector<float>& cmd)
 {
-    int mode = 0;
-    nh_.getParam("motor_ctrl_data/mode", mode);
+    int mode = nh_.param("motor_ctrl_data/mode", 0);
 
     for (size_t i = 0; i < motor_num_; ++i)
     {
@@ -74,17 +73,20 @@ void GoControl::init(std::vector<SerialPort*>& port)
     motor_cmd_.resize(motor_num_);
     motor_recv_.resize(motor_num_);
     motor_zero_position_.resize(motor_num_);
+    pos_state_.data.resize(motor_num_);
     for (size_t i = 0; i < motor_num_; ++i)
     {
-        // initialization parameters
+        // initial parameters
         init_param_[i].id = id_[i];
         init_param_[i].mode = 0;
         port[i]->sendRecv(&init_param_[i], &motor_recv_[i]);
-        // get current position and set it as zero point
+        // record the position at each motor power-up and set it as zero point
         motor_zero_position_[i] = motor_recv_[i].Pos;
+        motor_cmd_[i].Pos = motor_recv_[i].Pos;
 
         ROS_INFO("Zero position of motor Go[%lu]: %f", i, motor_zero_position_[i]);
     }
+    pub_.publish(pos_state_);
     ROS_INFO_STREAM("Motor Go initialization complete, start running!");
 }
 
@@ -95,7 +97,7 @@ void GoControl::init(std::vector<SerialPort*>& port)
 void GoControl::drive(std::vector<SerialPort*>& port)
 {
     std::vector<float> control_param_vec(2, 0.0);
-    float reduction_ratio = nh_.param("reduction_ratio", 6.33);
+    float reduction_ratio_ = nh_.param("reduction_ratio_", 6.33);
     int cmd_type = nh_.param("cmd_type", 0);
     int ctrl_frequency = nh_.param("motor_ctrl_data/ctrl_frequency", 200);
     ros::Rate loop_rate(ctrl_frequency);
@@ -106,23 +108,19 @@ void GoControl::drive(std::vector<SerialPort*>& port)
         // set K_W、K_P
         nh_.getParam("motor_ctrl_data/pos_kp_kw", control_param_vec);
         setCmd(control_param_vec);
-        // set target position
-        float add_goal_position = 0.0;
-        std::vector<float> goal_position_vec{};
-        nh_.getParam("motor_ctrl_data/goal_pos_vec", goal_position_vec);
 
-        for (auto goal_position : goal_position_vec)
+        // receive target position from topic "/steer_pos_cmd"
+        while (ros::ok())
         {
-            // 由于宇树电机使用单圈绝对值编码器，重启后编码器位置不会归零
-            // 因此使用给电机上电时的编码器位置作为补偿,即用给电机上电时的电机位置作为零点，发送的角度为零点角度加上目标角度(多圈累加)
-            add_goal_position += goal_position;
             for (size_t i = 0; i < motor_num_; ++i)
             {
-                motor_cmd_[i].Pos = motor_zero_position_[i] + add_goal_position * reduction_ratio * M_PI / 180.0;
                 port[i]->sendRecv(&motor_cmd_[i], &motor_recv_[i]);
-                ROS_DEBUG("Received position of motor Go[%lu]: %f", i, motor_recv_[i].Pos);
+                pos_state_.data[i] = (motor_recv_[i].Pos - motor_zero_position_[i]) / reduction_ratio_;
+                ROS_INFO("Received position of motor Go[%lu]: %f", i, motor_recv_[i].Pos);
             }
-            usleep(500000);
+            pub_.publish(pos_state_);
+            ros::spinOnce();
+            loop_rate.sleep();
         }
     }
     else if (cmd_type == 1)
@@ -134,7 +132,7 @@ void GoControl::drive(std::vector<SerialPort*>& port)
         // set target velocity
         std::for_each(motor_cmd_.begin(), motor_cmd_.end(), [&](MotorCmd& cmd) {
             nh_.getParam("motor_ctrl_data/goal_vel", cmd.W);
-            cmd.W *= reduction_ratio;
+            cmd.W *= reduction_ratio_;
         });
 
         while (ros::ok())
@@ -219,7 +217,7 @@ void GoControl::drive(std::vector<SerialPort*>& port)
                     {
                         goal_position += goal_traj[j];
                     }
-                    end_pos = motor_zero_position_[i] + goal_position * reduction_ratio * M_PI / 180.0;
+                    end_pos = motor_zero_position_[i] + goal_position * reduction_ratio_ * M_PI / 180.0;
                     phase = (right_now - start_time - (per_traj_seg_run_time * (current_traj_point[i] - 1))) /
                             per_traj_seg_run_time;  // phase of each trajectory segment，0~1
 
@@ -254,7 +252,7 @@ void GoControl::drive(std::vector<SerialPort*>& port)
         std::vector<std::vector<std::vector<float>>> qp_plan_result{};
         for (size_t i = 0; i < motor_num_; ++i)
         {
-            float end_pos = motor_zero_position_[i] + goal_position * reduction_ratio * M_PI / 180.0;
+            float end_pos = motor_zero_position_[i] + goal_position * reduction_ratio_ * M_PI / 180.0;
             std::vector<float> pos{ motor_zero_position_[i], end_pos }, vel{ 0, 0 },
                 acc{ 0, 0 };  // start，end position data
             qp_plan_result.push_back(interpolate::quinticPolynomial(total_run_time, pos, vel, acc, point_num));
@@ -332,8 +330,9 @@ void GoControl::stall(std::vector<SerialPort*>& port)
 void GoControl::operator()()
 {
     // open serial port
-    std::array<SerialPort, 4> serial_port{ SerialPort("/dev/ttyUSB0"), SerialPort("/dev/ttyUSB1"),
-                                           SerialPort("/dev/ttyUSB2"), SerialPort("/dev/ttyUSB3") };
+    // std::array<SerialPort, 4> serial_port{ SerialPort("/dev/ttyUSB0"), SerialPort("/dev/ttyUSB1"),
+    //                                        SerialPort("/dev/ttyUSB2"), SerialPort("/dev/ttyUSB3") };
+    std::array<SerialPort, 1> serial_port{ SerialPort("/dev/ttyUSB0") };
 
     std::vector<SerialPort*> serial{};
     for (auto iter = serial_port.begin(); iter != serial_port.end(); ++iter)

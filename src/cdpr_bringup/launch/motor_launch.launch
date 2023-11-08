@@ -7,7 +7,7 @@
     <!-- <include file="$(find stepper_motor_57)/launch/57_launch.launch"/> -->
     <!-- <include file="$(find motor_re35)/launch/re35_launch.launch"/> -->
 
-    <include file="$(find unitree_motor_a1)/launch/a1_launch.launch"/>
+    <!-- <include file="$(find unitree_motor_a1)/launch/a1_launch.launch"/> -->
     <!-- <include file="$(find unitree_motor_go)/launch/go_launch.launch"/> -->
 
     <!-- imu control node -->

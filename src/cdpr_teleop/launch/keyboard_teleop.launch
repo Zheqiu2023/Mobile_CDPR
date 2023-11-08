@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="cdpr_teleop" type="keyboard" name="cdpr_teleop_keyboard"  output="screen">
+  <node pkg="cdpr_teleop" type="teleop_twist_keyboard.py" name="cdpr_teleop_keyboard"  output="screen">
     <rosparam command="load" file="$(find cdpr_teleop)/config/vel_config.yaml"/>
   </node>
 </launch>

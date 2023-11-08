@@ -75,7 +75,7 @@ void A1Control::init(std::vector<SerialPort*>& port)
     motor_zero_position_.resize(motor_num_);
     for (size_t i = 0; i < motor_num_; ++i)
     {
-        // initialization parameters
+        // initial parameters
         init_param_[i].id = id_[i];
         init_param_[i].mode = 0;
         port[i]->sendRecv(&init_param_[i], &motor_recv_[i]);
@@ -130,12 +130,8 @@ void A1Control::drive(std::vector<SerialPort*>& port)
         // set K_W、K_P
         nh_.getParam("motor_ctrl_data/vel_kp_kw", control_param_vec);
         setCmd(control_param_vec);
-        // set target velocity
-        // std::for_each(motor_cmd_.begin(), motor_cmd_.end(), [&](MotorCmd& cmd) {
-        //     nh_.getParam("motor_ctrl_data/goal_vel", cmd.W);
-        //     cmd.W *= reduction_ratio;
-        // });
 
+        // receive target position from topic "/roll_vel_cmd"
         while (ros::ok())
         {
             // send the command

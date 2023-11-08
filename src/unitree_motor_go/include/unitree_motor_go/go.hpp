@@ -34,11 +34,13 @@ class GoControl
     void setCommandCB(const std_msgs::Float64MultiArray::ConstPtr& cmd_vel);
 
     int motor_num_ = 0;
+    float reduction_ratio_ = 0.0;
     std::vector<int> id_{};
     std::vector<float> motor_zero_position_{};
     std::vector<MotorCmd> init_param_{}, motor_cmd_{};
     std::vector<MotorData> motor_recv_{};
     std::vector<std::string> serial_port_{};
+    std_msgs::Float64MultiArray pos_state_{};
 
     ros::Subscriber sub_;
     ros::Publisher pub_;

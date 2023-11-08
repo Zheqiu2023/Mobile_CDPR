@@ -20,7 +20,7 @@
 #define KEYCODE_S_CAP 0x53
 #define KEYCODE_W_CAP 0x57
 
-class [[deprecated]] CdprKeyboardTeleopNode
+class CdprKeyboardTeleopNode
 {
   private:
     double walk_vel_;
@@ -33,7 +33,7 @@ class [[deprecated]] CdprKeyboardTeleopNode
     ros::Publisher pub_;
 
   public:
-    CdprKeyboardTeleopNode()
+    ROS_DEPRECATED CdprKeyboardTeleopNode()
     {
         pub_ = n_.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 

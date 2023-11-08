@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # coding:utf-8
-
 import rospy
 
-from cdpr_bringup.msg import ChassisCmd
+from geometry_msgs.msg import TwistStamped
 
 import sys
 import select
@@ -11,7 +10,7 @@ import termios
 import tty
 
 msg = """
-Control Your CDPR!
+Control Your CDPR!(simple version)
 ---------------------------
 Moving around:
    q    w    e
@@ -61,7 +60,7 @@ def getKey():
 
 
 def vels(x_vel, y_vel, turn):
-    return "currently:\tspeed in x axis %.3f, in y axis %.3f\tturn speed %.3f " % (x_vel, y_vel, turn)
+    return "currently:  speed in x axis %.3f, in y axis %.3f, turn speed %.3f " % (x_vel, y_vel, turn)
 
 
 def makeSimpleProfile(output, input, slop):
@@ -88,14 +87,14 @@ if __name__ == "__main__":
     settings = termios.tcgetattr(sys.stdin)
 
     rospy.init_node('cdpr_keyboard_teleop')
-    pub = rospy.Publisher('/cmd_chassis', ChassisCmd, queue_size=5)
+    pub = rospy.Publisher('/cmd_chassis', TwistStamped, queue_size=5)
 
-    x_vel = rospy.get_param("~x_vel", 1)
-    y_vel = rospy.get_param("~y_vel", 1)
+    x_vel = rospy.get_param("~x_vel", 0.5)
+    y_vel = rospy.get_param("~y_vel", 0.5)
     turn = rospy.get_param("~turn", 0.2)
-    max_x_vel = rospy.get_param("~max_x_vel", 5)
-    max_y_vel = rospy.get_param("~max_y_vel", 5)
-    max_turn = rospy.get_param("~max_turn", 2)
+    max_x_vel = rospy.get_param("~max_x_vel", 2)
+    max_y_vel = rospy.get_param("~max_y_vel", 2)
+    max_turn = rospy.get_param("~max_turn", 1)
     x_acc = rospy.get_param("~x_acc", 0.1)
     y_acc = rospy.get_param("~y_acc", 0.1)
     turn_acc = rospy.get_param("~turn_acc", 0.02)
@@ -116,7 +115,7 @@ if __name__ == "__main__":
     try:
         print(msg)
         print(vels(x_vel, y_vel, turn))
-        print("max:\tx_vel %s \ty_vel %s \tturn %s " %
+        print("max:  x_vel %s   y_vel %s   turn %s " %
               (max_x_vel, max_y_vel, max_turn))
         while not rospy.is_shutdown():
             key = getKey()
@@ -178,46 +177,32 @@ if __name__ == "__main__":
             control_y_vel = target_y_vel
             control_turn = target_turn
 
-            chassis_cmd = ChassisCmd()
-            chassis_cmd.Twist.linear.x = control_x_vel
-            chassis_cmd.Twist.linear.y = control_y_vel
-            chassis_cmd.Twist.linear.z = 0
-            chassis_cmd.Twist.angular.x = 0
-            chassis_cmd.Twist.angular.y = 0
-            chassis_cmd.Twist.angular.z = control_turn
+            twist_msg = TwistStamped()
+            twist_msg.twist.linear.x = control_x_vel
+            twist_msg.twist.linear.y = control_y_vel
+            twist_msg.twist.linear.z = 0
+            twist_msg.twist.angular.x = 0
+            twist_msg.twist.angular.y = 0
+            twist_msg.twist.angular.z = control_turn
 
-            chassis_cmd.Accel.linear.x = x_acc
-            chassis_cmd.Accel.linear.y = y_acc
-            chassis_cmd.Accel.linear.z = 0
-            chassis_cmd.Accel.angular.x = 0
-            chassis_cmd.Accel.angular.y = 0
-            chassis_cmd.Accel.angular.z = turn_acc
+            twist_msg.header.stamp = rospy.Time.now()
 
-            chassis_cmd.stamp = rospy.Time.now()
-
-            pub.publish(chassis_cmd)
+            pub.publish(twist_msg)
 
     except Exception as e:
         print(e)
 
     finally:
-        chassis_cmd = ChassisCmd()
-        chassis_cmd.Twist.linear.x = 0
-        chassis_cmd.Twist.linear.y = 0
-        chassis_cmd.Twist.linear.z = 0
-        chassis_cmd.Twist.angular.x = 0
-        chassis_cmd.Twist.angular.y = 0
-        chassis_cmd.Twist.angular.z = 0
+        twist_msg = TwistStamped()
+        twist_msg.twist.linear.x = 0
+        twist_msg.twist.linear.y = 0
+        twist_msg.twist.linear.z = 0
+        twist_msg.twist.angular.x = 0
+        twist_msg.twist.angular.y = 0
+        twist_msg.twist.angular.z = 0
 
-        chassis_cmd.Accel.linear.x = 0
-        chassis_cmd.Accel.linear.y = 0
-        chassis_cmd.Accel.linear.z = 0
-        chassis_cmd.Accel.angular.x = 0
-        chassis_cmd.Accel.angular.y = 0
-        chassis_cmd.Accel.angular.z = 0
+        twist_msg.header.stamp = rospy.Time.now()
 
-        chassis_cmd.stamp = rospy.Time.now()
-
-        pub.publish(chassis_cmd)
+        pub.publish(twist_msg)
 
     termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)

@@ -10,31 +10,27 @@ chassis:
       position: [ 0.557, 0.585 ]
       steer: 
         direction: 1.0
-        offset: 0.0
       roll:
         direction: 1.0  
         radius: 0.1175
-    right_front:
-      position: [ 0.557, -0.585 ]
-      steer: 
-        direction: 1.0
-        offset: 0.0
-      roll:
-        direction: -1.0  
-        radius: 0.1175
-    left_back:
-      position: [ -0.557, 0.585 ]
-      steer: 
-        direction: 1.0
-        offset: 0.0
-      roll:
-        direction: 1.0  
-        radius: 0.1175
-    right_back:
-      position: [ -0.557, -0.585 ]
-      steer: 
-        direction: 1.0
-        offset: 0.0
-      roll:
-        direction: -1.0  
-        radius: 0.1175
+    # right_front:
+    #   position: [ 0.557, -0.585 ]
+    #   steer: 
+    #     direction: 1.0
+    #   roll:
+    #     direction: -1.0  
+    #     radius: 0.1175
+    # left_back:
+    #   position: [ -0.557, 0.585 ]
+    #   steer: 
+    #     direction: 1.0
+    #   roll:
+    #     direction: 1.0  
+    #     radius: 0.1175
+    # right_back:
+    #   position: [ -0.557, -0.585 ]
+    #   steer: 
+    #     direction: 1.0
+    #   roll:
+    #     direction: -1.0  
+    #     radius: 0.1175

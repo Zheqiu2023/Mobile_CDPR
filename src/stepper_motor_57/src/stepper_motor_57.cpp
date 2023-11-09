@@ -23,81 +23,35 @@
 using namespace motor_57;
 
 /**
- * @brief Construct a new MsgBox::MsgBox object
+ * @brief Construct a new MotorRun::MotorRun object
  */
-MsgBox::MsgBox()
+MotorRun::MotorRun(ros::NodeHandle& nh) : nh_(nh)
 {
-    sem_init(&sem_trans_, 0, 0);  // 将信号量sem_trans设为线程间通信，初值为0
+    name_space_ = nh_.getNamespace();
     pub_ = nh_.advertise<cdpr_bringup::CanFrame>("/usbcan/motor_57", 100);
-    sub_ = nh_.subscribe<cdpr_bringup::CanFrame>("/usbcan/can_pub", 100, boost::bind(&MsgBox::recvCallback, this, _1));
+    sub_ =
+        nh_.subscribe<cdpr_bringup::CanFrame>("/usbcan/can_pub", 100, boost::bind(&MotorRun::recvCallback, this, _1));
 
     ros::Duration(0.4).sleep();  // 休眠0.4s，保证发出的第一条消息能被usbcan接收
 }
 
-MsgBox::~MsgBox()
-{
-    sem_destroy(&sem_trans_);
-}
-
-void MsgBox::recvCallback(const cdpr_bringup::CanFrame::ConstPtr& msg)
+void MotorRun::recvCallback(const cdpr_bringup::CanFrame::ConstPtr& msg)
 {
     if (msg->Data[2] == 0x41 && msg->Data[7] == 0)
-        sem_post(&sem_trans_);
+        is_reset_ = true;
 }
 
-/**
- * @brief 发送函数
- */
-void MsgBox::publishCmd(const cdpr_bringup::CanFrame& cmd)
+void MotorRun::publishCmd(const cdpr_bringup::CanFrame& cmd)
 {
     pub_.publish(cmd);
-}
-
-sem_t& MsgBox::getSemaphore()
-{
-    return sem_trans_;
-}
-
-/**
- * @brief 创建发送线程，属性设为可分离
- */
-void MotorRun::creatThread()
-{
-    pthread_t thread_trans;
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-    int ret_trans = pthread_create(&thread_trans, &attr, transmitFunc, this);
-    ROS_ASSERT_MSG(ret_trans == 0, "Failed to create a sending thread!");
-}
-
-/**
- * @brief 发送线程函数
- * @param  arg
- * @return void*
- */
-void* MotorRun::transmitFunc(void* arg)
-{
-    MotorRun* thr_m_run = (MotorRun*)arg;
-    thr_m_run->run();
-
-    // MotorParam m_param;
-    // m_param.writeParam();
-    // m_param.readParam();
-    // usleep(100000);
-
-    ROS_INFO_STREAM("Sending thread is closed!");
-    pthread_exit(0);
 }
 
 /**
  * @brief 根据电机运行模式设置相应控制指令
  * @param  cmd_mode
  */
-void MotorRun::setCmd(StepperMotorRunMode cmd_mode)
+void MotorRun::setCmd(StepperMotorRunMode cmd_mode, std::vector<int> data_vec)
 {
-    std::vector<int> data_vec{ 0, 0, 0, 0 };
-
     pub_cmd_.ID = 0xc1;  // 帧ID，与驱动器地址相同
     pub_cmd_.SendType = 1;  // 单次发送（只发送一次，发送失败不会自动重发，总线只产生一帧数据）
     pub_cmd_.RemoteFlag = 0;                                          // 0为数据帧，1为远程帧
@@ -112,17 +66,14 @@ void MotorRun::setCmd(StepperMotorRunMode cmd_mode)
             pub_cmd_.Data[7] = 1;                                                      // 复位完毕，返回命令
             break;
         case StepperMotorRunMode::POS:
-            ros::param::get("/motor_57/motor_ctrl_data/goal_pos_arr", data_vec);
             pub_cmd_.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X02);  // 定位命令(需要返回)
             pub_cmd_.Data[7] = 1;                                                      // 到位后，返回命令
             break;
         case StepperMotorRunMode::VEL_FORWARD:
-            ros::param::get("/motor_57/motor_ctrl_data/goal_vel_forward_arr", data_vec);
             pub_cmd_.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X03);  // 正转命令(需要返回)
             pub_cmd_.Data[7] = 3;  // 正方向转 IntDate 步后命令返回
             break;
         case StepperMotorRunMode::VEL_REVERSE:
-            ros::param::get("/motor_57/motor_ctrl_data/goal_vel_reverse_arr", data_vec);
             pub_cmd_.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X04);  // 反转命令(需要返回)
             pub_cmd_.Data[7] = 3;  // 反方向转 IntDate 步后命令返回
             break;
@@ -131,7 +82,7 @@ void MotorRun::setCmd(StepperMotorRunMode cmd_mode)
             pub_cmd_.Data[7] = 1;                                                      // 减速停止，返回命令
             break;
         default:
-            ROS_WARN_STREAM("Motor operating mode error!");
+            ROS_WARN_NAMED(name_space_, "Motor operating mode error!");
             break;
     }
     for (size_t i = 3; i < 7; ++i)
@@ -142,63 +93,75 @@ void MotorRun::setCmd(StepperMotorRunMode cmd_mode)
 
 void MotorRun::run()
 {
-    std::string is_stall{ "" }, cmd_type{ "" };
-    ros::param::get("/motor_57/motor_cmd_type", cmd_type);
+    // writeParam();
+    // readParam();
+
+    std::string is_stall{}, cmd_type{};
+    std::vector<int> data_vec(4, 0);
+    nh_.getParam("motor_cmd_type", cmd_type);
 
     if (cmd_type == "position")
     {
-        ROS_INFO_STREAM("Reset before positioning!");
-        // 先复位后定位
-        setCmd(StepperMotorRunMode::RESET);
-        msg_box_.publishCmd(pub_cmd_);
-        sem_wait(&msg_box_.getSemaphore());
-        ROS_INFO_STREAM("Reset done!");
-        setCmd(StepperMotorRunMode::POS);
-        msg_box_.publishCmd(pub_cmd_);
+        ROS_INFO_NAMED(name_space_, "Reset before localization!");
+        // Reset: find zero position
+        while (ros::ok())
+        {
+            setCmd(StepperMotorRunMode::RESET, data_vec);
+            publishCmd(pub_cmd_);
+            ros::spinOnce();
+            if (is_reset_)
+                break;
+        }
+        ROS_INFO_NAMED(name_space_, "Reset done!");
+        // Run to the specified position
+        nh_.getParam("motor_ctrl_data/goal_pos_arr", data_vec);
+        setCmd(StepperMotorRunMode::POS, data_vec);
+        publishCmd(pub_cmd_);
     }
     else if (cmd_type == "vel_forward")
     {
-        ROS_INFO_STREAM("Forward rotation!");
+        nh_.getParam("motor_ctrl_data/goal_vel_forward_arr", data_vec);
+        ROS_INFO_NAMED(name_space_, "Forward rotation!");
 
-        setCmd(StepperMotorRunMode::VEL_FORWARD);
-        msg_box_.publishCmd(pub_cmd_);
+        setCmd(StepperMotorRunMode::VEL_FORWARD, data_vec);
+        publishCmd(pub_cmd_);
         while (ros::ok())
         {
             getline(std::cin, is_stall);
             if (is_stall == "p")
                 break;
         }
-        setCmd(StepperMotorRunMode::STALL);
-        msg_box_.publishCmd(pub_cmd_);
+        setCmd(StepperMotorRunMode::STALL, data_vec);
+        publishCmd(pub_cmd_);
     }
     else if (cmd_type == "vel_backward")
     {
-        ROS_INFO_STREAM("Reverse rotation!");
+        nh_.getParam("motor_ctrl_data/goal_vel_reverse_arr", data_vec);
+        ROS_INFO_NAMED(name_space_, "Reverse rotation!");
 
-        setCmd(StepperMotorRunMode::VEL_REVERSE);
-        msg_box_.publishCmd(pub_cmd_);
+        setCmd(StepperMotorRunMode::VEL_REVERSE, data_vec);
+        publishCmd(pub_cmd_);
         while (ros::ok())
         {
             getline(std::cin, is_stall);
             if (is_stall == "p")
                 break;
         }
-        setCmd(StepperMotorRunMode::STALL);
-        msg_box_.publishCmd(pub_cmd_);
+        setCmd(StepperMotorRunMode::STALL, data_vec);
+        publishCmd(pub_cmd_);
     }
     else
     {
-        ROS_WARN_STREAM("Motor control type error!");
+        ROS_WARN_NAMED(name_space_, "Motor control type error!");
     }
 }
 
 /**
  * @brief 发送运行参数,保存到flash后掉电数据不会丢失，因此只需设置一次
  */
-void MotorParam::writeParam()
+void MotorRun::writeParam()
 {
-    ros::NodeHandle nh;
-    ros::Publisher pub = nh.advertise<cdpr_bringup::CanFrame>("/usbcan/motor_57", 100);
+    ros::Publisher pub = nh_.advertise<cdpr_bringup::CanFrame>("/usbcan/motor_57", 100);
     std::array<cdpr_bringup::CanFrame, 8> data_arr;  // data_arr[0]:启动周期   data_arr[1]:恒速周期 data_arr[2]:加速步数
                                                      // data_arr[3]:加速系数   data_arr[4]:细分    data_arr[5]：工作模式
                                                      // data_arr[6]：相电流    data_arr[7]：CAN ID
@@ -215,14 +178,14 @@ void MotorParam::writeParam()
     }
     // 小端模式：低地址存放低位
     std::vector<std::vector<int>> data_vec(8, std::vector<int>{ 0 });
-    ros::param::get("/motor_57/operating_param/plus_start_time", data_vec[0]);
-    ros::param::get("/motor_57/operating_param/plus_constant_time", data_vec[1]);
-    ros::param::get("/motor_57/operating_param/acc_steps", data_vec[2]);
-    ros::param::get("/motor_57/operating_param/acc_cof", data_vec[3]);
-    ros::param::get("/motor_57/operating_param/sub_divide", data_vec[4]);
-    ros::param::get("/motor_57/operating_param/reset_mode", data_vec[5]);
-    ros::param::get("/motor_57/operating_param/phase_current", data_vec[6]);
-    ros::param::get("/motor_57/operating_param/can_id", data_vec[7]);
+    nh_.getParam("operating_param/plus_start_time", data_vec[0]);
+    nh_.getParam("operating_param/plus_constant_time", data_vec[1]);
+    nh_.getParam("operating_param/acc_steps", data_vec[2]);
+    nh_.getParam("operating_param/acc_cof", data_vec[3]);
+    nh_.getParam("operating_param/sub_divide", data_vec[4]);
+    nh_.getParam("operating_param/reset_mode", data_vec[5]);
+    nh_.getParam("operating_param/phase_current", data_vec[6]);
+    nh_.getParam("operating_param/can_id", data_vec[7]);
     for (size_t i = 0; i < data_vec.size(); ++i)
     {
         for (size_t j = 0; j < 5; ++j)
@@ -231,27 +194,26 @@ void MotorParam::writeParam()
         }
     }
 
-    ROS_INFO_STREAM("Sending operating parameters!");
+    ROS_INFO_NAMED(name_space_, "Sending operating parameters!");
     for (auto& data : data_arr)
     {
         pub.publish(data);
         usleep(100000);
     }
 
-    ROS_INFO_STREAM("********************************");
+    ROS_INFO_NAMED(name_space_, "********************************");
     data_arr[0].Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X14);  // 运行参数保存到flash，掉电数据不丢失
     pub.publish(data_arr[0]);
     usleep(100000);
-    ROS_INFO_STREAM("Parameters have been saved in flash!");
+    ROS_INFO_NAMED(name_space_, "Parameters have been saved in flash!");
 }
 
 /**
  * @brief 从flash中读取电机运行参数
  */
-void MotorParam::readParam()
+void MotorRun::readParam()
 {
-    ros::NodeHandle nh;
-    ros::Publisher pub = nh.advertise<cdpr_bringup::CanFrame>("/usbcan/motor_57", 100);
+    ros::Publisher pub = nh_.advertise<cdpr_bringup::CanFrame>("/usbcan/motor_57", 100);
     std::array<cdpr_bringup::CanFrame, 8> data_arr;  // data_arr[0]:启动周期   data_arr[1]:恒速周期 data_arr[2]:加速步数
                                                      // data_arr[3]:加速系数   data_arr[4]:细分    data_arr[5]：工作模式
                                                      // data_arr[6]：相电流    data_arr[7]：CAN ID

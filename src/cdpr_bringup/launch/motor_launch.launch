@@ -8,7 +8,7 @@
     <!-- <include file="$(find motor_re35)/launch/re35_launch.launch"/> -->
 
     <!-- <include file="$(find unitree_motor_a1)/launch/a1_launch.launch"/> -->
-    <!-- <include file="$(find unitree_motor_go)/launch/go_launch.launch"/> -->
+    <include file="$(find unitree_motor_go)/launch/go_launch.launch"/>
 
     <!-- imu control node -->
     <!-- <include file="$(find wit_ros_imu)/launch/wit_imu_launch/display_and_imu.launch"/> -->

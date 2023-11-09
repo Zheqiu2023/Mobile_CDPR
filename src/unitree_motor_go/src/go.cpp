@@ -12,6 +12,7 @@
  */
 #include "unitree_motor_go/go.hpp"
 #include "cdpr_bringup/interpolation.hpp"
+#include "cdpr_bringup/math_utilities.hpp"
 
 #include <vector>
 #include <array>
@@ -22,9 +23,9 @@ using namespace motor_go;
 
 GoControl::GoControl(ros::NodeHandle& nh) : nh_(nh)
 {
-    sub_ = nh_.subscribe<std_msgs::Float64MultiArray>("/steer_pos_cmd", 10,
+    sub_ = nh_.subscribe<std_msgs::Float64MultiArray>("/steer_pos_cmd", 1,
                                                       boost::bind(&GoControl::setCommandCB, this, _1));
-    pub_ = nh_.advertise<std_msgs::Float64MultiArray>("/steer_pos_state", 10);
+    pub_ = nh_.advertise<std_msgs::Float64MultiArray>("/steer_pos_state", 100);
     // get motor parameters
     if (!(nh_.getParam("id", id_) && nh_.getParam("port_name", serial_port_) &&
           nh_.getParam("reduction_ratio", reduction_ratio_)))
@@ -116,7 +117,9 @@ void GoControl::drive(std::vector<SerialPort*>& port)
             {
                 port[i]->sendRecv(&motor_cmd_[i], &motor_recv_[i]);
                 pos_state_.data[i] = (motor_recv_[i].Pos - motor_zero_position_[i]) / reduction_ratio_;
-                ROS_INFO("Received position of motor Go[%lu]: %f", i, motor_recv_[i].Pos);
+                if (std::abs(pos_state_.data[i]) > 2 * M_PI)
+                    motor_zero_position_[i] += 2 * M_PI * reduction_ratio_ * sgn(pos_state_.data[i]);
+                ROS_INFO("position state of motor Go[%lu]: %f", i, pos_state_.data[i]);
             }
             pub_.publish(pos_state_);
             ros::spinOnce();

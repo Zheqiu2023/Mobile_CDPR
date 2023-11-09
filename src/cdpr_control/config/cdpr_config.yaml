@@ -1,10 +1,7 @@
 chassis:
-  update_rate: 500
+  update_rate: 400
   timeout: 0.1
-  accel:
-    x: 1.0
-    y: 1.0
-    w: 1.0
+  accel: 1.0
   wheelsets:
     left_front:
       position: [ 0.557, 0.585 ]

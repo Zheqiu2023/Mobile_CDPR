@@ -29,7 +29,7 @@ class ChassisCtrl
     double timeout_{};
     std::string name_space_{};
     std::vector<Wheelset> wheelsets_{};
-    RampFilter<double>*ramp_x_{}, *ramp_y_{}, *ramp_w_{};
+    std::vector<RampFilter<double>*> ramp_angle_{}, ramp_vel_{};
 
     geometry_msgs::Vector3 cmd_vel_{};
     geometry_msgs::TwistStamped chassis_cmd_{};

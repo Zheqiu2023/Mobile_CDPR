@@ -21,39 +21,25 @@
 
 namespace motor_57
 {
-class MotorParam
-{
-  public:
-    void readParam();
-    void writeParam();
-};
-
-class MsgBox
-{
-  public:
-    MsgBox();
-    ~MsgBox();
-    void publishCmd(const cdpr_bringup::CanFrame& cmd);
-    void recvCallback(const cdpr_bringup::CanFrame::ConstPtr& msg);
-    sem_t& getSemaphore();
-
-  private:
-    sem_t sem_trans_{};
-    ros::NodeHandle nh_;
-    ros::Publisher pub_;
-    ros::Subscriber sub_;
-};
-
 class MotorRun
 {
   public:
-    void creatThread();
-    static void* transmitFunc(void* arg);
-    void setCmd(StepperMotorRunMode cmd_mode);
+    MotorRun(ros::NodeHandle& nh);
     void run();
 
   private:
-    MsgBox msg_box_{};
+    void setCmd(StepperMotorRunMode cmd_mode, std::vector<int> data_vec);
+    void publishCmd(const cdpr_bringup::CanFrame& cmd);
+    void recvCallback(const cdpr_bringup::CanFrame::ConstPtr& msg);
+    void readParam();
+    void writeParam();
+
+    bool is_reset_ = false;
     cdpr_bringup::CanFrame pub_cmd_{};
+
+    std::string name_space_{};
+    ros::NodeHandle nh_;
+    ros::Publisher pub_;
+    ros::Subscriber sub_;
 };
 }  // namespace motor_57

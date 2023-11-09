@@ -128,7 +128,6 @@ class PublishThread(threading.Thread):
         twist_msg.header.stamp = rospy.Time.now()
 
         while not self.done:
-            twist_msg.header.stamp = rospy.Time.now()
             self.condition.acquire()
             # Wait for a new message or timeout.
             self.condition.wait(self.timeout)
@@ -140,6 +139,7 @@ class PublishThread(threading.Thread):
             twist_msg.twist.angular.x = 0
             twist_msg.twist.angular.y = 0
             twist_msg.twist.angular.z = self.th * self.turn
+            twist_msg.header.stamp = rospy.Time.now()
 
             self.condition.release()
 

@@ -4,6 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "/usr/include/**",
+                "/usr/include/eigen3/**",
                 "/opt/ros/noetic/include/**",
                 "${workspaceFolder}/devel/include/**",
                 "${workspaceFolder}/src/cdpr_bringup/include/**",

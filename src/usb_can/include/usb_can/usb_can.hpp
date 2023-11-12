@@ -16,26 +16,26 @@
 
 #include <ros/ros.h>
 
+namespace usb_can
+{
 enum class MotorType
 {
     STEPPER_MOTOR,
     MOTOR_RE35
 };
 
-namespace can_init
-{
 class CanInit
 {
   public:
-    void initCAN(const int& DevType, const int& DevInd, const int& CANIndex, const MotorType& m_type);
-    void setCANParam(const MotorType& m_type);
+    void initCAN(const int& dev_type, const int& dev_ind, const int& can_ind, const MotorType& m_type);
 
   private:
+    void setCANParam(const MotorType& m_type);
     VCI_INIT_CONFIG config_;  // 初始化参数，参考二次开发函数库说明书
 };
 
 /**
- * @brief 设置CAN通讯配置参数：CAN1接步进电机，CAN2接RE35和张力传感器
+ * @brief 设置CAN通讯配置参数：CAN1接步进电机，CAN2接RE35
  * @param  m_type 电机类型
  */
 void CanInit::setCANParam(const MotorType& m_type)
@@ -58,38 +58,32 @@ void CanInit::setCANParam(const MotorType& m_type)
 
 /**
  * @brief 打开设备，初始化CAN并启动
- * @param  DevType 设备类型
- * @param  DevInd 设备索引
- * @param  CANIndex can通道索引
+ * @param  dev_type 设备类型
+ * @param  dev_ind 设备索引
+ * @param  can_ind can通道索引
  * @param  m_type 电机类型
  * @return true
  * @return false
  */
-void CanInit::initCAN(const int& DevType, const int& DevInd, const int& CANIndex, const MotorType& m_type)
+void CanInit::initCAN(const int& dev_type, const int& dev_ind, const int& can_ind, const MotorType& m_type)
 {
     // 配置CAN
     setCANParam(m_type);
     // 初始化CAN
-    if (VCI_InitCAN(DevType, DevInd, CANIndex, &config_) != 1)
+    if (VCI_InitCAN(dev_type, dev_ind, can_ind, &config_) != 1)
     {
-        VCI_CloseDevice(DevType, DevInd);
-        if (CANIndex == CAN_IND0)
-            ROS_ERROR_STREAM("Failed to initialize CAN1!");
-        else
-            ROS_ERROR_STREAM("Failed to initialize CAN2!");
+        VCI_CloseDevice(dev_type, dev_ind);
+        ROS_WARN("Failed to initialize USBCAN%d CAN%d!", dev_ind, can_ind);
         return;
     }
-    VCI_ClearBuffer(DevType, DevInd, CANIndex);
+    VCI_ClearBuffer(dev_type, dev_ind, can_ind);
     // 启动CAN
-    if (VCI_StartCAN(DevType, DevInd, CANIndex) != 1)
+    if (VCI_StartCAN(dev_type, dev_ind, can_ind) != 1)
     {
-        VCI_CloseDevice(DevType, DevInd);
-        if (CANIndex == CAN_IND0)
-            ROS_ERROR_STREAM("Failed to open CAN1!");
-        else
-            ROS_ERROR_STREAM("Failed to open CAN2!");
+        VCI_CloseDevice(dev_type, dev_ind);
+        ROS_WARN("Failed to open USBCAN%d CAN%d!", dev_ind, can_ind);
         return;
     }
-    ROS_INFO_STREAM("Initialize CAN successfully!");
+    ROS_INFO("Initialize USBCAN%d CAN%d successfully!", dev_ind, can_ind);
 }
-}  // namespace can_init
+}  // namespace usb_can

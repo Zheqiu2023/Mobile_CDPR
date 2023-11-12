@@ -42,6 +42,7 @@ void GoControl::setCommandCB(const std_msgs::Float64MultiArray::ConstPtr& cmd_po
     for (size_t i = 0; i < motor_num_; ++i)
     {
         motor_cmd_[i].Pos = motor_zero_position_[i] + cmd_pos->data[i] * reduction_ratio_;
+        motor_cmd_[i].T = 0.2;
     }
 }
 
@@ -117,9 +118,13 @@ void GoControl::drive(std::vector<SerialPort*>& port)
             {
                 port[i]->sendRecv(&motor_cmd_[i], &motor_recv_[i]);
                 pos_state_.data[i] = (motor_recv_[i].Pos - motor_zero_position_[i]) / reduction_ratio_;
-                if (std::abs(pos_state_.data[i]) > 2 * M_PI)
-                    motor_zero_position_[i] += 2 * M_PI * reduction_ratio_ * sgn(pos_state_.data[i]);
+                // if (std::abs(pos_state_.data[i]) > M_PI)
+                // {
+                //     motor_zero_position_[i] += M_PI * reduction_ratio_ * sgn(pos_state_.data[i]);
+                //     pos_state_.data[i] += M_PI * sgn(pos_state_.data[i]);
+                // }
                 ROS_INFO("position state of motor Go[%lu]: %f", i, pos_state_.data[i]);
+                ROS_INFO("effort state of motor Go[%lu]: %f", i, motor_recv_[i].T);
             }
             pub_.publish(pos_state_);
             ros::spinOnce();

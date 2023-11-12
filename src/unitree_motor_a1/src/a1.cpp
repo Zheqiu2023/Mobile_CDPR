@@ -49,8 +49,7 @@ void A1Control::setCommandCB(const std_msgs::Float64MultiArray::ConstPtr& cmd_ve
  */
 void A1Control::setCmd(const std::vector<float>& cmd)
 {
-    int mode = 0;
-    nh_.getParam("motor_ctrl_data/mode", mode);
+    int mode = nh_.param("motor_ctrl_data/mode", 0);
 
     for (size_t i = 0; i < motor_num_; ++i)
     {
@@ -94,7 +93,7 @@ void A1Control::init(std::vector<SerialPort*>& port)
 void A1Control::drive(std::vector<SerialPort*>& port)
 {
     std::vector<float> control_param_vec(2, 0);
-    float reduction_ratio = nh_.param("reduction_ratio", 9.0);
+    float reduction_ratio = nh_.param("reduction_ratio", 9.1);
     int cmd_type = nh_.param("cmd_type", 0);
     int ctrl_frequency = nh_.param("motor_ctrl_data/ctrl_frequency", 200);
     ros::Rate loop_rate(ctrl_frequency);

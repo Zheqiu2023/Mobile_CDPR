@@ -16,7 +16,7 @@ cdpr_hw:
     dev_ind1: 
       can_ind0: 125000    # CAN1 : baud_rate is 125K
       can_ind1: 1000000   # CAN2 : baud_rate is 1M
-      usb_port: /dev/ttyUSB8  # usb port for the USB_CAN device
+      usb_port: /dev/ttyUSB9  # usb port for the USB_CAN device
     
   loop_frequency: 500
   cycle_time_error_threshold: 0.001

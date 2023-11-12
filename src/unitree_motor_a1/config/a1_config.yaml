@@ -1,7 +1,7 @@
 id: [0, 0, 0, 0]
 # 4个port分别对应LF RF LB RB
 port_name: ["/dev/ttyUSB0","/dev/ttyUSB1","/dev/ttyUSB2","/dev/ttyUSB3"]  # 串口控制权限在/etc/udev/rules.d/70-ttyusb.rules中
-reduction_ratio: 9   # 减速比
+reduction_ratio: 9.1   # 减速比
 motor_ctrl_data:
   mode: 10   # 控制方式：空闲==0，开环==5，FOC闭环控制==10
   ctrl_frequency: 200   # 控制频率

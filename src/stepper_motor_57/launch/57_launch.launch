@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-    <!-- 正转滑台靠近电机，反转滑台远离电机 -->
-    <arg name="57_cmd_type"  default="vel_backward"   doc="type [position,vel_forward,vel_backward]"/>
-         
-    <!-- run usb_can node when need to use USB_CAN -->
-    <node pkg="usb_can" type="usb_can_node" name="usbcan" output="screen"/>
-    <node pkg="stepper_motor_57" type="stepper_motor_57_node" name="motor_57" output="screen">
-        <param name="motor_cmd_type" type="string" value="$(arg 57_cmd_type)"/>
+    <!-- this node and usb_can node must run together -->
+    <node pkg="stepper_motor_57" type="stepper_motor_57_node" name="motor_57" output="screen" clear_params="true">
         <rosparam command="load" file="$(find stepper_motor_57)/config/57_config.yaml"/>
     </node>
 </launch>

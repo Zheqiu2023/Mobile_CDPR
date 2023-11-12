@@ -76,7 +76,8 @@
         "*.ipp": "cpp",
         "future": "cpp",
         "codecvt": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "forward_list": "cpp"
     },
     "ros.distro": "noetic",
     "python.analysis.extraPaths": [

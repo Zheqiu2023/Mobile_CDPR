@@ -24,6 +24,5 @@ int main(int argc, char** argv)
     motor_57::MotorRun m_run(nh);
     m_run.run();
 
-    ros::spin();
     return 0;
 }

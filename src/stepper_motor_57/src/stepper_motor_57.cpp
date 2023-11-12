@@ -14,12 +14,9 @@
 #include "stepper_motor_57/stepper_motor_57.hpp"
 #include "usb_can/usb_can.hpp"
 
-#include <pthread.h>
-#include <stdio.h>
-
-#include <array>
 #include <string>
 #include <vector>
+
 using namespace motor_57;
 
 /**
@@ -27,223 +24,318 @@ using namespace motor_57;
  */
 MotorRun::MotorRun(ros::NodeHandle& nh) : nh_(nh)
 {
-    name_space_ = nh_.getNamespace();
-    pub_ = nh_.advertise<cdpr_bringup::CanFrame>("/usbcan/motor_57", 100);
-    sub_ =
-        nh_.subscribe<cdpr_bringup::CanFrame>("/usbcan/can_pub", 100, boost::bind(&MotorRun::recvCallback, this, _1));
+    // Configure command waited to be sent
+    XmlRpc::XmlRpcValue can_config;
+    nh_.getParam("can_config", can_config);
+    ROS_ASSERT(can_config.getType() == XmlRpc::XmlRpcValue::TypeStruct);
+    pub_cmd_.resize(can_config.size());
+    is_reset_.resize(can_config.size());
+    auto iter = can_config.begin();
+    for (int i = 0; i < can_config.size(); ++i)
+    {
+        is_reset_[i] = false;
+        ROS_ASSERT(iter->second.hasMember("dev_ind") && iter->second.hasMember("can_ind") &&
+                   iter->second.hasMember("can_id"));
+        pub_cmd_[i].dev_ind = static_cast<unsigned int>((int)iter->second["dev_ind"]);
+        pub_cmd_[i].can_ind = static_cast<unsigned int>((int)iter->second["can_ind"]);
+        pub_cmd_[i].cmd.ID =
+            static_cast<unsigned int>(int(iter->second["can_id"]));  // CAN frame ID, same as CAN driver's address
+        pub_cmd_[i].cmd.SendType = 1;  // Single send (sends only once, does not automatically retransmit after a failed
+                                       // send, CAN bus generates only one frame of data)
+        pub_cmd_[i].cmd.RemoteFlag = 0;  // 0 for data frame, 1 for remote frame
+        pub_cmd_[i].cmd.ExternFlag = 0;  // 0 for standard frame, 1 for expanded frame
+        pub_cmd_[i].cmd.DataLen = 8;     // Data length 8 bytes
+        pub_cmd_[i].cmd.Data[0] =
+            static_cast<unsigned char>(pub_cmd_[i].cmd.ID >> 3);  // high 8 bits of CAN driver's address (11bits)
+        pub_cmd_[i].cmd.Data[1] =
+            static_cast<unsigned char>(pub_cmd_[i].cmd.ID << 5);  // Lower 3 bits of the CAN driver's address, the last
+                                                                  // five bits are normally set to 0.
+        ++iter;
+    }
 
-    ros::Duration(0.4).sleep();  // 休眠0.4s，保证发出的第一条消息能被usbcan接收
+    name_space_ = nh_.getNamespace();
+    pub_ = nh_.advertise<cdpr_bringup::CanCmd>("/usbcan/motor_57", 10);
+    sub_ = nh_.subscribe<cdpr_bringup::CanFrame>("/usbcan/can_pub", 10, boost::bind(&MotorRun::recvCallback, this, _1));
+
+    ros::Duration(1.0).sleep();  // Sleep for 0.5s to ensure that the first message sent is received by USBCAN
 }
 
 void MotorRun::recvCallback(const cdpr_bringup::CanFrame::ConstPtr& msg)
 {
-    if (msg->Data[2] == 0x41 && msg->Data[7] == 0)
-        is_reset_ = true;
+    if (0xc1 == msg->ID || 0xc2 == msg->ID || 0xc3 == msg->ID || 0xc4 == msg->ID)
+        if (msg->Data[2] == 0x41 && msg->Data[7] == 0)
+            // is_reset_[msg->ID - unsigned int(0xc1)] = true;
+            is_reset_[0] = true;
 }
 
-void MotorRun::publishCmd(const cdpr_bringup::CanFrame& cmd)
+void MotorRun::publishCmd(const cdpr_bringup::CanCmd& cmd_struct)
 {
-    pub_.publish(cmd);
+    pub_.publish(cmd_struct);
 }
 
-/**
- * @brief 根据电机运行模式设置相应控制指令
- * @param  cmd_mode
- */
-void MotorRun::setCmd(StepperMotorRunMode cmd_mode, std::vector<int> data_vec)
+void MotorRun::setCmd(cdpr_bringup::CanFrame& cmd, StepperMotorRunMode cmd_mode, std::vector<int>& data_vec)
 {
-    pub_cmd_.ID = 0xc1;  // 帧ID，与驱动器地址相同
-    pub_cmd_.SendType = 1;  // 单次发送（只发送一次，发送失败不会自动重发，总线只产生一帧数据）
-    pub_cmd_.RemoteFlag = 0;                                          // 0为数据帧，1为远程帧
-    pub_cmd_.ExternFlag = 0;                                          // 0为标准帧，1为拓展帧
-    pub_cmd_.DataLen = 8;                                             // 数据长度8字节
-    pub_cmd_.Data[0] = static_cast<unsigned char>(pub_cmd_.ID >> 3);  // CAN 驱动器地址0x0c1(11bits)的高 8bits
-    pub_cmd_.Data[1] = static_cast<unsigned char>(pub_cmd_.ID << 5);  // CAN 驱动器地址的低 3bits，后五位一般设置为 0
     switch (cmd_mode)
     {
         case StepperMotorRunMode::RESET:
-            pub_cmd_.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X01);  // 复位命令(需要返回)
-            pub_cmd_.Data[7] = 1;                                                      // 复位完毕，返回命令
+            cmd.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X01);  // Reset command (return required)
+            cmd.Data[7] = 1;                                                      // When reset complete, return command
             break;
         case StepperMotorRunMode::POS:
-            pub_cmd_.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X02);  // 定位命令(需要返回)
-            pub_cmd_.Data[7] = 1;                                                      // 到位后，返回命令
+            cmd.Data[2] =
+                static_cast<unsigned char>((CMD_REQUEST << 5) | 0X02);  // Positioning command (return required)
+            cmd.Data[7] = 1;                                            // When in place, return command
             break;
         case StepperMotorRunMode::VEL_FORWARD:
-            pub_cmd_.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X03);  // 正转命令(需要返回)
-            pub_cmd_.Data[7] = 3;  // 正方向转 IntDate 步后命令返回
+            cmd.Data[2] =
+                static_cast<unsigned char>((CMD_REQUEST << 5) | 0X03);  // Forward rotating command (return required)
+            cmd.Data[7] = 3;  // The command returns after turning IntDate step in the positive direction.
             break;
         case StepperMotorRunMode::VEL_REVERSE:
-            pub_cmd_.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X04);  // 反转命令(需要返回)
-            pub_cmd_.Data[7] = 3;  // 反方向转 IntDate 步后命令返回
+            cmd.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X04);  // Reverse command (return required)
+            cmd.Data[7] = 3;  // The command returns after turning IntDate step in the opposite direction.
             break;
         case StepperMotorRunMode::STALL:
-            pub_cmd_.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X05);  // 停转命令(需要返回)
-            pub_cmd_.Data[7] = 1;                                                      // 减速停止，返回命令
+            cmd.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X05);  // Stop command (return required)
+            cmd.Data[7] = 1;  // Deceleration till stop, return command
             break;
         default:
-            ROS_WARN_NAMED(name_space_, "Motor operating mode error!");
+            ROS_WARN_NAMED(name_space_, "Motor run mode error!");
             break;
     }
     for (size_t i = 3; i < 7; ++i)
     {
-        pub_cmd_.Data[i] = static_cast<unsigned char>(data_vec[i - 3]);
+        cmd.Data[i] = static_cast<unsigned char>(data_vec[i - 3]);
     }
+}
+
+void MotorRun::getPos(cdpr_bringup::CanCmd& cmd_struct)
+{
+    cmd_struct.cmd.Data[2] =
+        static_cast<unsigned char>((CMD_REQUEST << 5) | 0);  // Communication test command (return current position)
+    for (size_t i = 3; i < 8; ++i)
+    {
+        cmd_struct.cmd.Data[i] = 0;
+    }
+    publishCmd(cmd_struct);
 }
 
 void MotorRun::run()
 {
-    // writeParam();
-    // readParam();
-
-    std::string is_stall{}, cmd_type{};
+    std::string is_stall{};
+    int run_type = nh_.param("motor_run_type", 0);
     std::vector<int> data_vec(4, 0);
-    nh_.getParam("motor_cmd_type", cmd_type);
 
-    if (cmd_type == "position")
-    {
-        ROS_INFO_NAMED(name_space_, "Reset before localization!");
-        // Reset: find zero position
-        while (ros::ok())
-        {
-            setCmd(StepperMotorRunMode::RESET, data_vec);
-            publishCmd(pub_cmd_);
-            ros::spinOnce();
-            if (is_reset_)
-                break;
-        }
-        ROS_INFO_NAMED(name_space_, "Reset done!");
-        // Run to the specified position
-        nh_.getParam("motor_ctrl_data/goal_pos_arr", data_vec);
-        setCmd(StepperMotorRunMode::POS, data_vec);
-        publishCmd(pub_cmd_);
-    }
-    else if (cmd_type == "vel_forward")
-    {
-        nh_.getParam("motor_ctrl_data/goal_vel_forward_arr", data_vec);
-        ROS_INFO_NAMED(name_space_, "Forward rotation!");
+    XmlRpc::XmlRpcValue value;
+    nh_.getParam("operating_param", value);
+    auto iter = value.begin();
 
-        setCmd(StepperMotorRunMode::VEL_FORWARD, data_vec);
-        publishCmd(pub_cmd_);
-        while (ros::ok())
-        {
-            getline(std::cin, is_stall);
-            if (is_stall == "p")
-                break;
-        }
-        setCmd(StepperMotorRunMode::STALL, data_vec);
-        publishCmd(pub_cmd_);
-    }
-    else if (cmd_type == "vel_backward")
+    switch (run_type)
     {
-        nh_.getParam("motor_ctrl_data/goal_vel_reverse_arr", data_vec);
-        ROS_INFO_NAMED(name_space_, "Reverse rotation!");
+        case 0:  // position
+            ROS_INFO_NAMED(name_space_, "Reset before localization!");
+            // Reset: find zero position
+            while (ros::ok())
+            {
+                std::size_t cnt = 0;
+                for (size_t i = 0; i < pub_cmd_.size(); ++i)
+                {
+                    if (true == is_reset_[i])
+                    {
+                        ++cnt;
+                        continue;
+                    }
+                    setCmd(pub_cmd_[i].cmd, StepperMotorRunMode::RESET, data_vec);
+                    publishCmd(pub_cmd_[i]);
+                }
+                ros::spinOnce();
+                if (pub_cmd_.size() == cnt)
+                    break;
+            }
+            usleep(500000);
+            ROS_INFO_NAMED(name_space_, "Reset done!");
+            // Run to the specified position
+            nh_.getParam("target_data/target_pos_arr", data_vec);
+            for (auto& pub_cmd : pub_cmd_)
+            {
+                setCmd(pub_cmd.cmd, StepperMotorRunMode::POS, data_vec);
+                publishCmd(pub_cmd);
+            }
 
-        setCmd(StepperMotorRunMode::VEL_REVERSE, data_vec);
-        publishCmd(pub_cmd_);
-        while (ros::ok())
-        {
-            getline(std::cin, is_stall);
-            if (is_stall == "p")
-                break;
-        }
-        setCmd(StepperMotorRunMode::STALL, data_vec);
-        publishCmd(pub_cmd_);
-    }
-    else
-    {
-        ROS_WARN_NAMED(name_space_, "Motor control type error!");
+            ros::spin();
+            break;
+        case 1:  // foward rotation
+            nh_.getParam("target_data/target_vel_forward_arr", data_vec);
+            ROS_INFO_NAMED(name_space_, "Forward rotation!");
+
+            for (auto& pub_cmd : pub_cmd_)
+            {
+                setCmd(pub_cmd.cmd, StepperMotorRunMode::VEL_FORWARD, data_vec);
+                publishCmd(pub_cmd);
+            }
+            ROS_INFO_NAMED(name_space_, "Press p to stop rotation: ");
+            while (ros::ok())
+            {
+                getline(std::cin, is_stall);
+                if (is_stall == "p")
+                    break;
+            }
+            for (auto& pub_cmd : pub_cmd_)
+            {
+                setCmd(pub_cmd.cmd, StepperMotorRunMode::STALL, data_vec);
+                publishCmd(pub_cmd);
+            }
+            break;
+        case 2:  // reverse rotation
+            nh_.getParam("target_data/target_vel_reverse_arr", data_vec);
+            ROS_INFO_NAMED(name_space_, "Reverse rotation!");
+
+            for (auto& pub_cmd : pub_cmd_)
+            {
+                setCmd(pub_cmd.cmd, StepperMotorRunMode::VEL_REVERSE, data_vec);
+                publishCmd(pub_cmd);
+            }
+            ROS_INFO_NAMED(name_space_, "Press p to stop rotation: ");
+            while (ros::ok())
+            {
+                getline(std::cin, is_stall);
+                if (is_stall == "p")
+                    break;
+            }
+            for (auto& pub_cmd : pub_cmd_)
+            {
+                setCmd(pub_cmd.cmd, StepperMotorRunMode::STALL, data_vec);
+                publishCmd(pub_cmd);
+            }
+            break;
+        case 3:  // configure motor parameters
+            for (size_t i = 0; i < pub_cmd_.size(); ++i)
+            {
+                readParam(pub_cmd_[i]);
+                writeParam(pub_cmd_[i], iter->second);
+                ++iter;
+            }
+            break;
+        default:
+            ROS_WARN_NAMED(name_space_, "Motor control type error!");
+            break;
     }
 }
 
 /**
- * @brief 发送运行参数,保存到flash后掉电数据不会丢失，因此只需设置一次
+ * @brief Sending operation parameters and save it to flash, data will not be lost even if power down, so only need to
+ * send once.
  */
-void MotorRun::writeParam()
+void MotorRun::writeParam(cdpr_bringup::CanCmd& cmd_struct, XmlRpc::XmlRpcValue& value)
 {
-    ros::Publisher pub = nh_.advertise<cdpr_bringup::CanFrame>("/usbcan/motor_57", 100);
-    std::array<cdpr_bringup::CanFrame, 8> data_arr;  // data_arr[0]:启动周期   data_arr[1]:恒速周期 data_arr[2]:加速步数
-                                                     // data_arr[3]:加速系数   data_arr[4]:细分    data_arr[5]：工作模式
-                                                     // data_arr[6]：相电流    data_arr[7]：CAN ID
-    for (auto& data : data_arr)
-    {
-        data.ID = 0xc1;  // 帧ID，与驱动器地址相同
-        data.SendType = 1;  // 单次发送（只发送一次，发送失败不会自动重发，总线只产生一帧数据）
-        data.RemoteFlag = 0;                                      // 0为数据帧，1为远程帧
-        data.ExternFlag = 0;                                      // 0为标准帧，1为拓展帧
-        data.DataLen = 8;                                         // 数据长度8字节
-        data.Data[0] = static_cast<unsigned char>(data.ID >> 3);  // CAN 驱动器地址(11bits)的高 8bits
-        data.Data[1] = static_cast<unsigned char>(data.ID << 5);  // CAN 驱动器地址的低 3bits，后五位一般设置为 0
-        data.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X13);  // 运行参数保存到内存
-    }
-    // 小端模式：低地址存放低位
-    std::vector<std::vector<int>> data_vec(8, std::vector<int>{ 0 });
-    nh_.getParam("operating_param/plus_start_time", data_vec[0]);
-    nh_.getParam("operating_param/plus_constant_time", data_vec[1]);
-    nh_.getParam("operating_param/acc_steps", data_vec[2]);
-    nh_.getParam("operating_param/acc_cof", data_vec[3]);
-    nh_.getParam("operating_param/sub_divide", data_vec[4]);
-    nh_.getParam("operating_param/reset_mode", data_vec[5]);
-    nh_.getParam("operating_param/phase_current", data_vec[6]);
-    nh_.getParam("operating_param/can_id", data_vec[7]);
-    for (size_t i = 0; i < data_vec.size(); ++i)
-    {
-        for (size_t j = 0; j < 5; ++j)
-        {
-            data_arr[i].Data[j + 3] = static_cast<unsigned char>(data_vec[i][j]);
-        }
-    }
+    ROS_ASSERT(value["plus_start_time"].size() == 5 && value["plus_constant_time"].size() == 5 &&
+               value["acc_steps"].size() == 5 && value["acc_cof"].size() == 5 && value["sub_divide"].size() == 5 &&
+               value["reset_mode"].size() == 5 && value["phase_current"].size() == 5 && value["can_id"].size() == 5 &&
+               value["zero_position"].size() == 5);
 
+    // dirty code for loading and writing parameters
     ROS_INFO_NAMED(name_space_, "Sending operating parameters!");
-    for (auto& data : data_arr)
+    cmd_struct.cmd.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X13);  // 运行参数保存到内存
+    for (int j = 0; j < value["plus_start_time"].size(); ++j)
     {
-        pub.publish(data);
-        usleep(100000);
+        // 小端模式：低地址存放低位
+        cmd_struct.cmd.Data[j + 3] = static_cast<unsigned char>(int(value["plus_start_time"][j]));
     }
+    publishCmd(cmd_struct);
+    usleep(100000);
+    for (int j = 0; j < value["plus_constant_time"].size(); ++j)
+    {
+        cmd_struct.cmd.Data[j + 3] = static_cast<unsigned char>(int(value["plus_constant_time"][j]));
+    }
+    publishCmd(cmd_struct);
+    usleep(100000);
+    for (int j = 0; j < value["acc_steps"].size(); ++j)
+    {
+        cmd_struct.cmd.Data[j + 3] = static_cast<unsigned char>(int(value["acc_steps"][j]));
+    }
+    publishCmd(cmd_struct);
+    usleep(100000);
+    for (int j = 0; j < value["acc_cof"].size(); ++j)
+    {
+        cmd_struct.cmd.Data[j + 3] = static_cast<unsigned char>(int(value["acc_cof"][j]));
+    }
+    publishCmd(cmd_struct);
+    usleep(100000);
+    for (int j = 0; j < value["sub_divide"].size(); ++j)
+    {
+        cmd_struct.cmd.Data[j + 3] = static_cast<unsigned char>(int(value["sub_divide"][j]));
+    }
+    publishCmd(cmd_struct);
+    usleep(100000);
+    for (int j = 0; j < value["reset_mode"].size(); ++j)
+    {
+        cmd_struct.cmd.Data[j + 3] = static_cast<unsigned char>(int(value["reset_mode"][j]));
+    }
+    publishCmd(cmd_struct);
+    usleep(100000);
+    for (int j = 0; j < value["phase_current"].size(); ++j)
+    {
+        cmd_struct.cmd.Data[j + 3] = static_cast<unsigned char>(int(value["phase_current"][j]));
+    }
+    publishCmd(cmd_struct);
+    usleep(100000);
+    for (int j = 0; j < value["can_id"].size(); ++j)
+    {
+        cmd_struct.cmd.Data[j + 3] = static_cast<unsigned char>(int(value["can_id"][j]));
+    }
+    publishCmd(cmd_struct);
+    usleep(100000);
+    for (int j = 0; j < value["zero_position"].size(); ++j)
+    {
+        cmd_struct.cmd.Data[j + 3] = static_cast<unsigned char>(int(value["zero_position"][j]));
+    }
+    publishCmd(cmd_struct);
+    usleep(100000);
 
     ROS_INFO_NAMED(name_space_, "********************************");
-    data_arr[0].Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X14);  // 运行参数保存到flash，掉电数据不丢失
-    pub.publish(data_arr[0]);
+    cmd_struct.cmd.Data[2] =
+        static_cast<unsigned char>((CMD_REQUEST << 5) | 0X14);  // 运行参数保存到flash，掉电数据不丢失
+    publishCmd(cmd_struct);
     usleep(100000);
     ROS_INFO_NAMED(name_space_, "Parameters have been saved in flash!");
 }
 
 /**
- * @brief 从flash中读取电机运行参数
+ * @brief Reading motor operating parameters from flash
  */
-void MotorRun::readParam()
+void MotorRun::readParam(cdpr_bringup::CanCmd& cmd_struct)
 {
-    ros::Publisher pub = nh_.advertise<cdpr_bringup::CanFrame>("/usbcan/motor_57", 100);
-    std::array<cdpr_bringup::CanFrame, 8> data_arr;  // data_arr[0]:启动周期   data_arr[1]:恒速周期 data_arr[2]:加速步数
-                                                     // data_arr[3]:加速系数   data_arr[4]:细分    data_arr[5]：工作模式
-                                                     // data_arr[6]：相电流    data_arr[7]：CAN ID
-    for (auto& data : data_arr)
+    cmd_struct.cmd.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X13);  // 运行参数读取
+    for (size_t i = 3; i < cmd_struct.cmd.DataLen; ++i)
     {
-        data.ID = 0xc1;  // 帧ID，与驱动器地址相同
-        data.SendType = 1;  // 单次发送（只发送一次，发送失败不会自动重发，总线只产生一帧数据）
-        data.RemoteFlag = 0;                                      // 0为数据帧，1为远程帧
-        data.ExternFlag = 0;                                      // 0为标准帧，1为拓展帧
-        data.DataLen = 8;                                         // 数据长度8字节
-        data.Data[0] = static_cast<unsigned char>(data.ID >> 3);  // CAN 驱动器地址(11bits)的高 8bits
-        data.Data[1] = static_cast<unsigned char>(data.ID << 5);  // CAN 驱动器地址的低 3bits，后五位一般设置为 0
-        data.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X13);  // 运行参数读取
-        for (size_t i = 3; i < data.DataLen; ++i)
-        {
-            data.Data[i] = 0;
-        }
+        cmd_struct.cmd.Data[i] = 0;
     }
-    data_arr[0].Data[7] = 17;
-    data_arr[1].Data[7] = 15;
-    data_arr[2].Data[7] = 1;
-    data_arr[3].Data[7] = 19;
-    data_arr[4].Data[7] = 11;
-    data_arr[5].Data[7] = 13;
-    data_arr[6].Data[7] = 23;
-    data_arr[7].Data[7] = 9;
-
-    for (auto& data : data_arr)
-    {
-        pub.publish(data);
-        usleep(100000);
-    }
+    // dirty code for reading parameters
+    cmd_struct.cmd.Data[7] = 17;
+    publishCmd(cmd_struct);
+    usleep(100000);
+    cmd_struct.cmd.Data[7] = 15;
+    publishCmd(cmd_struct);
+    usleep(100000);
+    cmd_struct.cmd.Data[7] = 1;
+    publishCmd(cmd_struct);
+    usleep(100000);
+    cmd_struct.cmd.Data[7] = 19;
+    publishCmd(cmd_struct);
+    usleep(100000);
+    cmd_struct.cmd.Data[7] = 11;
+    publishCmd(cmd_struct);
+    usleep(100000);
+    cmd_struct.cmd.Data[7] = 13;
+    publishCmd(cmd_struct);
+    usleep(100000);
+    cmd_struct.cmd.Data[7] = 23;
+    publishCmd(cmd_struct);
+    usleep(100000);
+    cmd_struct.cmd.Data[7] = 9;
+    publishCmd(cmd_struct);
+    usleep(100000);
+    cmd_struct.cmd.Data[7] = 3;
+    publishCmd(cmd_struct);
+    usleep(100000);
 }

@@ -26,7 +26,7 @@ ChassisController::~ChassisController()
  * @brief set the chassis command
  * @param  msg
  */
-void ChassisController::cmdChassisCallback(const cdpr_bringup::ChassisCmd::ConstPtr& msg)
+void ChassisController::cmdChassisCallback(const geometry_msgs::TwistStamped::ConstPtr& msg)
 {
     chassis_cmd_ = *msg;
     // the writeFromNonRT can be used in RT, if you have the guarantee that
@@ -47,16 +47,18 @@ bool ChassisController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHan
                              ros::NodeHandle& controller_nh)
 {
     XmlRpc::XmlRpcValue wheelsets;
+    XmlRpc::XmlRpcValue accel;
     name_space_ = controller_nh.getNamespace();
     ROS_INFO_STREAM("ChassisController namespace: " << name_space_);
 
     if (!controller_nh.getParam("publish_rate", publish_rate_) || controller_nh.getParam("wheelsets", wheelsets) ||
-        !controller_nh.getParam("timeout", timeout_))
+        !controller_nh.getParam("timeout", timeout_) || !controller_nh.getParam("accel", accel))
     {
         ROS_ERROR("Some chassis params doesn't given in namespace: '%s')", name_space_.c_str());
         return false;
     }
     ROS_ASSERT(wheelsets.getType() == XmlRpc::XmlRpcValue::TypeStruct);
+    ROS_ASSERT(accel.getType() == XmlRpc::XmlRpcValue::TypeStruct);
 
     effort_joint_interface_ = robot_hw->get<hardware_interface::EffortJointInterface>();
     for (const auto& wheelset : wheelsets)
@@ -95,9 +97,9 @@ bool ChassisController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHan
         if (!pid_follow_.init(ros::NodeHandle(controller_nh, "pid_follow")))
             return false;
 
-    ramp_x_ = new RampFilter<double>(0, 0.001);
-    ramp_y_ = new RampFilter<double>(0, 0.001);
-    ramp_w_ = new RampFilter<double>(0, 0.001);
+    ramp_x_ = new RampFilter<double>((double)accel["x"], 0.001);
+    ramp_y_ = new RampFilter<double>((double)accel["y"], 0.001);
+    ramp_w_ = new RampFilter<double>((double)accel["z"], 0.001);
 
     // connect the joint state interface
     // joint_state_.position.resize(joint_handles_.size());
@@ -112,8 +114,8 @@ bool ChassisController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHan
     // }
 
     // Start command subscriber
-    cmd_chassis_sub_ = controller_nh.subscribe<cdpr_bringup::ChassisCmd>("/cmd_chassis", 1,
-                                                                         &ChassisController::cmdChassisCallback, this);
+    cmd_chassis_sub_ = controller_nh.subscribe<geometry_msgs::TwistStamped>(
+        "/cmd_chassis", 1, &ChassisController::cmdChassisCallback, this);
     // Start realtime state publisher
     chassis_state_publisher_.reset(
         new realtime_tools::RealtimePublisher<sensor_msgs::JointState>(controller_nh, "/chassis_state", 1));
@@ -124,10 +126,9 @@ bool ChassisController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHan
 // Controller update loop in realtime
 void ChassisController::update(const ros::Time& time, const ros::Duration& period)
 {
-    geometry_msgs::Twist cmd_twist = cmd_rt_buffer_.readFromRT()->Twist;
-    geometry_msgs::Accel accel = cmd_rt_buffer_.readFromRT()->Accel;
+    geometry_msgs::Twist cmd_twist = cmd_rt_buffer_.readFromRT()->twist;
 
-    if ((time - cmd_rt_buffer_.readFromRT()->stamp).toSec() > timeout_)
+    if ((time - cmd_rt_buffer_.readFromRT()->header.stamp).toSec() > timeout_)
     {
         cmd_vel_.x = 0.;
         cmd_vel_.y = 0.;
@@ -135,9 +136,6 @@ void ChassisController::update(const ros::Time& time, const ros::Duration& perio
     }
     else
     {
-        ramp_x_->setAcc(accel.linear.x);
-        ramp_y_->setAcc(accel.linear.y);
-        ramp_w_->setAcc(accel.angular.z);
         ramp_x_->input(cmd_twist.linear.x);
         ramp_y_->input(cmd_twist.linear.y);
         ramp_w_->input(cmd_twist.angular.z);

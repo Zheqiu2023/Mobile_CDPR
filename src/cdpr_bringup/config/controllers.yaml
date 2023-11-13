@@ -7,6 +7,7 @@ controllers:
     type: cdpr_chassis_controller/ChassisController
     publish_rate: 100
     timeout: 0.1
+    accel: {x: 1.0, y: 1.0, z: 0.1}
     pid_follow: { p: 1.0, i: 0, d: 0.3, i_max: 0.0, i_min: 0.0, antiwindup: true, publish_state: true }
 
     wheelsets:

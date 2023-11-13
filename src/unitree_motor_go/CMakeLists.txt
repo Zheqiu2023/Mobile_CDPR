@@ -112,7 +112,7 @@ catkin_package(
 ###########
 ## Build ##
 ###########
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE "Debug")
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations

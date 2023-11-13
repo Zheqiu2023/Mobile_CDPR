@@ -1,9 +1,9 @@
 /**
- * @File Name: test.hpp
+ * @File Name: chassis_controller.hpp
  * @brief
  * @author Zhe Qiu (zheqiu2021@163.com)
  * @version 0.1
- * @date 2023-11-06
+ * @date 2023-10-22
  *
  * *  ***********************************************************************************
  * *  @copyright Copyright (c) 2023  by Zhe Qiu. All rights reserved.
@@ -15,6 +15,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <ros/node_handle.h>
 #include <geometry_msgs/Twist.h>
+#include <geometry_msgs/TwistStamped.h>
 #include <sensor_msgs/JointState.h>
 
 #include <control_toolbox/pid.h>
@@ -24,7 +25,6 @@
 #include <effort_controllers/joint_position_controller.h>
 #include <effort_controllers/joint_velocity_controller.h>
 
-#include "cdpr_bringup/ChassisCmd.h"
 #include "cdpr_bringup/eigen_types.hpp"
 #include "cdpr_bringup/filters/filters.hpp"
 
@@ -38,17 +38,17 @@ struct Wheelset
     effort_controllers::JointVelocityController* ctrl_roll_;
 };
 
-class ChassisController
+class ChassisController : public controller_interface::Controller<hardware_interface::EffortJointInterface>
 {
   public:
     ChassisController() = default;
     ~ChassisController();
     bool init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh);
-    void update(const ros::Time& time, const ros::Duration& period);
+    void update(const ros::Time& time, const ros::Duration& period) override;
 
   private:
     void moveJoint(const ros::Time& time, const ros::Duration& period);
-    void cmdChassisCallback(const cdpr_bringup::ChassisCmd::ConstPtr& msg);
+    void cmdChassisCallback(const geometry_msgs::TwistStamped::ConstPtr& msg);
     void publishJointState(const ros::Time& time);
 
     double wheel_radius_{}, publish_rate_{}, timeout_{};
@@ -57,8 +57,8 @@ class ChassisController
     RampFilter<double>*ramp_x_{}, *ramp_y_{}, *ramp_w_{};
 
     geometry_msgs::Vector3 cmd_vel_{};
-    cdpr_bringup::ChassisCmd chassis_cmd_;
-    realtime_tools::RealtimeBuffer<cdpr_bringup::ChassisCmd> cmd_rt_buffer_;
+    geometry_msgs::TwistStamped chassis_cmd_;
+    realtime_tools::RealtimeBuffer<geometry_msgs::TwistStamped> cmd_rt_buffer_;
     ros::Subscriber cmd_chassis_sub_;
 
     control_toolbox::Pid pid_follow_;

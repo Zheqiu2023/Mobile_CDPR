@@ -10,26 +10,22 @@
  *  Use of this source code is governed by the BSD 3-Clause license, see LICENSE.
  *  ***********************************************************************************
  */
-#include <ros/ros.h>
-#include <boost/thread.hpp>
 
 #include "motor_re35/motor_re35.hpp"
 
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "motor_re35");
+    ros::NodeHandle nh("~");
 
-    motor_re35::MotorRun m_run;
-
-    // 开启两条并发线程处理订阅话题回调函数
-    ros::AsyncSpinner spinner(2);
-    spinner.start();
+    motor_re35::MotorRun m_run(nh);
 
     ros::Rate loop_rate(1000);
     m_run.init();
     while (ros::ok())
     {
         m_run.run();
+        ros::spinOnce();
         loop_rate.sleep();
     }
 

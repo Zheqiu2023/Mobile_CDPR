@@ -16,6 +16,7 @@
 #include <std_msgs/Float32.h>
 
 #include "cdpr_bringup/CanFrame.h"
+#include "cdpr_bringup/CanCmd.h"
 #include "cdpr_bringup/usb_can/controlcan.h"
 #include "cdpr_bringup/ctrl_algorithm.hpp"
 
@@ -23,34 +24,21 @@ namespace motor_re35
 {
 constexpr unsigned short PWM_LIM = 5000;  // pwm限制值：0~5000，若供电电压与额定电压一致，设为5000
 
-class MsgBox
-{
-  public:
-    MsgBox();
-    void publishCmd(const cdpr_bringup::CanFrame& cmd);
-    void recvCANMsgs(const cdpr_bringup::CanFrame::ConstPtr& msg);
-    void recvTension(const std_msgs::Float32::ConstPtr& tension);
-    float getTension();
-
-  private:
-    ros::NodeHandle nh_;
-    ros::Publisher pub_;
-    ros::V_Subscriber subs_;
-    std::vector<float> tension_vec_{};
-    float force_ = 0;
-    int times_ = 0;
-};
-
 class MotorRun
 {
   public:
-    MotorRun();
+    MotorRun(ros::NodeHandle& nh);
     void run();
     void init();
+    void publishCmd(const cdpr_bringup::CanCmd& cmd_struct);
+    void recvCallback(const cdpr_bringup::CanFrame::ConstPtr& msg);
 
   private:
-    cdpr_bringup::CanFrame pub_cmd_{};
-    ctrl_algorithm::PID pid_;
-    MsgBox msg_box_;
+    cdpr_bringup::CanCmd pub_cmd_{};
+    cdpr_bringup::CanFrame recv_msg_{};
+
+    ros::NodeHandle nh_;
+    ros::Publisher pub_;
+    ros::Subscriber sub_;
 };
 }  // namespace motor_re35

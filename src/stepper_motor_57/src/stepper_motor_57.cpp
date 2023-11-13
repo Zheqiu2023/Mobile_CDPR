@@ -57,7 +57,7 @@ MotorRun::MotorRun(ros::NodeHandle& nh) : nh_(nh)
     pub_ = nh_.advertise<cdpr_bringup::CanCmd>("/usbcan/motor_57", 10);
     sub_ = nh_.subscribe<cdpr_bringup::CanFrame>("/usbcan/can_pub", 10, boost::bind(&MotorRun::recvCallback, this, _1));
 
-    ros::Duration(1.0).sleep();  // Sleep for 0.5s to ensure that the first message sent is received by USBCAN
+    ros::Duration(1.0).sleep();  // Sleep for 1s to ensure that the first message sent is received by USBCAN
 }
 
 void MotorRun::recvCallback(const cdpr_bringup::CanFrame::ConstPtr& msg)
@@ -148,17 +148,17 @@ void MotorRun::run()
                     setCmd(pub_cmd_[i].cmd, StepperMotorRunMode::RESET, data_vec);
                     publishCmd(pub_cmd_[i]);
                 }
-                ros::spinOnce();
                 if (pub_cmd_.size() == cnt)
                     break;
+                ros::spinOnce();
             }
-            usleep(500000);
+            sleep(1);
             ROS_INFO_NAMED(name_space_, "Reset done!");
             // Run to the specified position
             nh_.getParam("target_data/target_pos_arr", data_vec);
             for (auto& pub_cmd : pub_cmd_)
             {
-                setCmd(pub_cmd.cmd, StepperMotorRunMode::POS, data_vec);
+                setCmd(pub_cmd.cmd, StepperMotorRunMode::VEL_REVERSE, data_vec);
                 publishCmd(pub_cmd);
             }
 

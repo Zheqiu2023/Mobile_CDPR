@@ -1,4 +1,3 @@
-# The slide is close to the motor in forward rotation and away from the motor in reverse rotation.
 # Lead 5mm  
 motor_run_type: 0   # 0: position, 1: vel_forward, 2: vel_backward, 3: config_param
 
@@ -7,26 +6,26 @@ can_config:
   #   dev_ind: 0
   #   can_ind: 0
   #   can_id: 0xc1
-  rf:
-    dev_ind: 0
-    can_ind: 0
-    can_id: 0xc2
+  # rf:
+  #   dev_ind: 0
+  #   can_ind: 0
+  #   can_id: 0xc2
   # lb:
   #   dev_ind: 1
   #   can_ind: 0
   #   can_id: 0xc3
-  # rb:
-  #   dev_ind: 1
-  #   can_ind: 0
-  #   can_id: 0xc4
+  rb:
+    dev_ind: 0
+    can_ind: 0
+    can_id: 0xc4
 
 <<: &param
-  plus_start_time: [0xf4, 0x01, 0, 0, 0x10] # startup cycle
+  plus_start_time: [0xf4, 0x00, 0, 0, 0x10] # startup cycle
   plus_constant_time: [0x3c, 0, 0, 0, 0x0e] # constant speed cycle
   acc_steps: [0x20, 0x03, 0, 0, 0] # acceleration steps
   acc_cof: [0xcd, 0xcc, 0x4c, 0x3d, 0x12] # acceleration factor
   sub_divide: [0x10, 0, 0, 0, 0x0a] # subdivide
-  reset_mode: [0, 0, 0, 0, 0x0c] # operating mode
+  reset_mode: [0x80, 0, 0, 0, 0x0c] # operating mode
   phase_current: [0, 0, 0x90, 0x40, 0x16] # phase current
   zero_position: [0, 0, 0, 0, 0x02] # zero position
 
@@ -34,17 +33,17 @@ operating_param:
   # lf:
   #   <<: *param
   #   can_id: [0xc1, 0, 0, 0, 0x08] # CAN ID
-  rf:
-    <<: *param
-    can_id: [0xc2, 0, 0, 0, 0x08]
+  # rf:
+  #   <<: *param
+  #   can_id: [0xc2, 0, 0, 0, 0x08]
   # lb:
   #   <<: *param
   #   can_id: [0xc3, 0, 0, 0, 0x08]
-  # rb:
-  #   <<: *param
-  #   can_id: [0xc4, 0, 0, 0, 0x08]
+  rb:
+    <<: *param
+    can_id: [0xc4, 0, 0, 0, 0x08]
   
 target_data:
   target_pos_arr: [0x0, 0xff, 0, 0] 
-  target_vel_forward_arr: [0, 0, 0, 0x0f] 
-  target_vel_reverse_arr: [0, 0, 0, 0x0f]
+  target_vel_forward_arr: [0, 0xff, 0, 0] 
+  target_vel_reverse_arr: [0, 0xff, 0, 0]

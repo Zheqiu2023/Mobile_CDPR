@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-    <!-- re35运行模式： 0：速度模式；1：速度位置模式 -->
-    <arg name="re35_run_mode"  default="0"   doc="type [0, 1]"/>
-
     <node pkg="motor_re35" type="motor_re35_node" name="re35" output="screen">
-        <param name="run_mode" type="int" value="$(arg re35_run_mode)"/>
         <rosparam command="load" file="$(find motor_re35)/config/re35_config.yaml"/>
     </node>
 </launch>

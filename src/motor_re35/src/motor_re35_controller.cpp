@@ -20,13 +20,7 @@ int main(int argc, char** argv)
 
     motor_re35::MotorRun m_run(nh);
 
-    ros::Rate loop_rate(1000);
-    while (ros::ok())
-    {
-        m_run.run();
-        ros::spinOnce();
-        loop_rate.sleep();
-    }
+    m_run.run();
 
     return 0;
 }

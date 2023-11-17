@@ -37,6 +37,7 @@ class MotorRun
     void writeParam(cdpr_bringup::CanCmd& cmd_struct, XmlRpc::XmlRpcValue& value);
 
     std::vector<bool> is_reset_{};
+    std::vector<int> direction_{};
     std::vector<cdpr_bringup::CanCmd> pub_cmd_{};
 
     std::string name_space_{};

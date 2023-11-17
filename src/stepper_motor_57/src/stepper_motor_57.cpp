@@ -10,7 +10,6 @@
  *  Use of this source code is governed by the BSD 3-Clause license, see LICENSE.
  *  ***********************************************************************************
  */
-
 #include "stepper_motor_57/stepper_motor_57.hpp"
 #include "usb_can/usb_can.hpp"
 
@@ -30,12 +29,14 @@ MotorRun::MotorRun(ros::NodeHandle& nh) : nh_(nh)
     ROS_ASSERT(can_config.getType() == XmlRpc::XmlRpcValue::TypeStruct);
     pub_cmd_.resize(can_config.size());
     is_reset_.resize(can_config.size());
+    direction_.resize(can_config.size());
     auto iter = can_config.begin();
     for (int i = 0; i < can_config.size(); ++i)
     {
         is_reset_[i] = false;
         ROS_ASSERT(iter->second.hasMember("dev_ind") && iter->second.hasMember("can_ind") &&
-                   iter->second.hasMember("can_id"));
+                   iter->second.hasMember("can_id") && iter->second.hasMember("direction"));
+        direction_[i] = static_cast<int>(iter->second["direction"]);
         pub_cmd_[i].dev_ind = static_cast<unsigned int>((int)iter->second["dev_ind"]);
         pub_cmd_[i].can_ind = static_cast<unsigned int>((int)iter->second["can_ind"]);
         pub_cmd_[i].cmd.ID =
@@ -57,15 +58,15 @@ MotorRun::MotorRun(ros::NodeHandle& nh) : nh_(nh)
     pub_ = nh_.advertise<cdpr_bringup::CanCmd>("/usbcan/motor_57", 10);
     sub_ = nh_.subscribe<cdpr_bringup::CanFrame>("/usbcan/can_pub", 10, boost::bind(&MotorRun::recvCallback, this, _1));
 
-    ros::Duration(1.0).sleep();  // Sleep for 1s to ensure that the first message sent is received by USBCAN
+    ros::Duration(2.0).sleep();  // Sleep for 1s to ensure that the first message sent is received by USBCAN
 }
 
 void MotorRun::recvCallback(const cdpr_bringup::CanFrame::ConstPtr& msg)
 {
     if (0xc1 == msg->ID || 0xc2 == msg->ID || 0xc3 == msg->ID || 0xc4 == msg->ID)
         if (msg->Data[2] == 0x41 && msg->Data[7] == 0)
-            // is_reset_[msg->ID - unsigned int(0xc1)] = true;
-            is_reset_[0] = true;
+            is_reset_[msg->ID - (unsigned int)0xc1] = true;
+    // is_reset_[0] = true;
 }
 
 void MotorRun::publishCmd(const cdpr_bringup::CanCmd& cmd_struct)
@@ -152,10 +153,13 @@ void MotorRun::run()
             ROS_INFO_NAMED(name_space_, "Reset done!");
             // Run to the specified position
             nh_.getParam("target_data/target_pos_arr", data_vec);
-            for (auto& pub_cmd : pub_cmd_)
+            for (size_t i = 0; i < pub_cmd_.size(); ++i)
             {
-                setCmd(pub_cmd.cmd, StepperMotorRunMode::VEL_REVERSE, data_vec);
-                publishCmd(pub_cmd);
+                if (direction_[i] == 1)
+                    setCmd(pub_cmd_[i].cmd, StepperMotorRunMode::VEL_REVERSE, data_vec);
+                else if (direction_[i] == -1)
+                    setCmd(pub_cmd_[i].cmd, StepperMotorRunMode::VEL_FORWARD, data_vec);
+                publishCmd(pub_cmd_[i]);
             }
 
             ros::spin();
@@ -234,8 +238,7 @@ void MotorRun::writeParam(cdpr_bringup::CanCmd& cmd_struct, XmlRpc::XmlRpcValue&
 {
     ROS_ASSERT(value["plus_start_time"].size() == 5 && value["plus_constant_time"].size() == 5 &&
                value["acc_steps"].size() == 5 && value["acc_cof"].size() == 5 && value["sub_divide"].size() == 5 &&
-               value["reset_mode"].size() == 5 && value["phase_current"].size() == 5 && value["can_id"].size() == 5 &&
-               value["zero_position"].size() == 5);
+               value["reset_mode"].size() == 5 && value["phase_current"].size() == 5 && value["can_id"].size() == 5);
 
     // dirty code for loading and writing parameters
     ROS_INFO_NAMED(name_space_, "Sending operating parameters!");
@@ -289,12 +292,6 @@ void MotorRun::writeParam(cdpr_bringup::CanCmd& cmd_struct, XmlRpc::XmlRpcValue&
     }
     publishCmd(cmd_struct);
     usleep(100000);
-    for (int j = 0; j < value["zero_position"].size(); ++j)
-    {
-        cmd_struct.cmd.Data[j + 3] = static_cast<unsigned char>(int(value["zero_position"][j]));
-    }
-    publishCmd(cmd_struct);
-    usleep(100000);
 
     ROS_INFO_NAMED(name_space_, "********************************");
     cmd_struct.cmd.Data[2] =
@@ -337,9 +334,6 @@ void MotorRun::readParam(cdpr_bringup::CanCmd& cmd_struct)
     publishCmd(cmd_struct);
     usleep(100000);
     cmd_struct.cmd.Data[7] = 9;
-    publishCmd(cmd_struct);
-    usleep(100000);
-    cmd_struct.cmd.Data[7] = 3;
     publishCmd(cmd_struct);
     usleep(100000);
 }

@@ -8,18 +8,22 @@ can_config:
     dev_ind: 0
     can_ind: 0
     can_id: 0xc1
+    direction: 1
   m1:  # right front
     dev_ind: 0
     can_ind: 0
     can_id: 0xc2
+    direction: 1
   m2:  # left back
     dev_ind: 1
     can_ind: 0
     can_id: 0xc3
+    direction: 1
   m3: # right back
     dev_ind: 1
     can_ind: 0
     can_id: 0xc4
+    direction: -1
 
 <<: &param
   plus_start_time: [0xf4, 0x00, 0, 0, 0x10] # startup cycle
@@ -29,8 +33,6 @@ can_config:
   sub_divide: [0x10, 0, 0, 0, 0x0a] # subdivide
   reset_mode: [0x80, 0, 0, 0, 0x0c] # operating mode
   phase_current: [0, 0, 0x90, 0x40, 0x16] # phase current
-  zero_position: [0, 0, 0, 0, 0x02] # zero position
-
 operating_param: 
   m0:
     <<: *param
@@ -47,5 +49,5 @@ operating_param:
   
 target_data:
   target_pos_arr: [0x0, 0xff, 0, 0] 
-  target_vel_forward_arr: [0, 0xff, 0, 0] 
+  target_vel_forward_arr: [0, 0xff, 0x01, 0] 
   target_vel_reverse_arr: [0, 0xff, 0, 0]

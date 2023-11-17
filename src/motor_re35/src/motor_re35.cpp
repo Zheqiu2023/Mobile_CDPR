@@ -122,12 +122,13 @@ void MotorRun::run()
 {
     int run_mode = nh_.param("run_mode", 5);
     init(run_mode);
+    std::vector<int> target_pos_vec{}, history_pos(pub_cmd_.size(), 0);
+    int reduction_ratio = 0, encoder_lines_num = 0;
 
     switch (run_mode)
     {
-        case 5: {  // 速度位置模式
-            std::vector<int> target_pos_vec{};
-            int temp_pos = 0, history_pos = 0, reduction_ratio = 0, encoder_lines_num = 0;
+        // 速度位置模式
+        case 5: {
             unsigned short temp_vel = 10000;  // 速度限制值(RPM)：0~32767
 
             nh_.getParam("target_data/target_pos_vec", target_pos_vec);
@@ -144,26 +145,25 @@ void MotorRun::run()
             }
             for (auto& temp_pos : target_pos_vec)
             {
-                history_pos += temp_pos;
-                temp_pos = history_pos * reduction_ratio * encoder_lines_num / 360;  // °转换为qc
-                for (auto& pub_cmd : pub_cmd_)
+                for (size_t i = 0; i < pub_cmd_.size(); ++i)
                 {
-                    pub_cmd.cmd.Data[4] = static_cast<unsigned char>((temp_pos >> 24) & 0xff);
-                    pub_cmd.cmd.Data[5] = static_cast<unsigned char>((temp_pos >> 16) & 0xff);
-                    pub_cmd.cmd.Data[6] = static_cast<unsigned char>((temp_pos >> 8) & 0xff);
-                    pub_cmd.cmd.Data[7] = static_cast<unsigned char>(temp_pos & 0xff);
+                    history_pos[i] += temp_pos;
+                    temp_pos = history_pos[i] * reduction_ratio * encoder_lines_num / 360;  // °转换为qc
+                    pub_cmd_[i].cmd.Data[4] = static_cast<unsigned char>((temp_pos >> 24) & 0xff);
+                    pub_cmd_[i].cmd.Data[5] = static_cast<unsigned char>((temp_pos >> 16) & 0xff);
+                    pub_cmd_[i].cmd.Data[6] = static_cast<unsigned char>((temp_pos >> 8) & 0xff);
+                    pub_cmd_[i].cmd.Data[7] = static_cast<unsigned char>(temp_pos & 0xff);
 
-                    publishCmd(pub_cmd);
+                    publishCmd(pub_cmd_[i]);
                 }
                 sleep(1);
             }
             break;
         }
-        case 8: {  // 电流速度位置模式
-            std::vector<int> target_pos_vec{};
-            int temp_pos = 0, history_pos = 0, reduction_ratio = 0, encoder_lines_num = 0;
-            unsigned short temp_vel = 10000;      // 速度限制值(RPM)：0~32767
-            unsigned short temp_current = 10000;  // 电流限制值(mA)：0~32767
+        // 电流速度位置模式
+        case 8: {
+            unsigned short temp_vel = 10000;     // 速度限制值(RPM)：0~32767
+            unsigned short temp_current = 1000;  // 电流限制值(mA)：0~32767
 
             nh_.getParam("target_data/target_pos_vec", target_pos_vec);
             nh_.getParam("reduction_ratio", reduction_ratio);
@@ -179,16 +179,16 @@ void MotorRun::run()
             }
             for (auto& temp_pos : target_pos_vec)
             {
-                history_pos += temp_pos;
-                temp_pos = history_pos * reduction_ratio * encoder_lines_num / 360;  // °转换为qc
-                for (auto& pub_cmd : pub_cmd_)
+                for (size_t i = 0; i < pub_cmd_.size(); ++i)
                 {
-                    pub_cmd.cmd.Data[4] = static_cast<unsigned char>((temp_pos >> 24) & 0xff);
-                    pub_cmd.cmd.Data[5] = static_cast<unsigned char>((temp_pos >> 16) & 0xff);
-                    pub_cmd.cmd.Data[6] = static_cast<unsigned char>((temp_pos >> 8) & 0xff);
-                    pub_cmd.cmd.Data[7] = static_cast<unsigned char>(temp_pos & 0xff);
+                    history_pos[i] += temp_pos;
+                    temp_pos = history_pos[i] * reduction_ratio * encoder_lines_num / 360;  // °转换为qc
+                    pub_cmd_[i].cmd.Data[4] = static_cast<unsigned char>((temp_pos >> 24) & 0xff);
+                    pub_cmd_[i].cmd.Data[5] = static_cast<unsigned char>((temp_pos >> 16) & 0xff);
+                    pub_cmd_[i].cmd.Data[6] = static_cast<unsigned char>((temp_pos >> 8) & 0xff);
+                    pub_cmd_[i].cmd.Data[7] = static_cast<unsigned char>(temp_pos & 0xff);
 
-                    publishCmd(pub_cmd);
+                    publishCmd(pub_cmd_[i]);
                 }
                 sleep(1);
             }

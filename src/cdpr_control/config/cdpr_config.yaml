@@ -2,32 +2,34 @@ chassis:
   update_rate: 400
   timeout: 0.1
   accel: 1.0
+  # if read wheelsets with XmlRpc::XmlRpcValue, the data will be saved in alphabetic order, that is "left back", "left front", "right back", "right front"
+  # so use "w0 w1 w2 w3" as the key instead of "left front, right front, left back, right back"
   wheelsets:
-    left_front:
+    w0:
       position: [ 0.557, 0.585 ]
       steer: 
         direction: 1.0
       roll:
         direction: 1.0  
         radius: 0.1175
-    # right_front:
-    #   position: [ 0.557, -0.585 ]
-    #   steer: 
-    #     direction: 1.0
-    #   roll:
-    #     direction: -1.0  
-    #     radius: 0.1175
-    # left_back:
-    #   position: [ -0.557, 0.585 ]
-    #   steer: 
-    #     direction: 1.0
-    #   roll:
-    #     direction: 1.0  
-    #     radius: 0.1175
-    # right_back:
-    #   position: [ -0.557, -0.585 ]
-    #   steer: 
-    #     direction: 1.0
-    #   roll:
-    #     direction: -1.0  
-    #     radius: 0.1175
+    w1:
+      position: [ 0.557, -0.585 ]
+      steer: 
+        direction: 1.0
+      roll:
+        direction: -1.0  
+        radius: 0.1175
+    w2:
+      position: [ -0.557, 0.585 ]
+      steer: 
+        direction: 1.0
+      roll:
+        direction: 1.0  
+        radius: 0.1175
+    w3:
+      position: [ -0.557, -0.585 ]
+      steer: 
+        direction: 1.0
+      roll:
+        direction: -1.0  
+        radius: 0.1175

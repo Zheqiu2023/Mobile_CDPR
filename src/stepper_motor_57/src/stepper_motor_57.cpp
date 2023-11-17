@@ -126,13 +126,9 @@ void MotorRun::run()
     int run_type = nh_.param("motor_run_type", 0);
     std::vector<int> data_vec(4, 0);
 
-    XmlRpc::XmlRpcValue value;
-    nh_.getParam("operating_param", value);
-    auto iter = value.begin();
-
     switch (run_type)
     {
-        case 0:  // position
+        case 0: {  // position
             ROS_INFO_NAMED(name_space_, "Reset before localization!");
             // Reset: find zero position
             while (ros::ok())
@@ -164,7 +160,8 @@ void MotorRun::run()
 
             ros::spin();
             break;
-        case 1:  // foward rotation
+        }
+        case 1: {  // foward rotation
             nh_.getParam("target_data/target_vel_forward_arr", data_vec);
             ROS_INFO_NAMED(name_space_, "Forward rotation!");
 
@@ -186,7 +183,8 @@ void MotorRun::run()
                 publishCmd(pub_cmd);
             }
             break;
-        case 2:  // reverse rotation
+        }
+        case 2: {  // reverse rotation
             nh_.getParam("target_data/target_vel_reverse_arr", data_vec);
             ROS_INFO_NAMED(name_space_, "Reverse rotation!");
 
@@ -208,7 +206,12 @@ void MotorRun::run()
                 publishCmd(pub_cmd);
             }
             break;
-        case 3:  // configure motor parameters
+        }
+        case 3: {  // configure motor parameters
+            XmlRpc::XmlRpcValue value;
+            nh_.getParam("operating_param", value);
+            auto iter = value.begin();
+
             for (size_t i = 0; i < pub_cmd_.size(); ++i)
             {
                 readParam(pub_cmd_[i]);
@@ -216,6 +219,7 @@ void MotorRun::run()
                 ++iter;
             }
             break;
+        }
         default:
             ROS_WARN_NAMED(name_space_, "Motor control type error!");
             break;

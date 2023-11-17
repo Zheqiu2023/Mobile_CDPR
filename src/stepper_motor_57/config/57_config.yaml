@@ -1,21 +1,23 @@
 # Lead 5mm  
 motor_run_type: 0   # 0: position, 1: vel_forward, 2: vel_backward, 3: config_param
 
+# if read can_config with XmlRpc::XmlRpcValue, the data will be saved in alphabetic order, that is "left back", "left front", "right back", "right front"
+# so use "m0 m1 m2 m3" as the key instead of "left front, right front, left back, right back"
 can_config:
-  # lf:  
-  #   dev_ind: 0
-  #   can_ind: 0
-  #   can_id: 0xc1
-  # rf:
-  #   dev_ind: 0
-  #   can_ind: 0
-  #   can_id: 0xc2
-  # lb:
-  #   dev_ind: 1
-  #   can_ind: 0
-  #   can_id: 0xc3
-  rb:
+  m0:  # left front
     dev_ind: 0
+    can_ind: 0
+    can_id: 0xc1
+  m1:  # right front
+    dev_ind: 0
+    can_ind: 0
+    can_id: 0xc2
+  m2:  # left back
+    dev_ind: 1
+    can_ind: 0
+    can_id: 0xc3
+  m3: # right back
+    dev_ind: 1
     can_ind: 0
     can_id: 0xc4
 
@@ -30,16 +32,16 @@ can_config:
   zero_position: [0, 0, 0, 0, 0x02] # zero position
 
 operating_param: 
-  # lf:
-  #   <<: *param
-  #   can_id: [0xc1, 0, 0, 0, 0x08] # CAN ID
-  # rf:
-  #   <<: *param
-  #   can_id: [0xc2, 0, 0, 0, 0x08]
-  # lb:
-  #   <<: *param
-  #   can_id: [0xc3, 0, 0, 0, 0x08]
-  rb:
+  m0:
+    <<: *param
+    can_id: [0xc1, 0, 0, 0, 0x08] # CAN ID
+  m1:
+    <<: *param
+    can_id: [0xc2, 0, 0, 0, 0x08]
+  m2:
+    <<: *param
+    can_id: [0xc3, 0, 0, 0, 0x08]
+  m3:
     <<: *param
     can_id: [0xc4, 0, 0, 0, 0x08]
   

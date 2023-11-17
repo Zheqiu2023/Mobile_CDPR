@@ -18,7 +18,6 @@
 #include "cdpr_bringup/CanFrame.h"
 #include "cdpr_bringup/CanCmd.h"
 #include "cdpr_bringup/usb_can/controlcan.h"
-#include "cdpr_bringup/ctrl_algorithm.hpp"
 
 namespace motor_re35
 {
@@ -29,12 +28,14 @@ class MotorRun
   public:
     MotorRun(ros::NodeHandle& nh);
     void run();
-    void init();
     void publishCmd(const cdpr_bringup::CanCmd& cmd_struct);
     void recvCallback(const cdpr_bringup::CanFrame::ConstPtr& msg);
 
   private:
-    cdpr_bringup::CanCmd pub_cmd_{};
+    void init(const int& run_mode);
+
+    std::vector<int> driver_id_{};
+    std::vector<cdpr_bringup::CanCmd> pub_cmd_{};
     cdpr_bringup::CanFrame recv_msg_{};
 
     ros::NodeHandle nh_;

@@ -21,7 +21,6 @@ int main(int argc, char** argv)
     motor_re35::MotorRun m_run(nh);
 
     ros::Rate loop_rate(1000);
-    m_run.init();
     while (ros::ok())
     {
         m_run.run();

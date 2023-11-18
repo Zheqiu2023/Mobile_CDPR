@@ -25,10 +25,10 @@ int main(int argc, char** argv)
         ROS_WARN("Failed to open at least one USBCAN!");
     }
     CanInit can_handler;
-    // can_handler.initCAN(VCI_USBCAN2, DEV_IND0, CAN_IND0, MotorType::STEPPER_MOTOR);  // open USBCAN0 CNA1
-    can_handler.initCAN(VCI_USBCAN2, DEV_IND0, CAN_IND1, MotorType::MOTOR_RE35);  // open USBCAN0 CNA2
-    // can_handler.initCAN(VCI_USBCAN2, DEV_IND1, CAN_IND0, MotorType::STEPPER_MOTOR);  // open USBCAN1 CNA1
-    can_handler.initCAN(VCI_USBCAN2, DEV_IND1, CAN_IND1, MotorType::MOTOR_RE35);  // open USBCAN1 CNA2
+    can_handler.initCAN(VCI_USBCAN2, DEV_IND0, CAN_IND0, MotorType::STEPPER_MOTOR);  // open USBCAN0 CNA1
+    can_handler.initCAN(VCI_USBCAN2, DEV_IND0, CAN_IND1, MotorType::MOTOR_RE35);     // open USBCAN0 CNA2
+    can_handler.initCAN(VCI_USBCAN2, DEV_IND1, CAN_IND0, MotorType::STEPPER_MOTOR);  // open USBCAN1 CNA1
+    can_handler.initCAN(VCI_USBCAN2, DEV_IND1, CAN_IND1, MotorType::MOTOR_RE35);     // open USBCAN1 CNA2
 
     TransferStation transfer_station(nh);
 

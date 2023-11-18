@@ -25,18 +25,7 @@ using namespace motor_re35;
 MotorRun::MotorRun(ros::NodeHandle& nh) : nh_(nh)
 {
     pub_ = nh_.advertise<cdpr_bringup::CanCmd>("/usbcan/motor_re35", 10);
-    sub_ =
-        nh_.subscribe<cdpr_bringup::CanFrame>("/usbcan/can_pub", 100, boost::bind(&MotorRun::recvCallback, this, _1));
     ros::Duration(1.0).sleep();  // 休眠1s，保证发出的第一条消息能被usbcan接收
-}
-
-/**
- * @brief 订阅CAN话题回调函数
- * @param  msg
- */
-void MotorRun::recvCallback(const cdpr_bringup::CanFrame::ConstPtr& msg)
-{
-    recv_msg_ = std::move(*msg);
 }
 
 void MotorRun::publishCmd(const cdpr_bringup::CanCmd& cmd_struct)
@@ -70,7 +59,7 @@ void MotorRun::init(const int& run_mode)
     for (int i = 0; i < can_config.size(); ++i)
     {
         // 发送复位指令
-        pub_cmd_[i].cmd.ID = 0x000 || (driver_id_[i] << 4);  // 复位指令（帧ID，由驱动器编号和功能序号决定）
+        pub_cmd_[i].cmd.ID = 0x000 | (driver_id_[i] << 4);  // 复位指令（帧ID，由驱动器编号和功能序号决定）
         for (auto& data : pub_cmd_[i].cmd.Data)
             data = 0x55;
         publishCmd(pub_cmd_[i]);
@@ -79,7 +68,7 @@ void MotorRun::init(const int& run_mode)
     for (int i = 0; i < can_config.size(); ++i)
     {
         // 发送配置指令
-        pub_cmd_[i].cmd.ID = 0x00A || (driver_id_[i] << 4);  // 配置指令
+        pub_cmd_[i].cmd.ID = 0x00A | (driver_id_[i] << 4);  // 配置指令
         for (auto& data : pub_cmd_[i].cmd.Data)
             data = 0x55;
         pub_cmd_[i].cmd.Data[0] = 0x0a;  // 以 10 毫秒为周期对外发送电流、速度、位置等信息
@@ -90,7 +79,7 @@ void MotorRun::init(const int& run_mode)
     for (int i = 0; i < can_config.size(); ++i)
     {
         // 发送模式选择指令
-        pub_cmd_[i].cmd.ID = 0x001 || (driver_id_[i] << 4);  // 模式选择指令
+        pub_cmd_[i].cmd.ID = 0x001 | (driver_id_[i] << 4);  // 模式选择指令
         for (auto& data : pub_cmd_[i].cmd.Data)
             data = 0x55;
         switch (run_mode)
@@ -122,14 +111,14 @@ void MotorRun::run()
 {
     int run_mode = nh_.param("run_mode", 5);
     init(run_mode);
-    std::vector<int> target_pos_vec{}, history_pos(pub_cmd_.size(), 0);
+    std::vector<int> target_pos_vec{}, target_pos(pub_cmd_.size(), 0), history_pos(pub_cmd_.size(), 0);
     int reduction_ratio = 0, encoder_lines_num = 0;
 
     switch (run_mode)
     {
         // 速度位置模式
         case 5: {
-            unsigned short temp_vel = 10000;  // 速度限制值(RPM)：0~32767
+            unsigned short temp_vel = 1000;  // 速度限制值(RPM)：0~32767
 
             nh_.getParam("target_data/target_pos_vec", target_pos_vec);
             nh_.getParam("reduction_ratio", reduction_ratio);
@@ -137,7 +126,7 @@ void MotorRun::run()
 
             for (size_t i = 0; i < pub_cmd_.size(); ++i)
             {
-                pub_cmd_[i].cmd.ID = 0x006 || (driver_id_[i] << 4);  // 速度位置模式下的参数指令，非广播
+                pub_cmd_[i].cmd.ID = 0x006 | (driver_id_[i] << 4);  // 速度位置模式下的参数指令，非广播
                 pub_cmd_[i].cmd.Data[0] = static_cast<unsigned char>((PWM_LIM >> 8) & 0xff);
                 pub_cmd_[i].cmd.Data[1] = static_cast<unsigned char>(PWM_LIM & 0xff);
                 pub_cmd_[i].cmd.Data[2] = static_cast<unsigned char>((temp_vel >> 8) & 0xff);
@@ -148,11 +137,11 @@ void MotorRun::run()
                 for (size_t i = 0; i < pub_cmd_.size(); ++i)
                 {
                     history_pos[i] += temp_pos;
-                    temp_pos = history_pos[i] * reduction_ratio * encoder_lines_num / 360;  // °转换为qc
-                    pub_cmd_[i].cmd.Data[4] = static_cast<unsigned char>((temp_pos >> 24) & 0xff);
-                    pub_cmd_[i].cmd.Data[5] = static_cast<unsigned char>((temp_pos >> 16) & 0xff);
-                    pub_cmd_[i].cmd.Data[6] = static_cast<unsigned char>((temp_pos >> 8) & 0xff);
-                    pub_cmd_[i].cmd.Data[7] = static_cast<unsigned char>(temp_pos & 0xff);
+                    target_pos[i] = history_pos[i] * reduction_ratio * encoder_lines_num / 360;  // °转换为qc
+                    pub_cmd_[i].cmd.Data[4] = static_cast<unsigned char>((target_pos[i] >> 24) & 0xff);
+                    pub_cmd_[i].cmd.Data[5] = static_cast<unsigned char>((target_pos[i] >> 16) & 0xff);
+                    pub_cmd_[i].cmd.Data[6] = static_cast<unsigned char>((target_pos[i] >> 8) & 0xff);
+                    pub_cmd_[i].cmd.Data[7] = static_cast<unsigned char>(target_pos[i] & 0xff);
 
                     publishCmd(pub_cmd_[i]);
                 }
@@ -162,7 +151,7 @@ void MotorRun::run()
         }
         // 电流速度位置模式
         case 8: {
-            unsigned short temp_vel = 10000;     // 速度限制值(RPM)：0~32767
+            unsigned short temp_vel = 1000;      // 速度限制值(RPM)：0~32767
             unsigned short temp_current = 1000;  // 电流限制值(mA)：0~32767
 
             nh_.getParam("target_data/target_pos_vec", target_pos_vec);
@@ -171,7 +160,7 @@ void MotorRun::run()
 
             for (size_t i = 0; i < pub_cmd_.size(); ++i)
             {
-                pub_cmd_[i].cmd.ID = 0x009 || (driver_id_[i] << 4);  // 速度位置模式下的参数指令，非广播
+                pub_cmd_[i].cmd.ID = 0x009 | (driver_id_[i] << 4);  // 速度位置模式下的参数指令，非广播
                 pub_cmd_[i].cmd.Data[0] = static_cast<unsigned char>((temp_current >> 8) & 0xff);
                 pub_cmd_[i].cmd.Data[1] = static_cast<unsigned char>(temp_current & 0xff);
                 pub_cmd_[i].cmd.Data[2] = static_cast<unsigned char>((temp_vel >> 8) & 0xff);
@@ -182,11 +171,11 @@ void MotorRun::run()
                 for (size_t i = 0; i < pub_cmd_.size(); ++i)
                 {
                     history_pos[i] += temp_pos;
-                    temp_pos = history_pos[i] * reduction_ratio * encoder_lines_num / 360;  // °转换为qc
-                    pub_cmd_[i].cmd.Data[4] = static_cast<unsigned char>((temp_pos >> 24) & 0xff);
-                    pub_cmd_[i].cmd.Data[5] = static_cast<unsigned char>((temp_pos >> 16) & 0xff);
-                    pub_cmd_[i].cmd.Data[6] = static_cast<unsigned char>((temp_pos >> 8) & 0xff);
-                    pub_cmd_[i].cmd.Data[7] = static_cast<unsigned char>(temp_pos & 0xff);
+                    target_pos[i] = history_pos[i] * reduction_ratio * encoder_lines_num / 360;  // °转换为qc
+                    pub_cmd_[i].cmd.Data[4] = static_cast<unsigned char>((target_pos[i] >> 24) & 0xff);
+                    pub_cmd_[i].cmd.Data[5] = static_cast<unsigned char>((target_pos[i] >> 16) & 0xff);
+                    pub_cmd_[i].cmd.Data[6] = static_cast<unsigned char>((target_pos[i] >> 8) & 0xff);
+                    pub_cmd_[i].cmd.Data[7] = static_cast<unsigned char>(target_pos[i] & 0xff);
 
                     publishCmd(pub_cmd_[i]);
                 }

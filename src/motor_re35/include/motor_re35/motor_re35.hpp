@@ -28,15 +28,13 @@ class MotorRun
   public:
     MotorRun(ros::NodeHandle& nh);
     void run();
-    void publishCmd(const cdpr_bringup::CanCmd& cmd_struct);
-    void recvCallback(const cdpr_bringup::CanFrame::ConstPtr& msg);
 
   private:
     void init(const int& run_mode);
+    void publishCmd(const cdpr_bringup::CanCmd& cmd_struct);
 
     std::vector<int> driver_id_{};
     std::vector<cdpr_bringup::CanCmd> pub_cmd_{};
-    cdpr_bringup::CanFrame recv_msg_{};
 
     ros::NodeHandle nh_;
     ros::Publisher pub_;

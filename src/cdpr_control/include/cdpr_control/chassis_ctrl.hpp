@@ -29,6 +29,7 @@ class ChassisCtrl
     double timeout_{};
     std::string name_space_{};
     std::vector<Wheelset> wheelsets_{};
+    std::vector<double> last_angle_{};
     std::vector<RampFilter<double>*> ramp_angle_{}, ramp_vel_{};
 
     geometry_msgs::Vector3 cmd_vel_{};

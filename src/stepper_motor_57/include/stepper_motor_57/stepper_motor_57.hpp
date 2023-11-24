@@ -13,7 +13,8 @@
 #pragma once
 
 #include <ros/ros.h>
-#include <semaphore.h>
+#include <std_msgs/Float32MultiArray.h>
+#include <mutex>
 
 #include "cdpr_bringup/usb_can/controlcan.h"
 #include "cdpr_bringup/CanCmd.h"
@@ -22,27 +23,40 @@
 
 namespace motor_57
 {
-class MotorRun
+struct MotorData
+{
+    bool is_reset_;
+    int direction_;
+    float target_pos_;
+    cdpr_bringup::CanCmd pub_cmd_;
+};
+
+class MotorDriver
 {
   public:
-    MotorRun(ros::NodeHandle& nh);
+    MotorDriver(ros::NodeHandle& nh);
     void run();
-    void getPos(cdpr_bringup::CanCmd& cmd_struct);
 
   private:
-    void setCmd(cdpr_bringup::CanFrame& cmd, StepperMotorRunMode cmd_mode, std::vector<int>& data_vec);
+    void setCmd(cdpr_bringup::CanFrame& cmd, StepperMotorRunMode cmd_mode, const std::vector<int>& pos_vec);
     void publishCmd(const cdpr_bringup::CanCmd& cmd_struct);
-    void recvCallback(const cdpr_bringup::CanFrame::ConstPtr& msg);
+
+    void recvPosCallback(const std_msgs::Float32MultiArray::ConstPtr& pos);
+    void recvStateCallback(const cdpr_bringup::CanFrame::ConstPtr& state);
+
     void readParam(cdpr_bringup::CanCmd& cmd_struct);
     void writeParam(cdpr_bringup::CanCmd& cmd_struct, XmlRpc::XmlRpcValue& value);
 
-    std::vector<bool> is_reset_{};
-    std::vector<int> direction_{};
-    std::vector<cdpr_bringup::CanCmd> pub_cmd_{};
+    int lead_ = 0, sub_divide_ = 0;
+    float step_angle_ = 0.0;
+
+    std::vector<MotorData> motor_data_{};
 
     std::string name_space_{};
     ros::NodeHandle nh_;
-    ros::Publisher pub_;
-    ros::Subscriber sub_;
+    ros::V_Publisher pubs_;
+    ros::V_Subscriber subs_;
+
+    std::mutex mutex_;
 };
 }  // namespace motor_57

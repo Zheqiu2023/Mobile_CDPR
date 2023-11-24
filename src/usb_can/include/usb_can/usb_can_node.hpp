@@ -49,11 +49,9 @@ class TransferStation
 TransferStation::TransferStation(ros::NodeHandle& nh) : nh_(nh)
 {
     subs_.resize(2);
-    subs_[0] =
-        nh_.subscribe<cdpr_bringup::CanCmd>("motor_57", 100, boost::bind(&TransferStation::canMsgCallback, this, _1));
-    subs_[1] =
-        nh_.subscribe<cdpr_bringup::CanCmd>("motor_re35", 100, boost::bind(&TransferStation::canMsgCallback, this, _1));
-    pub_ = nh_.advertise<cdpr_bringup::CanFrame>("can_pub", 50);
+    subs_[0] = nh_.subscribe<cdpr_bringup::CanCmd>("motor_57", 100, &TransferStation::canMsgCallback, this);
+    subs_[1] = nh_.subscribe<cdpr_bringup::CanCmd>("motor_re35", 100, &TransferStation::canMsgCallback, this);
+    pub_ = nh_.advertise<cdpr_bringup::CanFrame>("motor_state", 100);
 }
 
 void TransferStation::canMsgCallback(const cdpr_bringup::CanCmd::ConstPtr& msg)

@@ -17,7 +17,7 @@
                 "${workspaceFolder}/src/cdpr_gazebo/include/**",
                 "${workspaceFolder}/src/cdpr_hw/include/**",
                 "${workspaceFolder}/src/cdpr_chassis_controller/include/**",
-                "${workspaceFolder}/src/cdpr_control/include"
+                "${workspaceFolder}/src/cdpr_control/include/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

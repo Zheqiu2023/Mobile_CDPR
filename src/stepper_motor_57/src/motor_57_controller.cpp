@@ -21,7 +21,10 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "stepper_motor_57");
     ros::NodeHandle nh("~");
 
-    motor_57::MotorRun m_run(nh);
+    ros::AsyncSpinner spinner(2);
+    spinner.start();
+
+    motor_57::MotorDriver m_run(nh);
     m_run.run();
 
     return 0;

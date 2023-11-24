@@ -8,7 +8,7 @@
             "name": "ROS: Launch",
             "type": "ros",
             "request": "launch",
-            "target": "/home/qz/Mobile_CDPR_WS/src/cdpr_bringup/launch/motor_launch.launch"
+            "target": "/home/g1019/Mobile_CDPR_WS/src/cdpr_bringup/launch/motor_launch.launch"
             // "target": "/home/g1019/MOBILE_CDPR_WS/src/cdpr_bringup/launch/cdpr_hw.launch"
             // "target": "/home/g1019/MOBILE_CDPR_WS/src/cdpr_gazebo/launch/sim_control.launch"
         },

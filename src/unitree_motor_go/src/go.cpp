@@ -11,25 +11,27 @@
  *  ***********************************************************************************
  */
 #include "unitree_motor_go/go.hpp"
+
+#include <math.h>
+
+#include <algorithm>
+#include <array>
+#include <vector>
+
 #include "cdpr_bringup/interpolation.hpp"
 #include "cdpr_bringup/math_utilities.hpp"
-
-#include <vector>
-#include <array>
-#include <math.h>
-#include <algorithm>
 
 using namespace motor_go;
 
 GoControl::GoControl(ros::NodeHandle& nh) : nh_(nh)
 {
-    sub_ = nh_.subscribe<std_msgs::Float64MultiArray>("/steer_pos_cmd", 1,
-                                                      boost::bind(&GoControl::setCommandCB, this, _1));
+    sub_ = nh_.subscribe<std_msgs::Float64MultiArray>("/steer_pos_cmd", 1, &GoControl::setCommandCB, this);
     pub_ = nh_.advertise<std_msgs::Float64MultiArray>("/steer_pos_state", 100);
     // get motor parameters
     if (!(nh_.getParam("id", id_) && nh_.getParam("port_name", serial_port_) &&
           nh_.getParam("reduction_ratio", reduction_ratio_)))
         ROS_ERROR("Some motor params doesn't given in namespace: '%s')", nh_.getNamespace().c_str());
+    ROS_ASSERT(serial_port_.size() == 4);
     motor_num_ = id_.size();
 }
 
@@ -42,7 +44,7 @@ void GoControl::setCommandCB(const std_msgs::Float64MultiArray::ConstPtr& cmd_po
     for (size_t i = 0; i < motor_num_; ++i)
     {
         motor_cmd_[i].Pos = motor_zero_position_[i] + cmd_pos->data[i] * reduction_ratio_;
-        motor_cmd_[i].T = 0.2;
+        motor_cmd_[i].T = 0.2;  // feed-forward torque(0.2 is an estimated value)
     }
 }
 
@@ -99,218 +101,216 @@ void GoControl::init(std::vector<SerialPort*>& port)
 void GoControl::drive(std::vector<SerialPort*>& port)
 {
     std::vector<float> control_param_vec(2, 0.0);
-    float reduction_ratio_ = nh_.param("reduction_ratio_", 6.33);
     int cmd_type = nh_.param("cmd_type", 0);
     int ctrl_frequency = nh_.param("motor_ctrl_data/ctrl_frequency", 200);
     ros::Rate loop_rate(ctrl_frequency);
 
-    if (cmd_type == 0)
+    switch (cmd_type)
     {
-        // position control
-        // set K_W、K_P
-        nh_.getParam("motor_ctrl_data/pos_kp_kw", control_param_vec);
-        setCmd(control_param_vec);
+        case 0: {  // position control
+            // set K_W、K_P
+            nh_.getParam("motor_ctrl_data/pos_kp_kw", control_param_vec);
+            setCmd(control_param_vec);
 
-        // receive target position from topic "/steer_pos_cmd"
-        while (ros::ok())
-        {
-            for (size_t i = 0; i < motor_num_; ++i)
+            // receive target position from topic "/steer_pos_cmd"
+            while (ros::ok())
             {
-                port[i]->sendRecv(&motor_cmd_[i], &motor_recv_[i]);
-                pos_state_.data[i] = (motor_recv_[i].Pos - motor_zero_position_[i]) / reduction_ratio_;
-                // if (std::abs(pos_state_.data[i]) > M_PI)
-                // {
-                //     motor_zero_position_[i] += M_PI * reduction_ratio_ * sgn(pos_state_.data[i]);
-                //     pos_state_.data[i] += M_PI * sgn(pos_state_.data[i]);
-                // }
-                ROS_INFO("position state of motor Go[%lu]: %f", i, pos_state_.data[i]);
-                ROS_INFO("effort state of motor Go[%lu]: %f", i, motor_recv_[i].T);
-            }
-            pub_.publish(pos_state_);
-            ros::spinOnce();
-            loop_rate.sleep();
-        }
-    }
-    else if (cmd_type == 1)
-    {
-        // velocity control
-        // set K_W、K_P
-        ros::param::get("motor_ctrl_data/vel_kp_kw", control_param_vec);
-        setCmd(control_param_vec);
-        // set target velocity
-        std::for_each(motor_cmd_.begin(), motor_cmd_.end(), [&](MotorCmd& cmd) {
-            nh_.getParam("motor_ctrl_data/goal_vel", cmd.W);
-            cmd.W *= reduction_ratio_;
-        });
-
-        while (ros::ok())
-        {
-            // send the command
-            for (size_t i = 0; i < motor_num_; ++i)
-            {
-                port[i]->sendRecv(&motor_cmd_[i], &motor_recv_[i]);
-                ROS_INFO("Received velocity of motor Go[%lu]: %f", i, motor_recv_[i].W);
-            }
-            loop_rate.sleep();
-        }
-    }
-    else if (cmd_type == 2)
-    {
-        // torque control
-        // set K_W、K_P
-        nh_.getParam("motor_ctrl_data/trq_kp_kw", control_param_vec);
-        setCmd(control_param_vec);
-        // set target torque
-        std::for_each(motor_cmd_.begin(), motor_cmd_.end(),
-                      [&](MotorCmd& cmd) { nh_.getParam("motor_ctrl_data/goal_trq", cmd.T); });
-
-        while (ros::ok())
-        {
-            for (size_t i = 0; i < motor_num_; ++i)
-            {
-                port[i]->sendRecv(&motor_cmd_[i], &motor_recv_[i]);
-                ROS_INFO("Received torque of motor Go[%lu]: %f", i, motor_recv_[i].T);
-            }
-            loop_rate.sleep();
-        }
-    }
-    else if (cmd_type == 3)
-    {
-        // bessel curve trajectory planning：no need to set a timer in while(ros::ok())
-        // set K_W、K_P
-        nh_.getParam("motor_ctrl_data/traj_kp_kw", control_param_vec);
-        setCmd(control_param_vec);
-
-        float total_run_time = 0, end_pos = 0, phase = 0, goal_position = 0;
-        std::vector<float> bezier_plan_result(3, 0), goal_traj{}, traj_start_pos(motor_num_, 0);
-        std::vector<int> current_traj_point(motor_num_, 0);
-
-        nh_.getParam("interpolation/total_run_time", total_run_time);
-        nh_.getParam("motor_ctrl_data/goal_traj", goal_traj);
-        float per_traj_seg_run_time = total_run_time / goal_traj.size();  // run time of each trajectory segment
-
-        // get the start time
-        double start_time = ros::Time::now().toSec();
-        // current time
-        double right_now = 0;
-        while (ros::ok())
-        {
-            for (size_t i = 0; i < motor_num_; ++i)
-            {
-                goal_position = 0;
-                right_now = ros::Time::now().toSec();
-                if ((right_now - start_time) < 0)
+                for (size_t i = 0; i < motor_num_; ++i)
                 {
-                    ROS_FATAL("System Time Error!");
+                    port[i]->sendRecv(&motor_cmd_[i], &motor_recv_[i]);
+                    pos_state_.data[i] = (motor_recv_[i].Pos - motor_zero_position_[i]) / reduction_ratio_;
+                    // if (std::abs(pos_state_.data[i]) > M_PI)
+                    // {
+                    //     motor_zero_position_[i] += M_PI * reduction_ratio_ * sgn(pos_state_.data[i]);
+                    //     pos_state_.data[i] += M_PI * sgn(pos_state_.data[i]);
+                    // }
+                    ROS_INFO("position state of motor Go[%lu]: %f", i, pos_state_.data[i]);
+                    ROS_INFO("effort state of motor Go[%lu]: %f", i, motor_recv_[i].T);
                 }
-                else if ((right_now - start_time) >= total_run_time)  // the entire trajectory finished
-                {
-                    motor_cmd_[i].Pos = motor_recv_[i].Pos;  // stay at the end of the trajectory
-                    phase = (right_now - start_time - (per_traj_seg_run_time * (current_traj_point[i] - 1))) /
-                            per_traj_seg_run_time;  // any number greater than 1 is acceptable
-                    ROS_INFO("Motor Go[%lu] run complete!", i);
-                }
-                else if ((right_now - start_time) >
-                         (double)(current_traj_point[i] * per_traj_seg_run_time))  // one trajectory segment finished,
-                                                                                   // update for next segment
-                {
-                    ++current_traj_point[i];
-                    traj_start_pos[i] = motor_recv_[i].Pos;
-                }
+                pub_.publish(pos_state_);
+                ros::spinOnce();
+                loop_rate.sleep();
+            }
+            break;
+        }
+        case 1: {  // velocity control
+            // set K_W、K_P
+            ros::param::get("motor_ctrl_data/vel_kp_kw", control_param_vec);
+            setCmd(control_param_vec);
+            // set target velocity
+            std::for_each(motor_cmd_.begin(), motor_cmd_.end(), [&](MotorCmd& cmd) {
+                nh_.getParam("motor_ctrl_data/goal_vel", cmd.W);
+                cmd.W *= reduction_ratio_;
+            });
 
-                if (phase >= 0 && phase <= 1)
+            while (ros::ok())
+            {
+                // send the command
+                for (size_t i = 0; i < motor_num_; ++i)
                 {
-                    // one segment isn't finished, continue planning
-                    for (size_t j = 0; j < current_traj_point[i]; ++j)
+                    port[i]->sendRecv(&motor_cmd_[i], &motor_recv_[i]);
+                    ROS_INFO("Received velocity of motor Go[%lu]: %f", i, motor_recv_[i].W);
+                }
+                loop_rate.sleep();
+            }
+            break;
+        }
+        case 2: {  // torque control
+            // set K_W、K_P
+            nh_.getParam("motor_ctrl_data/trq_kp_kw", control_param_vec);
+            setCmd(control_param_vec);
+            // set target torque
+            std::for_each(motor_cmd_.begin(), motor_cmd_.end(),
+                          [&](MotorCmd& cmd) { nh_.getParam("motor_ctrl_data/goal_trq", cmd.T); });
+
+            while (ros::ok())
+            {
+                for (size_t i = 0; i < motor_num_; ++i)
+                {
+                    port[i]->sendRecv(&motor_cmd_[i], &motor_recv_[i]);
+                    ROS_INFO("Received torque of motor Go[%lu]: %f", i, motor_recv_[i].T);
+                }
+                loop_rate.sleep();
+            }
+            break;
+        }
+        case 3: {  // bessel curve trajectory planning：no need to set a timer in while(ros::ok())
+            // set K_W、K_P
+            nh_.getParam("motor_ctrl_data/traj_kp_kw", control_param_vec);
+            setCmd(control_param_vec);
+
+            float total_run_time = 0, end_pos = 0, phase = 0, goal_position = 0;
+            std::vector<float> bezier_plan_result(3, 0), goal_traj{}, traj_start_pos(motor_num_, 0);
+            std::vector<int> current_traj_point(motor_num_, 0);
+
+            nh_.getParam("interpolation/total_run_time", total_run_time);
+            nh_.getParam("motor_ctrl_data/goal_traj", goal_traj);
+            float per_traj_seg_run_time = total_run_time / goal_traj.size();  // run time of each trajectory segment
+
+            // get the start time
+            double start_time = ros::Time::now().toSec();
+            // current time
+            double right_now = 0;
+            while (ros::ok())
+            {
+                for (size_t i = 0; i < motor_num_; ++i)
+                {
+                    goal_position = 0;
+                    right_now = ros::Time::now().toSec();
+                    if ((right_now - start_time) < 0)
                     {
-                        goal_position += goal_traj[j];
+                        ROS_FATAL("System Time Error!");
                     }
-                    end_pos = motor_zero_position_[i] + goal_position * reduction_ratio_ * M_PI / 180.0;
-                    phase = (right_now - start_time - (per_traj_seg_run_time * (current_traj_point[i] - 1))) /
-                            per_traj_seg_run_time;  // phase of each trajectory segment，0~1
+                    else if ((right_now - start_time) >= total_run_time)  // the entire trajectory finished
+                    {
+                        motor_cmd_[i].Pos = motor_recv_[i].Pos;  // stay at the end of the trajectory
+                        phase = (right_now - start_time - (per_traj_seg_run_time * (current_traj_point[i] - 1))) /
+                                per_traj_seg_run_time;  // any number greater than 1 is acceptable
+                        ROS_INFO("Motor Go[%lu] run complete!", i);
+                    }
+                    else if ((right_now - start_time) >
+                             (double)(current_traj_point[i] * per_traj_seg_run_time))  // one trajectory segment
+                                                                                       // finished, update for next
+                                                                                       // segment
+                    {
+                        ++current_traj_point[i];
+                        traj_start_pos[i] = motor_recv_[i].Pos;
+                    }
 
-                    bezier_plan_result =
-                        interpolate::cubicBezierTrajPlanner(traj_start_pos[i], end_pos, phase, total_run_time);
-                    ROS_INFO("Bezier planning result: pos:%f, vel:%f, acc:%f", bezier_plan_result[0],
-                             bezier_plan_result[1], bezier_plan_result[2]);
-                    motor_cmd_[i].Pos = bezier_plan_result[0];
-                    motor_cmd_[i].W = bezier_plan_result[1];
+                    if (phase >= 0 && phase <= 1)
+                    {
+                        // one segment isn't finished, continue planning
+                        for (size_t j = 0; j < current_traj_point[i]; ++j)
+                        {
+                            goal_position += goal_traj[j];
+                        }
+                        end_pos = motor_zero_position_[i] + goal_position * reduction_ratio_ * M_PI / 180.0;
+                        phase = (right_now - start_time - (per_traj_seg_run_time * (current_traj_point[i] - 1))) /
+                                per_traj_seg_run_time;  // phase of each trajectory segment，0~1
+
+                        bezier_plan_result =
+                            interpolate::cubicBezierTrajPlanner(traj_start_pos[i], end_pos, phase, total_run_time);
+                        ROS_INFO("Bezier planning result: pos:%f, vel:%f, acc:%f", bezier_plan_result[0],
+                                 bezier_plan_result[1], bezier_plan_result[2]);
+                        motor_cmd_[i].Pos = bezier_plan_result[0];
+                        motor_cmd_[i].W = bezier_plan_result[1];
+                    }
+
+                    port[i]->sendRecv(&motor_cmd_[i], &motor_recv_[i]);
+                    ROS_INFO("Motor Go[%lu] run time:%.6lf, phase:%f, pos:%f, vel:%f, startpos:%f, endpos:%f", i,
+                             (right_now - start_time), phase, motor_recv_[i].Pos, motor_recv_[i].W, traj_start_pos[i],
+                             end_pos);
                 }
-
-                port[i]->sendRecv(&motor_cmd_[i], &motor_recv_[i]);
-                ROS_INFO("Motor Go[%lu] run time:%.6lf, phase:%f, pos:%f, vel:%f, startpos:%f, endpos:%f", i,
-                         (right_now - start_time), phase, motor_recv_[i].Pos, motor_recv_[i].W, traj_start_pos[i],
-                         end_pos);
             }
+            break;
         }
-    }
-    else if (cmd_type == 4)
-    {
-        // quintic polynomial trajectory planning
-        // set K_W、K_P
-        nh_.getParam("motor_ctrl_data/traj_kp_kw", control_param_vec);
-        setCmd(control_param_vec);
+        case 4: {  // quintic polynomial trajectory planning
+            // set K_W、K_P
+            nh_.getParam("motor_ctrl_data/traj_kp_kw", control_param_vec);
+            setCmd(control_param_vec);
 
-        std::vector<int> current_traj_point(motor_num_, 0);
-        float total_run_time = 2, goal_position = 360;
-        int point_num = ceil(ctrl_frequency * total_run_time) +
-                        101;  // ensure that the control period is greater than the running time of each segment
-        float per_traj_seg_run_time = total_run_time / (point_num - 1);
+            std::vector<int> current_traj_point(motor_num_, 0);
+            float total_run_time = 2, goal_position = 360;
+            int point_num = ceil(ctrl_frequency * total_run_time) +
+                            101;  // ensure that the control period is greater than the running time of each segment
+            float per_traj_seg_run_time = total_run_time / (point_num - 1);
 
-        std::vector<std::vector<std::vector<float>>> qp_plan_result{};
-        for (size_t i = 0; i < motor_num_; ++i)
-        {
-            float end_pos = motor_zero_position_[i] + goal_position * reduction_ratio_ * M_PI / 180.0;
-            std::vector<float> pos{ motor_zero_position_[i], end_pos }, vel{ 0, 0 },
-                acc{ 0, 0 };  // start，end position data
-            qp_plan_result.push_back(interpolate::quinticPolynomial(total_run_time, pos, vel, acc, point_num));
-        }
-
-        // get the start time
-        double start_time = ros::Time::now().toSec();
-        // current time
-        double right_now = 0;
-        while (ros::ok())
-        {
+            std::vector<std::vector<std::vector<float>>> qp_plan_result{};
             for (size_t i = 0; i < motor_num_; ++i)
             {
-                right_now = ros::Time::now().toSec();
-                if ((right_now - start_time) < 0)
-                {
-                    ROS_FATAL("Time Error");
-                }
-                else if (current_traj_point[i] >= point_num)  // the entire trajectory finished
-                {
-                    ROS_INFO("Motor Go[%lu] run complete!", i);
-                    motor_cmd_[i].Pos = qp_plan_result[i].back()[0];
-                }
-                // If you don't use timer in while(ros::ok()), you need to use time to judge whether the waypoint is
-                // completed or not; if you use timer, you don't need to judge whether the waypoint is completed or not,
-                // but you need to make sure that the control period is greater than the running time of each segment of
-                // the trajectory.
-                // else if ((right_now - start_time) > static_cast<double>(current_traj_point * per_traj_seg_run_time))
-                // // one trajectory segment finished, update for next segment
-                // {
-                ++current_traj_point[i];
-
-                if (current_traj_point[i] < point_num)
-                {
-                    motor_cmd_[i].Pos = qp_plan_result[i][current_traj_point[i]][0];
-                    motor_cmd_[i].W = qp_plan_result[i][current_traj_point[i]][1];
-                    // instead of using the planned speeds, use the average of the speeds for each segment
-                    // motor_cmd_.W = (motor_cmd_.Pos - motor_recv_.Pos) / per_traj_seg_run_time;
-                }
-                // }
-                port[i]->sendRecv(&motor_cmd_[i], &motor_recv_[i]);
-                ROS_INFO("Motor Go[%lu] run time:%.6lf, pos:%f, Vel:%f", i, (right_now - start_time),
-                         motor_recv_[i].Pos, motor_recv_[i].W);
+                float end_pos = motor_zero_position_[i] + goal_position * reduction_ratio_ * M_PI / 180.0;
+                std::vector<float> pos{ motor_zero_position_[i], end_pos }, vel{ 0, 0 },
+                    acc{ 0, 0 };  // start，end position data
+                qp_plan_result.push_back(interpolate::quinticPolynomial(total_run_time, pos, vel, acc, point_num));
             }
-            loop_rate.sleep();
+
+            // get the start time
+            double start_time = ros::Time::now().toSec();
+            // current time
+            double right_now = 0;
+            while (ros::ok())
+            {
+                for (size_t i = 0; i < motor_num_; ++i)
+                {
+                    right_now = ros::Time::now().toSec();
+                    if ((right_now - start_time) < 0)
+                    {
+                        ROS_FATAL("Time Error");
+                    }
+                    else if (current_traj_point[i] >= point_num)  // the entire trajectory finished
+                    {
+                        ROS_INFO("Motor Go[%lu] run complete!", i);
+                        motor_cmd_[i].Pos = qp_plan_result[i].back()[0];
+                    }
+                    // If you don't use timer in while(ros::ok()), you need to use time to judge whether the waypoint is
+                    // completed or not; if you use timer, you don't need to judge whether the waypoint is completed or
+                    // not, but you need to make sure that the control period is greater than the running time of each
+                    // segment of the trajectory. else if ((right_now - start_time) >
+                    // static_cast<double>(current_traj_point * per_traj_seg_run_time))
+                    // // one trajectory segment finished, update for next segment
+                    // {
+                    ++current_traj_point[i];
+
+                    if (current_traj_point[i] < point_num)
+                    {
+                        motor_cmd_[i].Pos = qp_plan_result[i][current_traj_point[i]][0];
+                        motor_cmd_[i].W = qp_plan_result[i][current_traj_point[i]][1];
+                        // instead of using the planned speeds, use the average of the speeds for each segment
+                        // motor_cmd_.W = (motor_cmd_.Pos - motor_recv_.Pos) / per_traj_seg_run_time;
+                    }
+                    // }
+                    port[i]->sendRecv(&motor_cmd_[i], &motor_recv_[i]);
+                    ROS_INFO("Motor Go[%lu] run time:%.6lf, pos:%f, Vel:%f", i, (right_now - start_time),
+                             motor_recv_[i].Pos, motor_recv_[i].W);
+                }
+                loop_rate.sleep();
+            }
+            break;
         }
-    }
-    else
-    {
-        ROS_ERROR_STREAM("Motor control type error!");
+        default: {
+            ROS_ERROR_STREAM("Motor control type error!");
+            break;
+        }
     }
 }
 
@@ -329,7 +329,7 @@ void GoControl::stall(std::vector<SerialPort*>& port)
         ROS_DEBUG_STREAM("position: " << motor_recv_[i].Pos << motor_recv_[i].T);
     }
 
-    ROS_INFO("End of motor Go operation!");
+    ROS_INFO("Motor Go run over!");
 }
 
 /**
@@ -338,9 +338,9 @@ void GoControl::stall(std::vector<SerialPort*>& port)
 void GoControl::operator()()
 {
     // open serial port
-    // std::array<SerialPort, 4> serial_port{ SerialPort("/dev/ttyUSB0"), SerialPort("/dev/ttyUSB1"),
-    //                                        SerialPort("/dev/ttyUSB2"), SerialPort("/dev/ttyUSB3") };
-    std::array<SerialPort, 1> serial_port{ SerialPort("/dev/ttyUSB0") };
+    std::array<SerialPort, 4> serial_port{ SerialPort(serial_port_[0]), SerialPort(serial_port_[1]),
+                                           SerialPort(serial_port_[2]), SerialPort(serial_port_[3]) };
+    // std::array<SerialPort, 1> serial_port{ SerialPort("/dev/ttyUSB0") };
 
     std::vector<SerialPort*> serial{};
     for (auto iter = serial_port.begin(); iter != serial_port.end(); ++iter)

@@ -57,6 +57,7 @@ ChassisCtrl::ChassisCtrl(ros::NodeHandle& nh) : nh_(nh)
     steer_state_.data.resize(wheelsets_.size());
     steer_cmd_.data.resize(wheelsets_.size());
     roll_cmd_.data.resize(wheelsets_.size());
+    last_angle_.resize(wheelsets_.size());
 
     ramp_vel_.resize(wheelsets_.size());
     ramp_angle_.resize(wheelsets_.size());
@@ -89,22 +90,32 @@ void ChassisCtrl::update(const ros::Time& time)
 void ChassisCtrl::moveJoint()
 {
     Vec2<double> vel_center(cmd_vel_.x, cmd_vel_.y);  // velocity of wheelset
+    double target_angle = 0.0, target_vel = 0.0;
     for (size_t i = 0; i < wheelsets_.size(); ++i)
     {
-        // Calculate the speed and angle of each wheelset based on the speed of car center
-        Vec2<double> vel =
-            vel_center + cmd_vel_.z * Vec2<double>(-wheelsets_[i].position_.y(), wheelsets_[i].position_.x());
-        double vel_angle = std::atan2(vel.y(), vel.x());
-
-        // Direction flipping and Stray wheelset mitigation
-        double a = angles::shortest_angular_distance(steer_state_.data[i], vel_angle);
-        double b = angles::shortest_angular_distance(steer_state_.data[i], vel_angle + M_PI);
-        double target_angle = 0.0, target_vel = 0.0;
-        if (std::abs(a) > std::abs(b))
-            target_angle = (vel_angle + M_PI) > M_PI ? angles::normalize_angle(vel_angle + M_PI) : vel_angle + M_PI;
+        if (0 == cmd_vel_.x && 0 == cmd_vel_.y && 0 == cmd_vel_.z)
+        {
+            // If all velocity commands are 0, the wheelset maintains the current angle and the velocity is reduced to 0
+            target_angle = last_angle_[i];
+            target_vel = 0;
+        }
         else
-            target_angle = vel_angle;
-        target_vel = vel.norm() / wheelsets_[i].wheel_radius_ * std::cos(a) * wheelsets_[i].roll_direction_;
+        {
+            // Calculate the speed and angle of each wheelset based on the speed of car center
+            Vec2<double> vel =
+                vel_center + cmd_vel_.z * Vec2<double>(-wheelsets_[i].position_.y(), wheelsets_[i].position_.x());
+            double vel_angle = std::atan2(vel.y(), vel.x());
+
+            // Direction flipping and Stray wheelset mitigation
+            double a = angles::shortest_angular_distance(steer_state_.data[i], vel_angle);
+            double b = angles::shortest_angular_distance(steer_state_.data[i], vel_angle + M_PI);
+            if (std::abs(a) > std::abs(b))
+                target_angle = (vel_angle + M_PI) > M_PI ? angles::normalize_angle(vel_angle + M_PI) : vel_angle + M_PI;
+            else
+                target_angle = vel_angle;
+            last_angle_[i] = target_angle;
+            target_vel = vel.norm() / wheelsets_[i].wheel_radius_ * std::cos(a) * wheelsets_[i].roll_direction_;
+        }
 
         // Smoothing steering angle and rolling velocity
         ramp_angle_[i]->input(target_angle);

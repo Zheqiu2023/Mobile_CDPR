@@ -18,7 +18,10 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "motor_re35");
     ros::NodeHandle nh("~");
 
-    motor_re35::MotorRun m_run(nh);
+    ros::AsyncSpinner spinner(3);
+    spinner.start();
+
+    motor_re35::MotorDriver m_run(nh);
 
     m_run.run();
 

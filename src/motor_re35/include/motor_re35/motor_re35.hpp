@@ -13,7 +13,8 @@
 #pragma once
 
 #include <ros/ros.h>
-#include <std_msgs/Float32.h>
+#include <std_msgs/Float32MultiArray.h>
+#include <mutex>
 
 #include "cdpr_bringup/CanFrame.h"
 #include "cdpr_bringup/CanCmd.h"
@@ -23,21 +24,36 @@ namespace motor_re35
 {
 constexpr unsigned short PWM_LIM = 5000;  // pwm限制值：0~5000，若供电电压与额定电压一致，设为5000
 
-class MotorRun
+struct MotorData
+{
+    int driver_id_;
+    float target_pos_, target_force_;
+    cdpr_bringup::CanCmd pub_cmd_;
+};
+
+class MotorDriver
 {
   public:
-    MotorRun(ros::NodeHandle& nh);
+    MotorDriver(ros::NodeHandle& nh);
     void run();
 
   private:
     void init(const int& run_mode);
     void publishCmd(const cdpr_bringup::CanCmd& cmd_struct);
 
-    std::vector<int> driver_id_{};
-    std::vector<cdpr_bringup::CanCmd> pub_cmd_{};
+    void recvCableLengthCB(const std_msgs::Float32MultiArray::ConstPtr& length);
+    void recvCableForceCB(const std_msgs::Float32MultiArray::ConstPtr& force);
+    void recvStateCB(const cdpr_bringup::CanFrame::ConstPtr& state);
+
+    int reduction_ratio_ = 0, encoder_lines_num_ = 0;
+    float reel_radius_ = 0.0;
+
+    std::vector<MotorData> motor_data_{};
 
     ros::NodeHandle nh_;
-    ros::Publisher pub_;
-    ros::Subscriber sub_;
+    ros::V_Publisher pubs_;
+    ros::V_Subscriber subs_;
+
+    std::mutex mtx1_, mtx2_;
 };
 }  // namespace motor_re35

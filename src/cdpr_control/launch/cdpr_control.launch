@@ -2,4 +2,5 @@
 <launch>
     <rosparam command="load" file="$(find cdpr_control)/config/cdpr_config.yaml"/>
     <node pkg="cdpr_control" type="chassis_ctrl" name="chassis" output="screen" clear_params="true"/>
+    <node pkg="cdpr_control" type="cable_archor_ctrl" name="cable_archor" output="screen" clear_params="true"/>
 </launch>

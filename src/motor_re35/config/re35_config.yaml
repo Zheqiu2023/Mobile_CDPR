@@ -12,14 +12,14 @@ can_config:
   #   dev_ind: 0
   #   can_ind: 1
   #   driver_id: 1 
-  # m1: # right front
-  #   dev_ind: 0
-  #   can_ind: 1
-  #   driver_id: 2 
-  m2: # left back
+  m1: # right front
     dev_ind: 0
     can_ind: 1
-    driver_id: 3 
+    driver_id: 2 
+  # m2: # left back
+  #   dev_ind: 1
+  #   can_ind: 1
+  #   driver_id: 3 
   # m3: # right back
   #   dev_ind: 1
   #   can_ind: 1

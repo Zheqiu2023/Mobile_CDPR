@@ -19,7 +19,7 @@
 
 using namespace motor_57;
 
-MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh)
+MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh), is_traj_end_(false)
 {
     // Configure command waited to be sent
     XmlRpc::XmlRpcValue can_config;
@@ -37,7 +37,7 @@ MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh)
         pub_cmd.dev_ind = static_cast<unsigned int>((int)iter->second["dev_ind"]);
         pub_cmd.can_ind = static_cast<unsigned int>((int)iter->second["can_ind"]);
         pub_cmd.cmd.ID =
-            static_cast<unsigned int>(int(iter->second["can_id"]));  // CAN frame ID, same as CAN driver's address
+            static_cast<unsigned int>((int)iter->second["can_id"]);  // CAN frame ID, same as CAN driver's address
         pub_cmd.cmd.SendType = 1;    // Single send (sends only once, does not automatically retransmit after a failed
                                      // send, CAN bus generates only one frame of data)
         pub_cmd.cmd.RemoteFlag = 0;  // 0 for data frame, 1 for remote frame
@@ -63,13 +63,12 @@ MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh)
     ros::Duration(1.0).sleep();  // Sleep for 1s to ensure that the first message sent is received by USBCAN
 }
 
-void MotorDriver::recvPosCallback(const std_msgs::Float32MultiArray::ConstPtr& pos)
+void MotorDriver::recvPosCallback(const cdpr_bringup::TrajCmd::ConstPtr& pos)
 {
     std::lock_guard<std::mutex> guard(mutex_);
+    is_traj_end_ = pos->is_traj_end;
     for (size_t i = 0; i < motor_data_.size(); ++i)
-    {
-        motor_data_[i].target_pos_ = pos->data[i];
-    }
+        motor_data_[i].target_pos_ = pos->target[i];
 }
 
 void MotorDriver::recvStateCallback(const cdpr_bringup::CanFrame::ConstPtr& state)
@@ -89,31 +88,29 @@ void MotorDriver::publishCmd(const cdpr_bringup::CanCmd& cmd_struct)
     pubs_[0].publish(cmd_struct);
 }
 
-void MotorDriver::setCmd(cdpr_bringup::CanFrame& cmd, StepperMotorRunMode cmd_mode, const std::vector<int>& pos_vec)
+void MotorDriver::setCmd(cdpr_bringup::CanFrame& cmd, RunMode cmd_mode, const std::vector<int>& pos_vec)
 {
     switch (cmd_mode)
     {
-        case StepperMotorRunMode::RESET:
-            cmd.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X01);  // Reset command (return required)
-            cmd.Data[7] = 1;                                                      // When reset complete, return command
+        case RunMode::RESET:
+            cmd.Data[2] = (CMD_REQUEST << 5) | 0X01;  // Reset command (return required)
+            cmd.Data[7] = 1;                          // When reset complete, return command
             break;
-        case StepperMotorRunMode::POS:
-            cmd.Data[2] =
-                static_cast<unsigned char>((CMD_REQUEST << 5) | 0X02);  // Positioning command (return required)
-            cmd.Data[7] = 1;                                            // When in place, return command
+        case RunMode::POS:
+            cmd.Data[2] = (CMD_REQUEST << 5) | 0X02;  // Positioning command (return required)
+            cmd.Data[7] = 1;                          // When in place, return command
             break;
-        case StepperMotorRunMode::VEL_FORWARD:
-            cmd.Data[2] =
-                static_cast<unsigned char>((CMD_REQUEST << 5) | 0X03);  // Forward rotating command (return required)
+        case RunMode::VEL_FORWARD:
+            cmd.Data[2] = (CMD_REQUEST << 5) | 0X03;  // Forward rotating command (return required)
             cmd.Data[7] = 3;  // The command returns after turning IntDate step in the positive direction.
             break;
-        case StepperMotorRunMode::VEL_REVERSE:
-            cmd.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X04);  // Reverse command (return required)
+        case RunMode::VEL_REVERSE:
+            cmd.Data[2] = (CMD_REQUEST << 5) | 0X04;  // Reverse command (return required)
             cmd.Data[7] = 3;  // The command returns after turning IntDate step in the opposite direction.
             break;
-        case StepperMotorRunMode::STALL:
-            cmd.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X05);  // Stop command (return required)
-            cmd.Data[7] = 1;  // Deceleration till stop, return command
+        case RunMode::STALL:
+            cmd.Data[2] = (CMD_REQUEST << 5) | 0X05;  // Stop command (return required)
+            cmd.Data[7] = 1;                          // Deceleration till stop, return command
             break;
         default:
             ROS_WARN_NAMED(name_space_, "Motor run mode error!");
@@ -135,14 +132,14 @@ void MotorDriver::run()
     {
         case 0: {  // position
             ROS_INFO_NAMED(name_space_, "Reset before localization!");
-            // Reset: back to zero position
+            // Reset: move to zero position
             while (ros::ok())
             {
                 for (auto& motor_data : motor_data_)
                 {
                     if (true == motor_data.is_reset_)
                         continue;
-                    setCmd(motor_data.pub_cmd_.cmd, StepperMotorRunMode::RESET, pos_vec);
+                    setCmd(motor_data.pub_cmd_.cmd, RunMode::RESET, pos_vec);
                     publishCmd(motor_data.pub_cmd_);
                 }
 
@@ -155,12 +152,11 @@ void MotorDriver::run()
                 }
                 ros::spinOnce();
             }
-            ros::Duration(1.0).sleep();
-            ROS_INFO_NAMED(name_space_, "Reset done!");
 
             std_msgs::Bool reset_done{};
             reset_done.data = true;
             pubs_[1].publish(reset_done);
+            ROS_INFO_NAMED(name_space_, "Reset done!");
 
             // follow the trajectory
             while (ros::ok())
@@ -168,75 +164,79 @@ void MotorDriver::run()
                 std::lock_guard<std::mutex> guard(mutex_);
                 for (auto& motor_data : motor_data_)
                 {
-                    int cmd_pos =
-                        static_cast<int>((motor_data.target_pos_ * 1000 * 360 / lead_) / (step_angle_ / sub_divide_));
-                    for (size_t i = 0; i < pos_vec.size(); ++i)
-                        pos_vec[i] = (cmd_pos >> (8 * i)) & 0xff;
-
-                    pos_vec = { 0, 0x1f, 0, 0 };
+                    int cmd_pos = round((motor_data.target_pos_ * 1000 * 360 / lead_) / (step_angle_ / sub_divide_));
                     if (motor_data.direction_ == 1)
-                        setCmd(motor_data.pub_cmd_.cmd, StepperMotorRunMode::VEL_REVERSE, pos_vec);
+                    {
+                        for (size_t i = 0; i < pos_vec.size(); ++i)
+                            pos_vec[i] = 0xff - (cmd_pos >> (8 * i)) & 0xff;
+                    }
                     else if (motor_data.direction_ == -1)
-                        setCmd(motor_data.pub_cmd_.cmd, StepperMotorRunMode::VEL_FORWARD, pos_vec);
+                    {
+                        for (size_t i = 0; i < pos_vec.size(); ++i)
+                            pos_vec[i] = (cmd_pos >> (8 * i)) & 0xff;
+                    }
+
+                    setCmd(motor_data.pub_cmd_.cmd, RunMode::POS, pos_vec);
                     publishCmd(motor_data.pub_cmd_);
                 }
-                sleep(2);
+                if (is_traj_end_)
+                    break;
             }
-            // Return to initial position
+
+            ros::Duration(1.0).sleep();  // buffering time for motors moving back to zero position
+            break;
+        }
+        case 1: {  // close to motor
+            nh_.getParam("target_data/target_vel_close_arr", pos_vec);
+            ROS_INFO_NAMED(name_space_, "Move close to motor!");
+
+            ROS_INFO_NAMED(name_space_, "Press p to stop moving: ");
+            while (ros::ok())
+            {
+                for (auto& motor_data : motor_data_)
+                {
+                    if (motor_data.direction_ == 1)
+                        setCmd(motor_data.pub_cmd_.cmd, RunMode::VEL_FORWARD, pos_vec);
+                    else if (motor_data.direction_ == -1)
+                        setCmd(motor_data.pub_cmd_.cmd, RunMode::VEL_REVERSE, pos_vec);
+                    publishCmd(motor_data.pub_cmd_);
+                }
+                getline(std::cin, is_stall);
+                if (is_stall == "p")
+                    break;
+            }
+
             for (auto& motor_data : motor_data_)
             {
-                for (auto& pos : pos_vec)
-                    pos = 0;
+                setCmd(motor_data.pub_cmd_.cmd, RunMode::STALL, pos_vec);
+                publishCmd(motor_data.pub_cmd_);
+            }
+            break;
+        }
+        case 2: {  // away from motor
+            nh_.getParam("target_data/target_vel_away_arr", pos_vec);
+            ROS_INFO_NAMED(name_space_, "Move away from motor!");
+
+            for (auto& motor_data : motor_data_)
+            {
                 if (motor_data.direction_ == 1)
-                    setCmd(motor_data.pub_cmd_.cmd, StepperMotorRunMode::VEL_REVERSE, pos_vec);
+                    setCmd(motor_data.pub_cmd_.cmd, RunMode::VEL_REVERSE, pos_vec);
                 else if (motor_data.direction_ == -1)
-                    setCmd(motor_data.pub_cmd_.cmd, StepperMotorRunMode::VEL_FORWARD, pos_vec);
+                    setCmd(motor_data.pub_cmd_.cmd, RunMode::VEL_FORWARD, pos_vec);
                 publishCmd(motor_data.pub_cmd_);
             }
-            break;
-        }
-        case 1: {  // foward rotation
-            nh_.getParam("target_data/target_vel_forward_arr", pos_vec);
-            ROS_INFO_NAMED(name_space_, "Forward rotation!");
 
-            for (auto& motor_data : motor_data_)
-            {
-                setCmd(motor_data.pub_cmd_.cmd, StepperMotorRunMode::VEL_FORWARD, pos_vec);
-                publishCmd(motor_data.pub_cmd_);
-            }
-            ROS_INFO_NAMED(name_space_, "Press p to stop rotation: ");
+            ROS_INFO_NAMED(name_space_, "Press p to stop moving: ");
             while (ros::ok())
             {
                 getline(std::cin, is_stall);
                 if (is_stall == "p")
                     break;
             }
-            for (auto& motor_data : motor_data_)
-            {
-                setCmd(motor_data.pub_cmd_.cmd, StepperMotorRunMode::STALL, pos_vec);
-                publishCmd(motor_data.pub_cmd_);
-            }
-            break;
-        }
-        case 2: {  // reverse rotation
-            nh_.getParam("target_data/target_vel_reverse_arr", pos_vec);
-            ROS_INFO_NAMED(name_space_, "Reverse rotation!");
 
             for (auto& motor_data : motor_data_)
             {
-                setCmd(motor_data.pub_cmd_.cmd, StepperMotorRunMode::VEL_REVERSE, pos_vec);
-                publishCmd(motor_data.pub_cmd_);
-            }
-            ROS_INFO_NAMED(name_space_, "Press p to stop rotation: ");
-            while (ros::ok())
-            {
-                getline(std::cin, is_stall);
-                if (is_stall == "p")
-                    break;
-            }
-            for (auto& motor_data : motor_data_)
-            {
-                setCmd(motor_data.pub_cmd_.cmd, StepperMotorRunMode::STALL, pos_vec);
+                setCmd(motor_data.pub_cmd_.cmd, RunMode::STALL, pos_vec);
                 publishCmd(motor_data.pub_cmd_);
             }
             break;

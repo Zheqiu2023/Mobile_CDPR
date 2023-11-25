@@ -13,12 +13,12 @@
 #pragma once
 
 #include <ros/ros.h>
-#include <std_msgs/Float32MultiArray.h>
 #include <mutex>
 
 #include "cdpr_bringup/CanFrame.h"
 #include "cdpr_bringup/CanCmd.h"
 #include "cdpr_bringup/usb_can/controlcan.h"
+#include "cdpr_bringup/TrajCmd.h"
 
 namespace motor_re35
 {
@@ -27,7 +27,7 @@ constexpr unsigned short PWM_LIM = 5000;  // pwm限制值：0~5000，若供电�
 struct MotorData
 {
     int driver_id_;
-    float target_pos_, target_force_;
+    double target_pos_, target_force_;
     cdpr_bringup::CanCmd pub_cmd_;
 };
 
@@ -41,13 +41,14 @@ class MotorDriver
     void init(const int& run_mode);
     void publishCmd(const cdpr_bringup::CanCmd& cmd_struct);
 
-    void recvCableLengthCB(const std_msgs::Float32MultiArray::ConstPtr& length);
-    void recvCableForceCB(const std_msgs::Float32MultiArray::ConstPtr& force);
+    void recvCableLengthCB(const cdpr_bringup::TrajCmd::ConstPtr& length);
+    void recvCableForceCB(const cdpr_bringup::TrajCmd::ConstPtr& force);
     void recvStateCB(const cdpr_bringup::CanFrame::ConstPtr& state);
 
     int reduction_ratio_ = 0, encoder_lines_num_ = 0;
-    float reel_radius_ = 0.0;
+    double reel_radius_ = 0.0;
 
+    bool is_traj_end_;
     std::vector<MotorData> motor_data_{};
 
     ros::NodeHandle nh_;

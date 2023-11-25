@@ -51,5 +51,5 @@ operating_param:
   
 target_data:
   target_pos_arr: [0x0, 0xff, 0, 0] 
-  target_vel_forward_arr: [0, 0xff, 0x01, 0] 
-  target_vel_reverse_arr: [0, 0xff, 0, 0]
+  target_vel_close_arr: [0, 0xff, 0x01, 0] 
+  target_vel_away_arr: [0, 0xff, 0, 0]

@@ -55,6 +55,7 @@ add_message_files(
   CanFrame.msg
   ActuatorState.msg
   CanCmd.msg
+  TrajCmd.msg
 )
 
 ## Generate services in the 'srv' folder

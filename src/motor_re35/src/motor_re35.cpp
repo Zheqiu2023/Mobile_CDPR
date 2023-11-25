@@ -42,7 +42,7 @@ MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh)
         pub_cmd.cmd.ExternFlag = 0;  // 0 for standard frame, 1 for expanded frame
         pub_cmd.cmd.DataLen = 8;     // Data length 8 bytes
 
-        motor_data_.push_back(MotorData{ .driver_id_ = (int)iter->second["driver_id"],
+        motor_data_.push_back(MotorData{ .driver_id_ = static_cast<int>(iter->second["driver_id"]),
                                          .target_pos_ = 0.0,
                                          .target_force_ = 0.0,
                                          .pub_cmd_ = std::move(pub_cmd) });
@@ -74,22 +74,19 @@ void MotorDriver::recvStateCB(const cdpr_bringup::CanFrame::ConstPtr& state)
     }
 }
 
-void MotorDriver::recvCableLengthCB(const std_msgs::Float32MultiArray::ConstPtr& length)
+void MotorDriver::recvCableLengthCB(const cdpr_bringup::TrajCmd::ConstPtr& length)
 {
     std::lock_guard<std::mutex> guard(mtx1_);
+    is_traj_end_ = length->is_traj_end;
     for (size_t i = 0; i < motor_data_.size(); ++i)
-    {
-        motor_data_[i].target_pos_ = length->data[i];
-    }
+        motor_data_[i].target_pos_ = length->target[i];
 }
 
-void MotorDriver::recvCableForceCB(const std_msgs::Float32MultiArray::ConstPtr& force)
+void MotorDriver::recvCableForceCB(const cdpr_bringup::TrajCmd::ConstPtr& force)
 {
     std::lock_guard<std::mutex> guard(mtx2_);
     for (size_t i = 0; i < motor_data_.size(); ++i)
-    {
-        motor_data_[i].target_force_ = force->data[i];
-    }
+        motor_data_[i].target_force_ = force->target[i];
 }
 
 void MotorDriver::publishCmd(const cdpr_bringup::CanCmd& cmd_struct)
@@ -104,8 +101,7 @@ void MotorDriver::init(const int& run_mode)
         // 发送复位指令
         motor_data.pub_cmd_.cmd.ID =
             0x000 | (motor_data.driver_id_ << 4);  // 复位指令（帧ID，由驱动器编号和功能序号决定）
-        for (auto& data : motor_data.pub_cmd_.cmd.Data)
-            data = 0x55;
+        std::fill(motor_data.pub_cmd_.cmd.Data.begin(), motor_data.pub_cmd_.cmd.Data.end(), 0x55);
         publishCmd(motor_data.pub_cmd_);
     }
     usleep(500000);
@@ -113,8 +109,6 @@ void MotorDriver::init(const int& run_mode)
     {
         // 发送配置指令
         motor_data.pub_cmd_.cmd.ID = 0x00A | (motor_data.driver_id_ << 4);  // 配置指令
-        for (auto& data : motor_data.pub_cmd_.cmd.Data)
-            data = 0x55;
         motor_data.pub_cmd_.cmd.Data[0] = 0x0a;  // 以 10 毫秒为周期对外发送电流、速度、位置等信息
         motor_data.pub_cmd_.cmd.Data[1] = 0x00;
         publishCmd(motor_data.pub_cmd_);
@@ -124,26 +118,23 @@ void MotorDriver::init(const int& run_mode)
     {
         // 发送模式选择指令
         motor_data.pub_cmd_.cmd.ID = 0x001 | (motor_data.driver_id_ << 4);  // 模式选择指令
-        for (auto& data : motor_data.pub_cmd_.cmd.Data)
-            data = 0x55;
+        motor_data.pub_cmd_.cmd.Data[1] = 0x55;
         switch (run_mode)
         {
             case 5:
                 motor_data.pub_cmd_.cmd.Data[0] = 0x05;  // 选择速度位置模式
-                publishCmd(motor_data.pub_cmd_);
                 break;
             case 7:
                 motor_data.pub_cmd_.cmd.Data[0] = 0x07;  // 选择电流位置模式
-                publishCmd(motor_data.pub_cmd_);
                 break;
             case 8:
                 motor_data.pub_cmd_.cmd.Data[0] = 0x08;  // 选择电流速度位置模式
-                publishCmd(motor_data.pub_cmd_);
                 break;
             default:
                 ROS_ERROR("Undefined run mode!");
                 break;
         }
+        publishCmd(motor_data.pub_cmd_);
     }
     usleep(500000);
 }
@@ -153,7 +144,7 @@ void MotorDriver::init(const int& run_mode)
  */
 void MotorDriver::run()
 {
-    int run_mode = nh_.param("run_mode", 5);
+    int run_mode = nh_.param("run_mode", 8);
     init(run_mode);
 
     switch (run_mode)
@@ -225,13 +216,8 @@ void MotorDriver::run()
 
                     publishCmd(motor_data_[i].pub_cmd_);
                 }
-            }
-            // Return to initial position
-            for (auto& motor_data : motor_data_)
-            {
-                for (size_t i = 4; i < 8; ++i)
-                    motor_data.pub_cmd_.cmd.Data[i] = 0;
-                publishCmd(motor_data.pub_cmd_);
+                if (is_traj_end_)
+                    break;
             }
             break;
         }

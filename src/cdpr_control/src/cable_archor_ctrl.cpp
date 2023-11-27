@@ -14,13 +14,13 @@ namespace cable_archor_ctrl
 class CableArchorCtrl
 {
   public:
-    CableArchorCtrl(ros::NodeHandle& nh) : nh_(nh), is_re35_reset_(false), is_stepper57_reset_(true)
+    CableArchorCtrl(ros::NodeHandle& nh) : nh_(nh), is_re35_ready_(false), is_stepper57_ready_(true)
     {
         pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/stepper_57/archor_coor_z", 100));
         pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/maxon_re35/cable_length", 100));
         pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/maxon_re35/cable_force", 100));
-        subs_.emplace_back(nh.subscribe("/maxon_re35/reset_flag", 10, &CableArchorCtrl::re35ResetCallback, this));
-        subs_.emplace_back(nh.subscribe("/stepper_57/reset_flag", 10, &CableArchorCtrl::stepper57ResetCallback, this));
+        subs_.emplace_back(nh.subscribe("/maxon_re35/ready_state", 10, &CableArchorCtrl::re35ResetCallback, this));
+        subs_.emplace_back(nh.subscribe("/stepper_57/ready_state", 10, &CableArchorCtrl::stepper57ResetCallback, this));
 
         archor_coor_z_.is_traj_end = false;
         cable_length_.is_traj_end = false;
@@ -35,10 +35,11 @@ class CableArchorCtrl
 
         std::string line, data;
         std::istringstream s;
+        double traj_period = nh_.param("traj_period", 0.3);
         // read title
         getline(f_in, line);
         // wait for motors reset to complete
-        while (!is_re35_reset_ || !is_stepper57_reset_)
+        while (!is_re35_ready_ || !is_stepper57_ready_)
             ros::spinOnce();
         // read data
         while (getline(f_in, line))
@@ -72,7 +73,7 @@ class CableArchorCtrl
             pubs_[0].publish(archor_coor_z_);
             pubs_[1].publish(cable_length_);
             // pubs_[2].publish(cable_force_);
-            ros::Duration(0.3).sleep();
+            ros::Duration(traj_period).sleep();
         }
         // End of trajectory, all motors move back to zero position then stop
         archor_coor_z_.is_traj_end = true;
@@ -89,17 +90,17 @@ class CableArchorCtrl
     }
 
   private:
-    void re35ResetCallback(const std_msgs::Bool::ConstPtr& is_reset)
+    void re35ResetCallback(const std_msgs::Bool::ConstPtr& is_ready)
     {
-        is_re35_reset_ = is_reset->data;
+        is_re35_ready_ = is_ready->data;
     }
-    void stepper57ResetCallback(const std_msgs::Bool::ConstPtr& is_reset)
+    void stepper57ResetCallback(const std_msgs::Bool::ConstPtr& is_ready)
     {
-        is_stepper57_reset_ = is_reset->data;
+        is_stepper57_ready_ = is_ready->data;
     }
 
     cdpr_bringup::TrajCmd archor_coor_z_{}, cable_length_{}, cable_force_{};
-    bool is_re35_reset_, is_stepper57_reset_;
+    bool is_re35_ready_, is_stepper57_ready_;
 
     ros::NodeHandle nh_;
     ros::V_Publisher pubs_;

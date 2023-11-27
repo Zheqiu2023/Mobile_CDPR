@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-    <!-- <include file="$(find cdpr_control)/launch/cdpr_control.launch"/> -->
+    <include file="$(find cdpr_control)/launch/cdpr_control.launch"/>
         
     <!-- run usb_can node when need to use USB_CAN -->
     <node pkg="usb_can" type="usb_can_node" name="usbcan" output="screen"/>

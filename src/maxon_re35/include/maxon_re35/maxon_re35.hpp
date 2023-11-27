@@ -26,8 +26,8 @@ constexpr unsigned short PWM_LIM = 5000;  // pwm限制值：0~5000，若供电�
 
 struct MotorData
 {
-    int driver_id_;
-    double target_pos_, target_force_;
+    int driver_id_, direction_;
+    double target_pos_, last_pos_, target_force_;
     cdpr_bringup::CanCmd pub_cmd_;
 };
 
@@ -46,7 +46,7 @@ class MotorDriver
     void motorStateCB(const cdpr_bringup::CanFrame::ConstPtr& state);
 
     int reduction_ratio_ = 0, encoder_lines_num_ = 0;
-    double reel_radius_ = 0.0;
+    double reel_diameter_ = 0.0, traj_period_ = 0.0;
 
     bool is_traj_end_;
     std::vector<MotorData> motor_data_{};

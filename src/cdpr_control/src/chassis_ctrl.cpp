@@ -29,7 +29,7 @@ ChassisCtrl::ChassisCtrl(ros::NodeHandle& nh) : nh_(nh)
     double accel = 0.0;
     if (!nh_.getParam("wheelsets", wheelsets) || !nh_.getParam("accel", accel) || !nh_.getParam("timeout", timeout_))
     {
-        ROS_ERROR("Some chassis params doesn't given in namespace: '%s')", name_space_.c_str());
+        ROS_ERROR("Some chassis params are not given in namespace: '%s')", name_space_.c_str());
         return;
     }
     ROS_ASSERT(wheelsets.getType() == XmlRpc::XmlRpcValue::TypeStruct);

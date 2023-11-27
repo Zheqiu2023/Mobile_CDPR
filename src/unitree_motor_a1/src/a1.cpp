@@ -26,7 +26,7 @@ A1Control::A1Control(ros::NodeHandle nh) : nh_(nh)
     // get motor parameters
     if (!(nh_.getParam("id", id_) && nh_.getParam("port_name", serial_port_) &&
           nh_.getParam("reduction_ratio", reduction_ratio_)))
-        ROS_ERROR("Some motor params doesn't given in namespace: '%s')", nh_.getNamespace().c_str());
+        ROS_ERROR("Some motor params are not given in namespace: '%s')", nh_.getNamespace().c_str());
     ROS_ASSERT(serial_port_.size() == 4);
     motor_num_ = id_.size();
 }

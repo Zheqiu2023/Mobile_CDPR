@@ -23,15 +23,18 @@ using namespace maxon_re35;
 
 MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh)
 {
-    XmlRpc::XmlRpcValue can_config;
+    XmlRpc::XmlRpcValue cmd_config;
     if (!(nh_.getParam("reduction_ratio", reduction_ratio_) && nh_.getParam("encoder_lines_num", encoder_lines_num_) &&
-          nh_.getParam("can_config", can_config)))
-        ROS_ERROR("Some motor params doesn't given in namespace: '%s')", nh_.getNamespace().c_str());
-    ROS_ASSERT(can_config.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    for (auto iter = can_config.begin(); iter != can_config.end(); ++iter)
+          nh_.getParam("cmd_config", cmd_config)))
+        ROS_ERROR("Some motor params are not given in namespace: '%s')", nh_.getNamespace().c_str());
+    if (!(nh_.getParam("/cable_archor/traj_period", traj_period_) &&
+          nh_.getParam("/cable_archor/reel_diameter", reel_diameter_)))
+        ROS_ERROR("Some motor params are not given in namespace: 'cable_archor'");
+    ROS_ASSERT(cmd_config.getType() == XmlRpc::XmlRpcValue::TypeStruct);
+    for (auto iter = cmd_config.begin(); iter != cmd_config.end(); ++iter)
     {
         ROS_ASSERT(iter->second.hasMember("dev_ind") && iter->second.hasMember("can_ind") &&
-                   iter->second.hasMember("driver_id"));
+                   iter->second.hasMember("driver_id") && iter->second.hasMember("direction"));
 
         cdpr_bringup::CanCmd pub_cmd{};
         pub_cmd.dev_ind = static_cast<unsigned int>((int)iter->second["dev_ind"]);
@@ -43,16 +46,18 @@ MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh)
         pub_cmd.cmd.DataLen = 8;     // Data length 8 bytes
 
         motor_data_.push_back(MotorData{ .driver_id_ = static_cast<int>(iter->second["driver_id"]),
+                                         .direction_ = static_cast<int>(iter->second["direction"]),
                                          .target_pos_ = 0.0,
+                                         .last_pos_ = 0.0,
                                          .target_force_ = 0.0,
                                          .pub_cmd_ = std::move(pub_cmd) });
     }
 
     pubs_.emplace_back(nh_.advertise<cdpr_bringup::CanCmd>("motor_cmd", 10));
-    pubs_.emplace_back(nh_.advertise<std_msgs::Bool>("reset_flag", 1));
+    pubs_.emplace_back(nh_.advertise<std_msgs::Bool>("ready_state", 1));
     subs_.emplace_back(nh_.subscribe("cable_length", 10, &MotorDriver::cmdCableLengthCB, this));
     // subs_.emplace_back(nh_.subscribe("cable_force", 10, &MotorDriver::cmdCableForceCB, this));
-    subs_.emplace_back(nh_.subscribe("/usbcan/motor_state", 10, &MotorDriver::motorStateCB, this));
+    // subs_.emplace_back(nh_.subscribe("/usbcan/motor_state", 10, &MotorDriver::motorStateCB, this));
     ros::Duration(1.0).sleep();  // Sleep for 1s to ensure that the first message sent is received by USBCAN
 }
 
@@ -79,12 +84,16 @@ void MotorDriver::cmdCableLengthCB(const cdpr_bringup::TrajCmd::ConstPtr& length
     std::lock_guard<std::mutex> guard(mtx1_);
     is_traj_end_ = length->is_traj_end;
     for (size_t i = 0; i < motor_data_.size(); ++i)
-        motor_data_[i].target_pos_ = length->target[i];
+    {
+        motor_data_[i].last_pos_ = motor_data_[i].target_pos_;
+        motor_data_[i].target_pos_ = length->target[i] * motor_data_[i].direction_;
+    }
 }
 
 void MotorDriver::cmdCableForceCB(const cdpr_bringup::TrajCmd::ConstPtr& force)
 {
     std::lock_guard<std::mutex> guard(mtx2_);
+    is_traj_end_ = force->is_traj_end;
     for (size_t i = 0; i < motor_data_.size(); ++i)
         motor_data_[i].target_force_ = force->target[i];
 }
@@ -124,9 +133,6 @@ void MotorDriver::init(const int& run_mode)
             case 5:
                 motor_data.pub_cmd_.cmd.Data[0] = 0x05;  // 选择速度位置模式
                 break;
-            case 7:
-                motor_data.pub_cmd_.cmd.Data[0] = 0x07;  // 选择电流位置模式
-                break;
             case 8:
                 motor_data.pub_cmd_.cmd.Data[0] = 0x08;  // 选择电流速度位置模式
                 break;
@@ -144,41 +150,49 @@ void MotorDriver::init(const int& run_mode)
  */
 void MotorDriver::run()
 {
-    int run_mode = nh_.param("run_mode", 8);
+    int run_mode = nh_.param("run_mode", 5);
     init(run_mode);
 
     switch (run_mode)
     {
         // 速度位置模式
         case 5: {
-            std::vector<int> target_pos_vec{}, target_pos(motor_data_.size(), 0), history_pos(motor_data_.size(), 0);
-            unsigned short temp_vel = 100;  // 速度限制值(RPM)：0~32767
-            nh_.getParam("target_data/target_pos_vec", target_pos_vec);
+            int cmd_pos = 0.0, cmd_vel = 0.0;  // 速度限制值(RPM)：0~32767
 
             for (auto& motor_data : motor_data_)
             {
                 motor_data.pub_cmd_.cmd.ID = 0x006 | (motor_data.driver_id_ << 4);  // 速度位置模式下的参数指令，非广播
                 motor_data.pub_cmd_.cmd.Data[0] = static_cast<unsigned char>((PWM_LIM >> 8) & 0xff);
                 motor_data.pub_cmd_.cmd.Data[1] = static_cast<unsigned char>(PWM_LIM & 0xff);
-                motor_data.pub_cmd_.cmd.Data[2] = static_cast<unsigned char>((temp_vel >> 8) & 0xff);
-                motor_data.pub_cmd_.cmd.Data[3] = static_cast<unsigned char>(temp_vel & 0xff);
             }
-            for (auto& temp_pos : target_pos_vec)
+
+            std_msgs::Bool is_ready{};
+            is_ready.data = true;
+            pubs_[1].publish(is_ready);
+            ROS_INFO("Reset done, ready to follow the trajectory!");
+
+            while (ros::ok())
             {
+                std::lock_guard<std::mutex> guard(mtx1_);
                 for (size_t i = 0; i < motor_data_.size(); ++i)
                 {
-                    history_pos[i] += temp_pos;
-                    target_pos[i] = history_pos[i] * reduction_ratio_ * encoder_lines_num_ / 360;  // °转换为qc
-                    motor_data_[i].pub_cmd_.cmd.Data[4] = static_cast<unsigned char>((target_pos[i] >> 24) & 0xff);
-                    motor_data_[i].pub_cmd_.cmd.Data[5] = static_cast<unsigned char>((target_pos[i] >> 16) & 0xff);
-                    motor_data_[i].pub_cmd_.cmd.Data[6] = static_cast<unsigned char>((target_pos[i] >> 8) & 0xff);
-                    motor_data_[i].pub_cmd_.cmd.Data[7] = static_cast<unsigned char>(target_pos[i] & 0xff);
+                    cmd_pos = std::round(motor_data_[i].target_pos_ * reduction_ratio_ * encoder_lines_num_ /
+                                         (M_PI * reel_diameter_));  // m转换为qc
+                    cmd_vel = std::ceil(std::fabs((motor_data_[i].target_pos_ - motor_data_[i].last_pos_) * 60 *
+                                                  reduction_ratio_ / (traj_period_ * M_PI * reel_diameter_)));
+
+                    motor_data_[i].pub_cmd_.cmd.Data[2] = static_cast<unsigned char>((cmd_vel >> 8) & 0xff);
+                    motor_data_[i].pub_cmd_.cmd.Data[3] = static_cast<unsigned char>(cmd_vel & 0xff);
+                    motor_data_[i].pub_cmd_.cmd.Data[4] = static_cast<unsigned char>((cmd_pos >> 24) & 0xff);
+                    motor_data_[i].pub_cmd_.cmd.Data[5] = static_cast<unsigned char>((cmd_pos >> 16) & 0xff);
+                    motor_data_[i].pub_cmd_.cmd.Data[6] = static_cast<unsigned char>((cmd_pos >> 8) & 0xff);
+                    motor_data_[i].pub_cmd_.cmd.Data[7] = static_cast<unsigned char>(cmd_pos & 0xff);
 
                     publishCmd(motor_data_[i].pub_cmd_);
                 }
-                sleep(1);
+                if (is_traj_end_)
+                    break;
             }
-
             break;
         }
         // 电流速度位置模式
@@ -203,8 +217,8 @@ void MotorDriver::run()
                 std::lock_guard<std::mutex> guard(mtx1_);
                 for (size_t i = 0; i < motor_data_.size(); ++i)
                 {
-                    cmd_pos[i] = motor_data_[i].target_pos_ * 1000 * reduction_ratio_ * encoder_lines_num_ /
-                                 (2 * M_PI * reel_radius_);  // °转换为qc
+                    cmd_pos[i] = motor_data_[i].target_pos_ * reduction_ratio_ * encoder_lines_num_ /
+                                 (M_PI * reel_diameter_);  // m转换为qc
                     motor_data_[i].pub_cmd_.cmd.Data[0] = static_cast<unsigned char>((temp_current >> 8) & 0xff);
                     motor_data_[i].pub_cmd_.cmd.Data[1] = static_cast<unsigned char>(temp_current & 0xff);
                     motor_data_[i].pub_cmd_.cmd.Data[4] = static_cast<unsigned char>((cmd_pos[i] >> 24) & 0xff);

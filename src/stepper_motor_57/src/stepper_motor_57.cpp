@@ -22,13 +22,13 @@ using namespace stepper_57;
 MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh), is_traj_end_(false)
 {
     // Configure command waited to be sent
-    XmlRpc::XmlRpcValue can_config;
+    XmlRpc::XmlRpcValue cmd_config;
     name_space_ = nh_.getNamespace();
-    if (!(nh_.getParam("can_config", can_config) && nh_.getParam("lead", lead_) &&
+    if (!(nh_.getParam("cmd_config", cmd_config) && nh_.getParam("lead", lead_) &&
           nh_.getParam("step_angle", step_angle_) && nh_.getParam("sub_divide", sub_divide_)))
-        ROS_ERROR("Some motor params doesn't given in namespace: '%s')", name_space_.c_str());
-    ROS_ASSERT(can_config.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    for (auto iter = can_config.begin(); iter != can_config.end(); ++iter)
+        ROS_ERROR("Some motor params are not given in namespace: '%s')", name_space_.c_str());
+    ROS_ASSERT(cmd_config.getType() == XmlRpc::XmlRpcValue::TypeStruct);
+    for (auto iter = cmd_config.begin(); iter != cmd_config.end(); ++iter)
     {
         ROS_ASSERT(iter->second.hasMember("dev_ind") && iter->second.hasMember("can_ind") &&
                    iter->second.hasMember("can_id") && iter->second.hasMember("direction"));
@@ -56,7 +56,7 @@ MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh), is_traj_end_(false)
     }
 
     pubs_.emplace_back(nh_.advertise<cdpr_bringup::CanCmd>("motor_cmd", 10));
-    pubs_.emplace_back(nh_.advertise<std_msgs::Bool>("reset_flag", 1));
+    pubs_.emplace_back(nh_.advertise<std_msgs::Bool>("ready_state", 1));
     subs_.emplace_back(nh_.subscribe("/usbcan/motor_state", 10, &MotorDriver::motorStateCallback, this));
     subs_.emplace_back(nh_.subscribe("archor_coor_z", 10, &MotorDriver::cmdPosCallback, this));
 
@@ -153,10 +153,10 @@ void MotorDriver::run()
                 ros::spinOnce();
             }
 
-            std_msgs::Bool reset_done{};
-            reset_done.data = true;
-            pubs_[1].publish(reset_done);
-            ROS_INFO_NAMED(name_space_, "Reset done!");
+            std_msgs::Bool is_ready{};
+            is_ready.data = true;
+            pubs_[1].publish(is_ready);
+            ROS_INFO_NAMED(name_space_, "Reset done, ready to follow the trajectory!");
 
             // follow the trajectory
             while (ros::ok())
@@ -164,7 +164,8 @@ void MotorDriver::run()
                 std::lock_guard<std::mutex> guard(mutex_);
                 for (auto& motor_data : motor_data_)
                 {
-                    int cmd_pos = round((motor_data.target_pos_ * 1000 * 360 / lead_) / (step_angle_ / sub_divide_));
+                    int cmd_pos =
+                        std::round((motor_data.target_pos_ * 1000 * 360 / lead_) / (step_angle_ / sub_divide_));
                     if (motor_data.direction_ == 1)
                     {
                         for (size_t i = 0; i < pos_vec.size(); ++i)

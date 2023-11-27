@@ -54,7 +54,7 @@ bool ChassisController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHan
     if (!controller_nh.getParam("publish_rate", publish_rate_) || controller_nh.getParam("wheelsets", wheelsets) ||
         !controller_nh.getParam("timeout", timeout_) || !controller_nh.getParam("accel", accel))
     {
-        ROS_ERROR("Some chassis params doesn't given in namespace: '%s')", name_space_.c_str());
+        ROS_ERROR("Some chassis params are not given in namespace: '%s')", name_space_.c_str());
         return false;
     }
     ROS_ASSERT(wheelsets.getType() == XmlRpc::XmlRpcValue::TypeStruct);

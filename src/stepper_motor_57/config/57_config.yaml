@@ -3,9 +3,9 @@ lead: 5
 step_angle: 1.8
 sub_divide: 16  # same as sub_divide in operating_param
 
-# if read can_config with XmlRpc::XmlRpcValue, the data will be saved in alphabetic order, that is "left back", "left front", "right back", "right front"
+# if read cmd_config with XmlRpc::XmlRpcValue, the data will be saved in alphabetic order, that is "left back", "left front", "right back", "right front"
 # so use "m0 m1 m2 m3" as the key instead of "left front, right front, left back, right back"
-can_config:
+cmd_config:
   m0:  # left front
     dev_ind: 0
     can_ind: 0

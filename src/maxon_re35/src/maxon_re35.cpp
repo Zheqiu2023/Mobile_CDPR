@@ -1,5 +1,5 @@
 /**
- * @File Name: motor_re35.cpp
+ * @File Name: maxon_re35.cpp
  * @brief
  * @author Zhe Qiu (zheqiu2021@163.com)
  * @version 0.1
@@ -10,7 +10,7 @@
  *  Use of this source code is governed by the BSD 3-Clause license, see LICENSE.
  *  ***********************************************************************************
  */
-#include "motor_re35/motor_re35.hpp"
+#include "maxon_re35/maxon_re35.hpp"
 #include "usb_can/usb_can.hpp"
 #include "cdpr_bringup/filters/filters.hpp"
 
@@ -19,7 +19,7 @@
 #include <unistd.h>
 #include <std_msgs/Bool.h>
 
-using namespace motor_re35;
+using namespace maxon_re35;
 
 MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh)
 {
@@ -48,20 +48,20 @@ MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh)
                                          .pub_cmd_ = std::move(pub_cmd) });
     }
 
-    pubs_.emplace_back(nh_.advertise<cdpr_bringup::CanCmd>("/usbcan/motor_re35", 10));
-    pubs_.emplace_back(nh_.advertise<std_msgs::Bool>("/motor_re35/reset_flag", 1));
-    subs_.emplace_back(nh_.subscribe("/cable_length", 10, &MotorDriver::recvCableLengthCB, this));
-    subs_.emplace_back(nh_.subscribe("/cable_force", 10, &MotorDriver::recvCableForceCB, this));
-    subs_.emplace_back(nh_.subscribe("/usb_can/motor_state", 10, &MotorDriver::recvStateCB, this));
+    pubs_.emplace_back(nh_.advertise<cdpr_bringup::CanCmd>("motor_cmd", 10));
+    pubs_.emplace_back(nh_.advertise<std_msgs::Bool>("reset_flag", 1));
+    subs_.emplace_back(nh_.subscribe("cable_length", 10, &MotorDriver::cmdCableLengthCB, this));
+    // subs_.emplace_back(nh_.subscribe("cable_force", 10, &MotorDriver::cmdCableForceCB, this));
+    subs_.emplace_back(nh_.subscribe("/usbcan/motor_state", 10, &MotorDriver::motorStateCB, this));
     ros::Duration(1.0).sleep();  // Sleep for 1s to ensure that the first message sent is received by USBCAN
 }
 
-void MotorDriver::recvStateCB(const cdpr_bringup::CanFrame::ConstPtr& state)
+void MotorDriver::motorStateCB(const cdpr_bringup::CanFrame::ConstPtr& state)
 {
     int id = (state->ID - 0x00B) >> 4;
     for (const auto& motor_data : motor_data_)
     {
-        if (motor_data.driver_id_ == id)
+        if (id == motor_data.driver_id_)
         {
             short real_current = (state->Data[0] << 8) | state->Data[1];
             short real_velocity = (state->Data[2] << 8) | state->Data[3];
@@ -74,7 +74,7 @@ void MotorDriver::recvStateCB(const cdpr_bringup::CanFrame::ConstPtr& state)
     }
 }
 
-void MotorDriver::recvCableLengthCB(const cdpr_bringup::TrajCmd::ConstPtr& length)
+void MotorDriver::cmdCableLengthCB(const cdpr_bringup::TrajCmd::ConstPtr& length)
 {
     std::lock_guard<std::mutex> guard(mtx1_);
     is_traj_end_ = length->is_traj_end;
@@ -82,7 +82,7 @@ void MotorDriver::recvCableLengthCB(const cdpr_bringup::TrajCmd::ConstPtr& lengt
         motor_data_[i].target_pos_ = length->target[i];
 }
 
-void MotorDriver::recvCableForceCB(const cdpr_bringup::TrajCmd::ConstPtr& force)
+void MotorDriver::cmdCableForceCB(const cdpr_bringup::TrajCmd::ConstPtr& force)
 {
     std::lock_guard<std::mutex> guard(mtx2_);
     for (size_t i = 0; i < motor_data_.size(); ++i)
@@ -152,8 +152,7 @@ void MotorDriver::run()
         // 速度位置模式
         case 5: {
             std::vector<int> target_pos_vec{}, target_pos(motor_data_.size(), 0), history_pos(motor_data_.size(), 0);
-            unsigned short temp_vel = 1000;  // 速度限制值(RPM)：0~32767
-
+            unsigned short temp_vel = 100;  // 速度限制值(RPM)：0~32767
             nh_.getParam("target_data/target_pos_vec", target_pos_vec);
 
             for (auto& motor_data : motor_data_)
@@ -179,6 +178,7 @@ void MotorDriver::run()
                 }
                 sleep(1);
             }
+
             break;
         }
         // 电流速度位置模式
@@ -200,9 +200,7 @@ void MotorDriver::run()
 
             while (ros::ok())
             {
-                std::lock(mtx1_, mtx2_);
-                std::lock_guard<std::mutex> lck1(mtx1_, std::adopt_lock);
-                std::lock_guard<std::mutex> lck2(mtx2_, std::adopt_lock);
+                std::lock_guard<std::mutex> guard(mtx1_);
                 for (size_t i = 0; i < motor_data_.size(); ++i)
                 {
                     cmd_pos[i] = motor_data_[i].target_pos_ * 1000 * reduction_ratio_ * encoder_lines_num_ /

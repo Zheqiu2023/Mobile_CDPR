@@ -24,7 +24,7 @@ int main(int argc, char** argv)
     ros::AsyncSpinner spinner(2);
     spinner.start();
 
-    motor_57::MotorDriver m_run(nh);
+    stepper_57::MotorDriver m_run(nh);
     m_run.run();
 
     return 0;

@@ -9,7 +9,7 @@
                 "/opt/ros/noetic/include/**",
                 "${workspaceFolder}/devel/include/**",
                 "${workspaceFolder}/src/cdpr_bringup/include/**",
-                "${workspaceFolder}/src/motor_re35/include/**",
+                "${workspaceFolder}/src/maxon_re35/include/**",
                 "${workspaceFolder}/src/stepper_motor_57/include/**",
                 "${workspaceFolder}/src/unitree_motor_a1/include/**",
                 "${workspaceFolder}/src/unitree_motor_go/include/**",

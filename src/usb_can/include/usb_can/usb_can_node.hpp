@@ -34,7 +34,7 @@ class TransferStation
     void publishMsg();
 
   private:
-    void canMsgCallback(const cdpr_bringup::CanCmd::ConstPtr& msg);
+    void cmdCallback(const cdpr_bringup::CanCmd::ConstPtr& msg);
     void printMsg(uint32_t dev_ind, uint32_t can_ind, const VCI_CAN_OBJ& msg) const;
 
     ros::NodeHandle nh_;
@@ -49,12 +49,12 @@ class TransferStation
 TransferStation::TransferStation(ros::NodeHandle& nh) : nh_(nh)
 {
     subs_.resize(2);
-    subs_[0] = nh_.subscribe<cdpr_bringup::CanCmd>("motor_57", 100, &TransferStation::canMsgCallback, this);
-    subs_[1] = nh_.subscribe<cdpr_bringup::CanCmd>("motor_re35", 100, &TransferStation::canMsgCallback, this);
+    subs_[0] = nh_.subscribe<cdpr_bringup::CanCmd>("/stepper_57/motor_cmd", 100, &TransferStation::cmdCallback, this);
+    subs_[1] = nh_.subscribe<cdpr_bringup::CanCmd>("/maxon_re35/motor_cmd", 100, &TransferStation::cmdCallback, this);
     pub_ = nh_.advertise<cdpr_bringup::CanFrame>("motor_state", 100);
 }
 
-void TransferStation::canMsgCallback(const cdpr_bringup::CanCmd::ConstPtr& msg)
+void TransferStation::cmdCallback(const cdpr_bringup::CanCmd::ConstPtr& msg)
 {
     temp_msg_ = std::move(*msg);
     memcpy(&send_msg_, &temp_msg_.cmd, sizeof(temp_msg_.cmd));
@@ -76,7 +76,7 @@ void TransferStation::publishMsg()
             {
                 for (size_t j = 0; j < recv_len; ++j)
                 {
-                    printMsg(dev_ind, can_ind, recv_msgs_[j]);
+                    // printMsg(dev_ind, can_ind, recv_msgs_[j]);
                     memcpy(&pub_msgs, &recv_msgs_[j], sizeof(recv_msgs_[j]));
                     pub_.publish(pub_msgs);
                 }

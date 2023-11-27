@@ -1,5 +1,5 @@
 /**
- * @File Name: motor_re35_controller.cpp
+ * @File Name: maxon_re35_controller.cpp
  * @brief
  * @author Zhe Qiu (zheqiu2021@163.com)
  * @version 0.1
@@ -11,17 +11,17 @@
  *  ***********************************************************************************
  */
 
-#include "motor_re35/motor_re35.hpp"
+#include "maxon_re35/maxon_re35.hpp"
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "motor_re35");
+    ros::init(argc, argv, "maxon_re35");
     ros::NodeHandle nh("~");
 
     ros::AsyncSpinner spinner(3);
     spinner.start();
 
-    motor_re35::MotorDriver m_run(nh);
+    maxon_re35::MotorDriver m_run(nh);
 
     m_run.run();
 

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <node pkg="maxon_re35" type="maxon_re35_node" name="maxon_re35" output="screen" clear_params="true">
+        <rosparam command="load" file="$(find maxon_re35)/config/re35_config.yaml"/>
+    </node>
+</launch>

@@ -20,7 +20,7 @@
 #include "cdpr_bringup/CanFrame.h"
 #include "cdpr_bringup/TrajCmd.h"
 
-namespace motor_57
+namespace stepper_57
 {
 // 命令码(功能码)类型
 constexpr unsigned char CMD_BROADCAST = 0x00;  // 广播命令(不需要返回)
@@ -60,8 +60,8 @@ class MotorDriver
     void setCmd(cdpr_bringup::CanFrame& cmd, RunMode cmd_mode, const std::vector<int>& pos_vec);
     void publishCmd(const cdpr_bringup::CanCmd& cmd_struct);
 
-    void recvPosCallback(const cdpr_bringup::TrajCmd::ConstPtr& pos);
-    void recvStateCallback(const cdpr_bringup::CanFrame::ConstPtr& state);
+    void cmdPosCallback(const cdpr_bringup::TrajCmd::ConstPtr& pos);
+    void motorStateCallback(const cdpr_bringup::CanFrame::ConstPtr& state);
 
     void readParam(cdpr_bringup::CanCmd& cmd_struct);
     void writeParam(cdpr_bringup::CanCmd& cmd_struct, XmlRpc::XmlRpcValue& value);
@@ -79,4 +79,4 @@ class MotorDriver
 
     std::mutex mutex_;
 };
-}  // namespace motor_57
+}  // namespace stepper_57

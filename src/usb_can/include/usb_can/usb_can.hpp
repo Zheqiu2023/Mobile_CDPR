@@ -21,7 +21,7 @@ namespace usb_can
 enum class MotorType
 {
     STEPPER_MOTOR,
-    MOTOR_RE35
+    MAXON_RE35
 };
 
 class CanInit
@@ -45,7 +45,7 @@ void CanInit::setCANParam(const MotorType& m_type)
         config_.Timing0 = 0x03;  // 波特率125K（由CAN驱动器确定）
         config_.Timing1 = 0x1C;
     }
-    else if (m_type == MotorType::MOTOR_RE35)
+    else if (m_type == MotorType::MAXON_RE35)
     {
         config_.Timing0 = 0x00;  // 波特率1M（由RoboModule驱动器确定）
         config_.Timing1 = 0x14;

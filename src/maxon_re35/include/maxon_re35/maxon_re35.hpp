@@ -1,5 +1,5 @@
 /**
- * @File Name: motor_re35.hpp
+ * @File Name: maxon_re35.hpp
  * @brief
  * @author Zhe Qiu (zheqiu2021@163.com)
  * @version 0.1
@@ -20,7 +20,7 @@
 #include "cdpr_bringup/usb_can/controlcan.h"
 #include "cdpr_bringup/TrajCmd.h"
 
-namespace motor_re35
+namespace maxon_re35
 {
 constexpr unsigned short PWM_LIM = 5000;  // pwm限制值：0~5000，若供电电压与额定电压一致，设为5000
 
@@ -41,9 +41,9 @@ class MotorDriver
     void init(const int& run_mode);
     void publishCmd(const cdpr_bringup::CanCmd& cmd_struct);
 
-    void recvCableLengthCB(const cdpr_bringup::TrajCmd::ConstPtr& length);
-    void recvCableForceCB(const cdpr_bringup::TrajCmd::ConstPtr& force);
-    void recvStateCB(const cdpr_bringup::CanFrame::ConstPtr& state);
+    void cmdCableLengthCB(const cdpr_bringup::TrajCmd::ConstPtr& length);
+    void cmdCableForceCB(const cdpr_bringup::TrajCmd::ConstPtr& force);
+    void motorStateCB(const cdpr_bringup::CanFrame::ConstPtr& state);
 
     int reduction_ratio_ = 0, encoder_lines_num_ = 0;
     double reel_radius_ = 0.0;
@@ -57,4 +57,4 @@ class MotorDriver
 
     std::mutex mtx1_, mtx2_;
 };
-}  // namespace motor_re35
+}  // namespace maxon_re35

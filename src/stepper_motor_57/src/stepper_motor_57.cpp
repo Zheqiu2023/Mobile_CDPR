@@ -17,7 +17,7 @@
 #include <vector>
 #include <std_msgs/Bool.h>
 
-using namespace motor_57;
+using namespace stepper_57;
 
 MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh), is_traj_end_(false)
 {
@@ -55,15 +55,15 @@ MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh), is_traj_end_(false)
                                          .pub_cmd_ = std::move(pub_cmd) });
     }
 
-    pubs_.emplace_back(nh_.advertise<cdpr_bringup::CanCmd>("/usbcan/motor_57", 10));
-    pubs_.emplace_back(nh_.advertise<std_msgs::Bool>("/motor_57/reset_flag", 1));
-    subs_.emplace_back(nh_.subscribe("/usbcan/motor_state", 10, &MotorDriver::recvStateCallback, this));
-    subs_.emplace_back(nh_.subscribe("/archor_coor_z", 10, &MotorDriver::recvPosCallback, this));
+    pubs_.emplace_back(nh_.advertise<cdpr_bringup::CanCmd>("motor_cmd", 10));
+    pubs_.emplace_back(nh_.advertise<std_msgs::Bool>("reset_flag", 1));
+    subs_.emplace_back(nh_.subscribe("/usbcan/motor_state", 10, &MotorDriver::motorStateCallback, this));
+    subs_.emplace_back(nh_.subscribe("archor_coor_z", 10, &MotorDriver::cmdPosCallback, this));
 
     ros::Duration(1.0).sleep();  // Sleep for 1s to ensure that the first message sent is received by USBCAN
 }
 
-void MotorDriver::recvPosCallback(const cdpr_bringup::TrajCmd::ConstPtr& pos)
+void MotorDriver::cmdPosCallback(const cdpr_bringup::TrajCmd::ConstPtr& pos)
 {
     std::lock_guard<std::mutex> guard(mutex_);
     is_traj_end_ = pos->is_traj_end;
@@ -71,7 +71,7 @@ void MotorDriver::recvPosCallback(const cdpr_bringup::TrajCmd::ConstPtr& pos)
         motor_data_[i].target_pos_ = pos->target[i];
 }
 
-void MotorDriver::recvStateCallback(const cdpr_bringup::CanFrame::ConstPtr& state)
+void MotorDriver::motorStateCallback(const cdpr_bringup::CanFrame::ConstPtr& state)
 {
     if (state->Data[2] == 0x41 && state->Data[7] == 0)
     {

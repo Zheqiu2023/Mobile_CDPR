@@ -3,7 +3,7 @@ reduction_ratio: 35
 encoder_lines_num: 2000   # 4倍频后的编码器线数
 target_data:  # for testing motor
   # target_pos_vec: [90.0, -90.0, 90.0, -90.0]    # 目标位置(°)
-  target_pos_vec: [0,0,0,0,0]    # 目标位置(°)
+  target_pos_vec: [-60,-60,-60,-60,-60,-60,-60,-60,-60,-60,-60,-60,-60,-60,-60,0,0,0,0,0,0,0,0,0,0,0]    # 目标位置(°)
 
 # if read can_config with XmlRpc::XmlRpcValue, the data will be saved in alphabetic order, that is "left back", "left front", "right back", "right front"
 # so use "m0 m1 m2 m3" as the key instead of "left front, right front, left back, right back"

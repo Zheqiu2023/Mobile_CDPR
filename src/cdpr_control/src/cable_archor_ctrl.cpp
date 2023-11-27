@@ -16,11 +16,11 @@ class CableArchorCtrl
   public:
     CableArchorCtrl(ros::NodeHandle& nh) : nh_(nh), is_re35_reset_(false), is_stepper57_reset_(true)
     {
-        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/archor_coor_z", 100));
-        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/cable_length", 100));
-        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/cable_force", 100));
-        subs_.emplace_back(nh.subscribe("/motor_re35/reset_flag", 10, &CableArchorCtrl::re35ResetCallback, this));
-        subs_.emplace_back(nh.subscribe("/motor_57/reset_flag", 10, &CableArchorCtrl::stepper57ResetCallback, this));
+        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/stepper_57/archor_coor_z", 100));
+        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/maxon_re35/cable_length", 100));
+        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/maxon_re35/cable_force", 100));
+        subs_.emplace_back(nh.subscribe("/maxon_re35/reset_flag", 10, &CableArchorCtrl::re35ResetCallback, this));
+        subs_.emplace_back(nh.subscribe("/stepper_57/reset_flag", 10, &CableArchorCtrl::stepper57ResetCallback, this));
 
         archor_coor_z_.is_traj_end = false;
         cable_length_.is_traj_end = false;
@@ -71,7 +71,7 @@ class CableArchorCtrl
             }
             pubs_[0].publish(archor_coor_z_);
             pubs_[1].publish(cable_length_);
-            pubs_[2].publish(cable_force_);
+            // pubs_[2].publish(cable_force_);
             ros::Duration(0.3).sleep();
         }
         // End of trajectory, all motors move back to zero position then stop
@@ -83,7 +83,7 @@ class CableArchorCtrl
         std::fill(cable_force_.target.begin(), cable_force_.target.end(), 0.0);
         pubs_[0].publish(archor_coor_z_);
         pubs_[1].publish(cable_length_);
-        pubs_[2].publish(cable_force_);
+        // pubs_[2].publish(cable_force_);
 
         f_in.close();
     }

@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<launch>
-    <node pkg="motor_re35" type="motor_re35_node" name="re35" output="screen" clear_params="true">
-        <rosparam command="load" file="$(find motor_re35)/config/re35_config.yaml"/>
-    </node>
-</launch>

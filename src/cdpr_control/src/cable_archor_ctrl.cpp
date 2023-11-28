@@ -14,7 +14,7 @@ namespace cable_archor_ctrl
 class CableArchorCtrl
 {
   public:
-    CableArchorCtrl(ros::NodeHandle& nh) : nh_(nh), is_re35_ready_(false), is_stepper57_ready_(true)
+    CableArchorCtrl(ros::NodeHandle& nh) : nh_(nh), is_re35_ready_(false), is_stepper57_ready_(false)
     {
         pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/stepper_57/archor_coor_z", 100));
         pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/maxon_re35/cable_length", 100));
@@ -29,15 +29,16 @@ class CableArchorCtrl
 
     void readPublishTraj()
     {
-        std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/test.csv", std::ios::in);
+        std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/line.csv", std::ios::in);
+        // std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/circle.csv", std::ios::in);
+        // std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/hit.csv", std::ios::in);
         if (!f_in.is_open())
             ROS_ERROR("Failed to open .csv file");
 
         std::string line, data;
         std::istringstream s;
         double traj_period = nh_.param("traj_period", 0.3);
-        // read title
-        getline(f_in, line);
+
         // wait for motors reset to complete
         while (!is_re35_ready_ || !is_stepper57_ready_)
             ros::spinOnce();

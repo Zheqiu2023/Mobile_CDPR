@@ -1,11 +1,11 @@
-#include <ros/ros.h>
 #include <ros/package.h>
+#include <ros/ros.h>
 #include <std_msgs/Bool.h>
 
-#include <iostream>
 #include <fstream>
-#include <vector>
+#include <iostream>
 #include <string>
+#include <vector>
 
 #include "cdpr_bringup/TrajCmd.h"
 
@@ -77,6 +77,7 @@ class CableArchorCtrl
             ros::Duration(traj_period).sleep();
         }
         // End of trajectory, all motors move back to zero position then stop
+        ros::Duration(1.0).sleep();
         archor_coor_z_.is_traj_end = true;
         cable_length_.is_traj_end = true;
         cable_force_.is_traj_end = true;
@@ -117,6 +118,6 @@ int main(int argc, char* argv[])
     cable_archor_ctrl::CableArchorCtrl ctrl(nh);
     ctrl.readPublishTraj();
 
-    ros::spin();
+    ros::waitForShutdown();
     return 0;
 }

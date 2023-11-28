@@ -13,17 +13,17 @@
 
 #include "maxon_re35/maxon_re35.hpp"
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     ros::init(argc, argv, "maxon_re35");
     ros::NodeHandle nh("~");
 
-    ros::AsyncSpinner spinner(3);
+    ros::AsyncSpinner spinner(2);
     spinner.start();
 
     maxon_re35::MotorDriver m_run(nh);
 
     m_run.run();
 
+    ros::waitForShutdown();
     return 0;
 }

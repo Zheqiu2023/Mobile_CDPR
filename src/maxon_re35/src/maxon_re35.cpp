@@ -11,13 +11,15 @@
  *  ***********************************************************************************
  */
 #include "maxon_re35/maxon_re35.hpp"
-#include "usb_can/usb_can.hpp"
-#include "cdpr_bringup/filters/filters.hpp"
 
-#include <vector>
-#include <algorithm>
-#include <unistd.h>
 #include <std_msgs/Bool.h>
+#include <unistd.h>
+
+#include <algorithm>
+#include <vector>
+
+#include "cdpr_bringup/filters/filters.hpp"
+#include "usb_can/usb_can.hpp"
 
 using namespace maxon_re35;
 
@@ -130,6 +132,7 @@ void MotorDriver::init(const int& run_mode)
         motor_data.pub_cmd_.cmd.Data[1] = 0x55;
         switch (run_mode)
         {
+            case 0:
             case 5:
                 motor_data.pub_cmd_.cmd.Data[0] = 0x05;  // 选择速度位置模式
                 break;
@@ -155,6 +158,34 @@ void MotorDriver::run()
 
     switch (run_mode)
     {
+        // 回零位
+        case 0: {
+            int cmd_pos = 0.0, cmd_vel = 0.0;  // 速度限制值(RPM)：0~32767
+
+            for (auto& motor_data : motor_data_)
+            {
+                motor_data.pub_cmd_.cmd.ID = 0x006 | (motor_data.driver_id_ << 4);  // 速度位置模式下的参数指令，非广播
+                motor_data.pub_cmd_.cmd.Data[0] = static_cast<unsigned char>((PWM_LIM >> 8) & 0xff);
+                motor_data.pub_cmd_.cmd.Data[1] = static_cast<unsigned char>(PWM_LIM & 0xff);
+            }
+
+            for (size_t i = 0; i < motor_data_.size(); ++i)
+            {
+                cmd_pos = 0;  // m转换为qc
+                cmd_vel = 500;
+
+                motor_data_[i].pub_cmd_.cmd.Data[2] = static_cast<unsigned char>((cmd_vel >> 8) & 0xff);
+                motor_data_[i].pub_cmd_.cmd.Data[3] = static_cast<unsigned char>(cmd_vel & 0xff);
+                for (size_t j = 4; j < 8; ++j)
+                {
+                    motor_data_[i].pub_cmd_.cmd.Data[j] = 0;
+                }
+
+                publishCmd(motor_data_[i].pub_cmd_);
+            }
+
+            break;
+        }
         // 速度位置模式
         case 5: {
             int cmd_pos = 0.0, cmd_vel = 0.0;  // 速度限制值(RPM)：0~32767
@@ -193,6 +224,8 @@ void MotorDriver::run()
                 if (is_traj_end_)
                     break;
             }
+
+            ros::Duration(2.0).sleep();  // buffering time for motors moving back to zero position
             break;
         }
         // 电流速度位置模式

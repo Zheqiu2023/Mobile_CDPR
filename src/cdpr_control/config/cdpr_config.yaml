@@ -43,4 +43,4 @@ chassis:
 
 cable_archor:
   traj_period: 0.3
-  reel_diameter: 0.03
+  reel_diameter: 0.031

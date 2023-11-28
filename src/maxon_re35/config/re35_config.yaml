@@ -1,4 +1,4 @@
-run_mode: 5   # 5：速度位置模式；8：电流速度位置模式
+run_mode: 5   # 0: 回零位 5：速度位置模式；8：电流速度位置模式
 reduction_ratio: 35  
 encoder_lines_num: 2000   # 4倍频后的编码器线数
 

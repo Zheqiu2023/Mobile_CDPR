@@ -27,5 +27,6 @@ int main(int argc, char** argv)
     stepper_57::MotorDriver m_run(nh);
     m_run.run();
 
+    ros::waitForShutdown();
     return 0;
 }

@@ -11,11 +11,13 @@
  *  ***********************************************************************************
  */
 #include "stepper_motor_57/stepper_motor_57.hpp"
-#include "usb_can/usb_can.hpp"
+
+#include <std_msgs/Bool.h>
 
 #include <string>
 #include <vector>
-#include <std_msgs/Bool.h>
+
+#include "usb_can/usb_can.hpp"
 
 using namespace stepper_57;
 
@@ -184,7 +186,7 @@ void MotorDriver::run()
                     break;
             }
 
-            ros::Duration(1.0).sleep();  // buffering time for motors moving back to zero position
+            ros::Duration(2.0).sleep();  // buffering time for motors moving back to zero position
             break;
         }
         case 1: {  // close to motor

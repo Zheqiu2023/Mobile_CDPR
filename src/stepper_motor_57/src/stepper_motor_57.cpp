@@ -242,7 +242,31 @@ void MotorDriver::run()
             }
             break;
         }
-        case 3: {  // configure motor parameters
+        case 3: {  // reset
+            ROS_INFO_NAMED(name_space_, "Reset!");
+            // Reset: move to zero position
+            while (ros::ok())
+            {
+                for (auto& motor_data : motor_data_)
+                {
+                    if (true == motor_data.is_reset_)
+                        continue;
+                    setCmd(motor_data.pub_cmd_.cmd, RunMode::RESET, pos_vec);
+                    publishCmd(motor_data.pub_cmd_);
+                }
+
+                if (std::all_of(motor_data_.begin(), motor_data_.end(), [](const MotorData& motor_data) {
+                        return motor_data.is_reset_;
+                    }))  // all archores reset successfully
+                {
+                    subs_[0].shutdown();
+                    break;
+                }
+                ros::spinOnce();
+            }
+            break;
+        }
+        case 4: {  // configure motor parameters
             XmlRpc::XmlRpcValue value;
             nh_.getParam("operating_param", value);
             auto iter = value.begin();

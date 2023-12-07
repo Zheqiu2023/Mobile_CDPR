@@ -71,6 +71,8 @@ void MotorDriver::cmdPosCallback(const cdpr_bringup::TrajCmd::ConstPtr& pos)
     is_traj_end_ = pos->is_traj_end;
     for (size_t i = 0; i < motor_data_.size(); ++i)
         motor_data_[i].target_pos_ = pos->target[i];
+    ROS_INFO("target pos: %.5f, %.5f, %.5f, %.5f", motor_data_[0].target_pos_, motor_data_[1].target_pos_,
+             motor_data_[2].target_pos_, motor_data_[3].target_pos_);
 }
 
 void MotorDriver::motorStateCallback(const cdpr_bringup::CanFrame::ConstPtr& state)
@@ -127,10 +129,11 @@ void MotorDriver::setCmd(cdpr_bringup::CanFrame& cmd, RunMode cmd_mode, const st
 void MotorDriver::run()
 {
     std::string is_stall{};
-    int run_type = nh_.param("motor_run_type", 0);
+    int run_mode = nh_.param("run_mode", 0);
+    double publish_rate = nh_.param("publish_rate", 500);
     std::vector<int> pos_vec(4, 0);
 
-    switch (run_type)
+    switch (run_mode)
     {
         case 0: {  // position
             ROS_INFO_NAMED(name_space_, "Reset before localization!");
@@ -152,7 +155,6 @@ void MotorDriver::run()
                     subs_[0].shutdown();
                     break;
                 }
-                ros::spinOnce();
             }
 
             std_msgs::Bool is_ready{};
@@ -161,6 +163,7 @@ void MotorDriver::run()
             ROS_INFO_NAMED(name_space_, "Reset done, ready to follow the trajectory!");
 
             // follow the trajectory
+            ros::Rate loop_rate(publish_rate);
             while (ros::ok())
             {
                 std::lock_guard<std::mutex> guard(mutex_);
@@ -184,6 +187,7 @@ void MotorDriver::run()
                 }
                 if (is_traj_end_)
                     break;
+                loop_rate.sleep();
             }
 
             ros::Duration(2.0).sleep();  // buffering time for motors moving back to zero position
@@ -264,7 +268,6 @@ void MotorDriver::run()
                     subs_[0].shutdown();
                     break;
                 }
-                ros::spinOnce();
             }
             break;
         }

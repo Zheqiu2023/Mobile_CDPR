@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "maxon_re35");
     ros::NodeHandle nh("~");
 
-    ros::AsyncSpinner spinner(2);
+    ros::AsyncSpinner spinner(1);
     spinner.start();
 
     maxon_re35::MotorDriver m_run(nh);

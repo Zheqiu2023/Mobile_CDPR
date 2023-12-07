@@ -1,9 +1,8 @@
-run_mode: 5   # 0: 回零位 5：速度位置模式；8：电流速度位置模式
+run_mode: 0   # 0:回零位  1:轨迹模式  2:收绳  3:放绳
+publish_rate: 300
+
 reduction_ratio: 35  
 encoder_lines_num: 2000   # 4倍频后的编码器线数
-
-target_data:  # for testing motor
-  target_pos_vec: [90.0, -90.0, 90.0, -90.0]    # 目标位置(°)
 
 # if read cmd_config with XmlRpc::XmlRpcValue, the data will be saved in alphabetic order, that is "left back", "left front", "right back", "right front"
 # so use "m0 m1 m2 m3" as the key instead of "left front, right front, left back, right back"
@@ -28,3 +27,7 @@ cmd_config:
     can_ind: 1
     driver_id: 4 
     direction: -1
+
+target_data:  # for testing motor
+  target_pos_vec: [90.0, -90.0, 90.0, -90.0]    # 目标位置(°)
+  target_vel: 200

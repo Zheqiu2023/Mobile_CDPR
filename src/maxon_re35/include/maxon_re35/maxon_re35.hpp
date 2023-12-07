@@ -27,7 +27,7 @@ constexpr unsigned short PWM_LIM = 5000;  // pwm限制值：0~5000，若供电�
 struct MotorData
 {
     int driver_id_, direction_;
-    double target_pos_, last_pos_, target_force_;
+    double target_pos_, last_pos_;
     cdpr_bringup::CanCmd pub_cmd_;
 };
 
@@ -42,7 +42,6 @@ class MotorDriver
     void publishCmd(const cdpr_bringup::CanCmd& cmd_struct);
 
     void cmdCableLengthCB(const cdpr_bringup::TrajCmd::ConstPtr& length);
-    void cmdCableForceCB(const cdpr_bringup::TrajCmd::ConstPtr& force);
     void motorStateCB(const cdpr_bringup::CanFrame::ConstPtr& state);
 
     int reduction_ratio_ = 0, encoder_lines_num_ = 0;
@@ -55,6 +54,6 @@ class MotorDriver
     ros::V_Publisher pubs_;
     ros::V_Subscriber subs_;
 
-    std::mutex mtx1_, mtx2_;
+    std::mutex mutex_;
 };
 }  // namespace maxon_re35

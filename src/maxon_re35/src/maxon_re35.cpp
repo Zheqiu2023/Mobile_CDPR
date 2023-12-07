@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "cdpr_bringup/filters/filters.hpp"
+#include "maxon_re35/scan_keyboard.hpp"
 #include "usb_can/usb_can.hpp"
 
 using namespace maxon_re35;
@@ -51,14 +51,12 @@ MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh)
                                          .direction_ = static_cast<int>(iter->second["direction"]),
                                          .target_pos_ = 0.0,
                                          .last_pos_ = 0.0,
-                                         .target_force_ = 0.0,
                                          .pub_cmd_ = std::move(pub_cmd) });
     }
 
     pubs_.emplace_back(nh_.advertise<cdpr_bringup::CanCmd>("motor_cmd", 10));
     pubs_.emplace_back(nh_.advertise<std_msgs::Bool>("ready_state", 1));
     subs_.emplace_back(nh_.subscribe("cable_length", 10, &MotorDriver::cmdCableLengthCB, this));
-    // subs_.emplace_back(nh_.subscribe("cable_force", 10, &MotorDriver::cmdCableForceCB, this));
     // subs_.emplace_back(nh_.subscribe("/usbcan/motor_state", 10, &MotorDriver::motorStateCB, this));
     ros::Duration(1.0).sleep();  // Sleep for 1s to ensure that the first message sent is received by USBCAN
 }
@@ -83,21 +81,15 @@ void MotorDriver::motorStateCB(const cdpr_bringup::CanFrame::ConstPtr& state)
 
 void MotorDriver::cmdCableLengthCB(const cdpr_bringup::TrajCmd::ConstPtr& length)
 {
-    std::lock_guard<std::mutex> guard(mtx1_);
+    std::lock_guard<std::mutex> guard(mutex_);
     is_traj_end_ = length->is_traj_end;
     for (size_t i = 0; i < motor_data_.size(); ++i)
     {
         motor_data_[i].last_pos_ = motor_data_[i].target_pos_;
         motor_data_[i].target_pos_ = length->target[i] * motor_data_[i].direction_;
     }
-}
-
-void MotorDriver::cmdCableForceCB(const cdpr_bringup::TrajCmd::ConstPtr& force)
-{
-    std::lock_guard<std::mutex> guard(mtx2_);
-    is_traj_end_ = force->is_traj_end;
-    for (size_t i = 0; i < motor_data_.size(); ++i)
-        motor_data_[i].target_force_ = force->target[i];
+    // ROS_INFO("target pos: %.5f, %.5f, %.5f, %.5f", length->target[0], length->target[1], length->target[2],
+    //          length->target[3]);
 }
 
 void MotorDriver::publishCmd(const cdpr_bringup::CanCmd& cmd_struct)
@@ -133,11 +125,12 @@ void MotorDriver::init(const int& run_mode)
         switch (run_mode)
         {
             case 0:
-            case 5:
+            case 1:
                 motor_data.pub_cmd_.cmd.Data[0] = 0x05;  // 选择速度位置模式
                 break;
-            case 8:
-                motor_data.pub_cmd_.cmd.Data[0] = 0x08;  // 选择电流速度位置模式
+            case 2:
+            case 3:
+                motor_data.pub_cmd_.cmd.Data[0] = 0x03;  // 选择速度模式
                 break;
             default:
                 ROS_ERROR("Undefined run mode!");
@@ -154,40 +147,34 @@ void MotorDriver::init(const int& run_mode)
 void MotorDriver::run()
 {
     int run_mode = nh_.param("run_mode", 5);
+    double publish_rate = nh_.param("publish_rate", 500);
     init(run_mode);
 
     switch (run_mode)
     {
         // 回零位
         case 0: {
-            int cmd_pos = 0.0, cmd_vel = 0.0;  // 速度限制值(RPM)：0~32767
+            int cmd_pos = 0, cmd_vel = nh_.param("target_data/target_vel", 1000);  // 速度限制值(RPM)：0~32767
 
             for (auto& motor_data : motor_data_)
             {
                 motor_data.pub_cmd_.cmd.ID = 0x006 | (motor_data.driver_id_ << 4);  // 速度位置模式下的参数指令，非广播
                 motor_data.pub_cmd_.cmd.Data[0] = static_cast<unsigned char>((PWM_LIM >> 8) & 0xff);
                 motor_data.pub_cmd_.cmd.Data[1] = static_cast<unsigned char>(PWM_LIM & 0xff);
-            }
-
-            for (size_t i = 0; i < motor_data_.size(); ++i)
-            {
-                cmd_pos = 0;  // m转换为qc
-                cmd_vel = 500;
-
-                motor_data_[i].pub_cmd_.cmd.Data[2] = static_cast<unsigned char>((cmd_vel >> 8) & 0xff);
-                motor_data_[i].pub_cmd_.cmd.Data[3] = static_cast<unsigned char>(cmd_vel & 0xff);
+                motor_data.pub_cmd_.cmd.Data[2] = static_cast<unsigned char>((cmd_vel >> 8) & 0xff);
+                motor_data.pub_cmd_.cmd.Data[3] = static_cast<unsigned char>(cmd_vel & 0xff);
                 for (size_t j = 4; j < 8; ++j)
                 {
-                    motor_data_[i].pub_cmd_.cmd.Data[j] = 0;
+                    motor_data.pub_cmd_.cmd.Data[j] = 0;
                 }
 
-                publishCmd(motor_data_[i].pub_cmd_);
+                publishCmd(motor_data.pub_cmd_);
             }
 
             break;
         }
         // 速度位置模式
-        case 5: {
+        case 1: {
             int cmd_pos = 0.0, cmd_vel = 0.0;  // 速度限制值(RPM)：0~32767
 
             for (auto& motor_data : motor_data_)
@@ -202,68 +189,105 @@ void MotorDriver::run()
             pubs_[1].publish(is_ready);
             ROS_INFO("Reset done, ready to follow the trajectory!");
 
+            // follow the trajectory
+            ros::Rate loop_rate(publish_rate);
             while (ros::ok())
             {
-                std::lock_guard<std::mutex> guard(mtx1_);
-                for (size_t i = 0; i < motor_data_.size(); ++i)
+                std::lock_guard<std::mutex> guard(mutex_);
+                for (auto& motor_data : motor_data_)
                 {
-                    cmd_pos = std::round(motor_data_[i].target_pos_ * reduction_ratio_ * encoder_lines_num_ /
+                    cmd_pos = std::round(motor_data.target_pos_ * reduction_ratio_ * encoder_lines_num_ /
                                          (M_PI * reel_diameter_));  // m转换为qc
-                    cmd_vel = std::ceil(std::fabs((motor_data_[i].target_pos_ - motor_data_[i].last_pos_) * 60 *
+                    cmd_vel = std::ceil(std::fabs((motor_data.target_pos_ - motor_data.last_pos_) * 60 *
                                                   reduction_ratio_ / (traj_period_ * M_PI * reel_diameter_)));
 
-                    motor_data_[i].pub_cmd_.cmd.Data[2] = static_cast<unsigned char>((cmd_vel >> 8) & 0xff);
-                    motor_data_[i].pub_cmd_.cmd.Data[3] = static_cast<unsigned char>(cmd_vel & 0xff);
-                    motor_data_[i].pub_cmd_.cmd.Data[4] = static_cast<unsigned char>((cmd_pos >> 24) & 0xff);
-                    motor_data_[i].pub_cmd_.cmd.Data[5] = static_cast<unsigned char>((cmd_pos >> 16) & 0xff);
-                    motor_data_[i].pub_cmd_.cmd.Data[6] = static_cast<unsigned char>((cmd_pos >> 8) & 0xff);
-                    motor_data_[i].pub_cmd_.cmd.Data[7] = static_cast<unsigned char>(cmd_pos & 0xff);
+                    motor_data.pub_cmd_.cmd.Data[2] = static_cast<unsigned char>((cmd_vel >> 8) & 0xff);
+                    motor_data.pub_cmd_.cmd.Data[3] = static_cast<unsigned char>(cmd_vel & 0xff);
+                    motor_data.pub_cmd_.cmd.Data[4] = static_cast<unsigned char>((cmd_pos >> 24) & 0xff);
+                    motor_data.pub_cmd_.cmd.Data[5] = static_cast<unsigned char>((cmd_pos >> 16) & 0xff);
+                    motor_data.pub_cmd_.cmd.Data[6] = static_cast<unsigned char>((cmd_pos >> 8) & 0xff);
+                    motor_data.pub_cmd_.cmd.Data[7] = static_cast<unsigned char>(cmd_pos & 0xff);
 
-                    publishCmd(motor_data_[i].pub_cmd_);
+                    publishCmd(motor_data.pub_cmd_);
                 }
                 if (is_traj_end_)
                     break;
+                loop_rate.sleep();
             }
 
             ros::Duration(2.0).sleep();  // buffering time for motors moving back to zero position
             break;
         }
-        // 电流速度位置模式
-        case 8: {
-            std::vector<int> cmd_pos{}, cmd_force{};
-            unsigned short temp_vel = 1000;      // 速度限制值(RPM)：0~32767
-            unsigned short temp_current = 1000;  // 电流限制值(mA)：0~32767
+        // 收绳: 按下按键 p
+        case 2: {
+            short cmd_vel = 0,
+                  target_vel = nh_.param("target_data/target_vel", 1000);  // 速度限制值(RPM)：-32768 ~ +32767
+            std::vector<int> direction{ 1, 1, 1, -1 };
+
             for (auto& motor_data : motor_data_)
             {
-                motor_data.pub_cmd_.cmd.ID =
-                    0x009 | (motor_data.driver_id_ << 4);  // 电流速度位置模式下的参数指令，非广播
-                motor_data.pub_cmd_.cmd.Data[2] = static_cast<unsigned char>((temp_vel >> 8) & 0xff);
-                motor_data.pub_cmd_.cmd.Data[3] = static_cast<unsigned char>(temp_vel & 0xff);
+                motor_data.pub_cmd_.cmd.ID = 0x004 | (motor_data.driver_id_ << 4);  // 速度模式下的参数指令，非广播
+                motor_data.pub_cmd_.cmd.Data[0] = static_cast<unsigned char>((PWM_LIM >> 8) & 0xff);
+                motor_data.pub_cmd_.cmd.Data[1] = static_cast<unsigned char>(PWM_LIM & 0xff);
+                motor_data.pub_cmd_.cmd.Data[2] = static_cast<unsigned char>((cmd_vel >> 8) & 0xff);
+                motor_data.pub_cmd_.cmd.Data[3] = static_cast<unsigned char>(cmd_vel & 0xff);
+                for (size_t j = 4; j < 8; ++j)
+                {
+                    motor_data.pub_cmd_.cmd.Data[j] = 0x55;
+                }
             }
-
-            std_msgs::Bool reset_done{};
-            reset_done.data = true;
-            pubs_[1].publish(reset_done);
-
             while (ros::ok())
             {
-                std::lock_guard<std::mutex> guard(mtx1_);
+                if ('p' == scanKeyboard())
+                    cmd_vel = target_vel;
+                else
+                    cmd_vel = 0;
+
                 for (size_t i = 0; i < motor_data_.size(); ++i)
                 {
-                    cmd_pos[i] = motor_data_[i].target_pos_ * reduction_ratio_ * encoder_lines_num_ /
-                                 (M_PI * reel_diameter_);  // m转换为qc
-                    motor_data_[i].pub_cmd_.cmd.Data[0] = static_cast<unsigned char>((temp_current >> 8) & 0xff);
-                    motor_data_[i].pub_cmd_.cmd.Data[1] = static_cast<unsigned char>(temp_current & 0xff);
-                    motor_data_[i].pub_cmd_.cmd.Data[4] = static_cast<unsigned char>((cmd_pos[i] >> 24) & 0xff);
-                    motor_data_[i].pub_cmd_.cmd.Data[5] = static_cast<unsigned char>((cmd_pos[i] >> 16) & 0xff);
-                    motor_data_[i].pub_cmd_.cmd.Data[6] = static_cast<unsigned char>((cmd_pos[i] >> 8) & 0xff);
-                    motor_data_[i].pub_cmd_.cmd.Data[7] = static_cast<unsigned char>(cmd_pos[i] & 0xff);
-
+                    cmd_vel *= direction[i];
+                    motor_data_[i].pub_cmd_.cmd.Data[2] = static_cast<unsigned char>((cmd_vel >> 8) & 0xff);
+                    motor_data_[i].pub_cmd_.cmd.Data[3] = static_cast<unsigned char>(cmd_vel & 0xff);
                     publishCmd(motor_data_[i].pub_cmd_);
                 }
-                if (is_traj_end_)
-                    break;
             }
+
+            break;
+        }
+        // 放绳: 按下按键 p
+        case 3: {
+            short cmd_vel = 0,
+                  target_vel = -nh_.param("target_data/target_vel", 1000);  // 速度限制值(RPM)：-32768 ~ +32767
+            std::vector<int> direction{ 1, 1, 1, -1 };
+
+            for (auto& motor_data : motor_data_)
+            {
+                motor_data.pub_cmd_.cmd.ID = 0x004 | (motor_data.driver_id_ << 4);  // 速度模式下的参数指令，非广播
+                motor_data.pub_cmd_.cmd.Data[0] = static_cast<unsigned char>((PWM_LIM >> 8) & 0xff);
+                motor_data.pub_cmd_.cmd.Data[1] = static_cast<unsigned char>(PWM_LIM & 0xff);
+                motor_data.pub_cmd_.cmd.Data[2] = static_cast<unsigned char>((cmd_vel >> 8) & 0xff);
+                motor_data.pub_cmd_.cmd.Data[3] = static_cast<unsigned char>(cmd_vel & 0xff);
+                for (size_t j = 4; j < 8; ++j)
+                {
+                    motor_data.pub_cmd_.cmd.Data[j] = 0x55;
+                }
+            }
+            while (ros::ok())
+            {
+                if ('p' == scanKeyboard())
+                    cmd_vel = target_vel;
+                else
+                    cmd_vel = 0;
+
+                for (size_t i = 0; i < motor_data_.size(); ++i)
+                {
+                    cmd_vel *= direction[i];
+                    motor_data_[i].pub_cmd_.cmd.Data[2] = static_cast<unsigned char>((cmd_vel >> 8) & 0xff);
+                    motor_data_[i].pub_cmd_.cmd.Data[3] = static_cast<unsigned char>(cmd_vel & 0xff);
+                    publishCmd(motor_data_[i].pub_cmd_);
+                }
+            }
+
             break;
         }
         default:

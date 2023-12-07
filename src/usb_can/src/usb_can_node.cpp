@@ -14,14 +14,12 @@
 
 using namespace usb_can;
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     ros::init(argc, argv, "usb_can_controller");
     ros::NodeHandle nh("~");
 
     // 打开设备：注意一个设备只能打开一次
-    if (VCI_OpenDevice(VCI_USBCAN2, DEV_IND0, 0) != 1 || VCI_OpenDevice(VCI_USBCAN2, DEV_IND1, 0) != 1)
-    {
+    if (VCI_OpenDevice(VCI_USBCAN2, DEV_IND0, 0) != 1 || VCI_OpenDevice(VCI_USBCAN2, DEV_IND1, 0) != 1) {
         ROS_WARN("Failed to open at least one USBCAN!");
     }
     CanInit can_handler;
@@ -30,18 +28,19 @@ int main(int argc, char** argv)
     can_handler.initCAN(VCI_USBCAN2, DEV_IND1, CAN_IND0, MotorType::STEPPER_MOTOR);  // open USBCAN1 CNA1
     can_handler.initCAN(VCI_USBCAN2, DEV_IND1, CAN_IND1, MotorType::MAXON_RE35);     // open USBCAN1 CNA2
 
-    TransferStation transfer_station(nh);
-
-    // 开启3条并发线程处理订阅话题回调函数，保证及时接收到每条消息
+    // 开启2条并发线程处理订阅话题回调函数，保证及时接收到每条消息
     ros::AsyncSpinner spinner(2);
     spinner.start();
 
-    ros::Rate loop_rate(1000);
-    while (ros::ok())
-    {
+    TransferStation transfer_station(nh);
+
+    ros::Rate loop_rate(500);
+    while (ros::ok()) {
         transfer_station.publishMsg();
         loop_rate.sleep();
     }
 
+    VCI_CloseDevice(VCI_USBCAN2, DEV_IND0);
+    VCI_CloseDevice(VCI_USBCAN2, DEV_IND1);
     return 0;
 }

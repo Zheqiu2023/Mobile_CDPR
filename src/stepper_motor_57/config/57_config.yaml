@@ -1,4 +1,6 @@
-motor_run_type: 0   # 0: position, 1: close to motor, 2: away from motor, 3: reset, 4: config_param
+run_mode: 3   # 0: position, 1: close to motor, 2: away from motor, 3: reset, 4: config_param
+publish_rate: 300
+
 lead: 5
 step_angle: 1.8
 sub_divide: 16  # same as sub_divide in operating_param

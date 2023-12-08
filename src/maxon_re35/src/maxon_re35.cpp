@@ -236,6 +236,8 @@ void MotorDriver::run()
                     motor_data.pub_cmd_.cmd.Data[j] = 0x55;
                 }
             }
+
+            ROS_INFO("Press 'p' to move, others to stop: ");
             while (ros::ok())
             {
                 if ('p' == scanKeyboard())
@@ -272,6 +274,8 @@ void MotorDriver::run()
                     motor_data.pub_cmd_.cmd.Data[j] = 0x55;
                 }
             }
+
+            ROS_INFO("Press 'p' to move, others to stop: ");
             while (ros::ok())
             {
                 if ('p' == scanKeyboard())

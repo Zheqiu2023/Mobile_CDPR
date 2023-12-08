@@ -1,4 +1,4 @@
-run_mode: 0   # 0:回零位  1:轨迹模式  2:收绳  3:放绳
+run_mode: 2   # 0:回零位  1:轨迹模式  2:收绳  3:放绳
 publish_rate: 300
 
 reduction_ratio: 35  
@@ -12,22 +12,22 @@ cmd_config:
     can_ind: 1
     driver_id: 1 
     direction: -1
-  m1: # right front
-    dev_ind: 0
-    can_ind: 1
-    driver_id: 2 
-    direction: 1
-  m2: # left back
-    dev_ind: 1
-    can_ind: 1
-    driver_id: 3 
-    direction: 1
-  m3: # right back
-    dev_ind: 1
-    can_ind: 1
-    driver_id: 4 
-    direction: -1
+  # m1: # right front
+  #   dev_ind: 0
+  #   can_ind: 1
+  #   driver_id: 2 
+  #   direction: 1
+  # m2: # left back
+  #   dev_ind: 1
+  #   can_ind: 1
+  #   driver_id: 3 
+  #   direction: 1
+  # m3: # right back
+  #   dev_ind: 1
+  #   can_ind: 1
+  #   driver_id: 4 
+  #   direction: -1
 
 target_data:  # for testing motor
   target_pos_vec: [90.0, -90.0, 90.0, -90.0]    # 目标位置(°)
-  target_vel: 200
+  target_vel: 500

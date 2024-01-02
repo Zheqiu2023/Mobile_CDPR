@@ -20,30 +20,38 @@
 
 namespace motor_go
 {
+struct MotorParam
+{
+    int serial_num_;
+    double zero_position_;
+    MotorCmd init_param_, motor_cmd_;
+    MotorData motor_recv_;
+
+    SerialPort* port_;
+};
+
 class GoControl
 {
   public:
     GoControl(ros::NodeHandle& nh);
-    void init(std::vector<SerialPort*>& port);
-    void drive(std::vector<SerialPort*>& port);
-    void stall(std::vector<SerialPort*>& port);
+    void init();
+    void drive();
+    void stall();
     void operator()();
 
   private:
-    void setCmd(const std::vector<float>& cmd);
-    void setCommandCB(const std_msgs::Float64MultiArray::ConstPtr& cmd_vel);
+    void setCmd(const std::vector<double>& cmd);
+    void setCommandCB(const std_msgs::Float64MultiArray::ConstPtr& cmd_pos);
+    void setAngleCB(const std_msgs::Float64MultiArray::ConstPtr& angle);
 
-    int motor_num_ = 0;
-    float reduction_ratio_ = 0.0;
+    double reduction_ratio_ = 0.0;
     std::vector<int> id_{};
-    std::vector<float> motor_zero_position_{};
-    std::vector<MotorCmd> init_param_{}, motor_cmd_{};
-    std::vector<MotorData> motor_recv_{};
-    std::vector<std::string> serial_port_{};
+    std::vector<std::string> port_name_{};
+    std::vector<MotorParam> motor_param_;
     std_msgs::Float64MultiArray pos_state_{};
 
-    ros::Subscriber sub_;
-    ros::Publisher pub_;
+    ros::V_Subscriber subs_;
+    ros::V_Publisher pubs_;
     ros::NodeHandle nh_;
 };
 }  // namespace motor_go

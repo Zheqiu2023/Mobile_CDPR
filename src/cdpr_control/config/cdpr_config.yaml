@@ -41,6 +41,5 @@ chassis:
         direction: 1.0  
         radius: 0.1175
 
-cable_archor:
-  traj_period: 0.3
-  reel_diameter: 0.031
+traj:
+  traj_period: 0.5

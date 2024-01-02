@@ -13,31 +13,29 @@
 #pragma once
 
 #include <ros/ros.h>
+
 #include <mutex>
 
-#include "cdpr_bringup/CanFrame.h"
 #include "cdpr_bringup/CanCmd.h"
-#include "cdpr_bringup/usb_can/controlcan.h"
+#include "cdpr_bringup/CanFrame.h"
 #include "cdpr_bringup/TrajCmd.h"
+#include "cdpr_bringup/usb_can/controlcan.h"
 
-namespace maxon_re35
-{
-constexpr unsigned short PWM_LIM = 5000;  // pwm限制值：0~5000，若供电电压与额定电压一致，设为5000
+namespace maxon_re35 {
+constexpr unsigned short PWM_LIM = 5000;  // pwm限制值：0~5000，供电电压24V，额定电压48V
 
-struct MotorData
-{
+struct MotorData {
     int driver_id_, direction_;
     double target_pos_, last_pos_;
     cdpr_bringup::CanCmd pub_cmd_;
 };
 
-class MotorDriver
-{
-  public:
+class MotorDriver {
+   public:
     MotorDriver(ros::NodeHandle& nh);
     void run();
 
-  private:
+   private:
     void init(const int& run_mode);
     void publishCmd(const cdpr_bringup::CanCmd& cmd_struct);
 
@@ -47,7 +45,7 @@ class MotorDriver
     int reduction_ratio_ = 0, encoder_lines_num_ = 0;
     double reel_diameter_ = 0.0, traj_period_ = 0.0;
 
-    bool is_traj_end_;
+    bool is_traj_end_ = false;
     std::vector<MotorData> motor_data_{};
 
     ros::NodeHandle nh_;

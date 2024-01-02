@@ -40,3 +40,9 @@ T alpha(T cutoff, double freq)
     T te = 1.0 / freq;
     return 1.0 / (1.0 + tau / te);
 }
+
+template <typename T>
+T deg2rad(T degree)
+{
+    return degree * (M_PI / 180.0);
+}

@@ -12,41 +12,31 @@
  */
 #pragma once
 
-#include "cdpr_bringup/usb_can/controlcan.h"
-
 #include <ros/ros.h>
 
-namespace usb_can
-{
-enum class MotorType
-{
-    STEPPER_MOTOR,
-    MAXON_RE35
-};
+#include "cdpr_bringup/usb_can/controlcan.h"
 
-class CanInit
-{
-  public:
+namespace usb_can {
+enum class MotorType { STEPPER_MOTOR, MAXON_RE35 };
+
+class CanInit {
+   public:
     void initCAN(const int& dev_type, const int& dev_ind, const int& can_ind, const MotorType& m_type);
 
-  private:
+   private:
     void setCANParam(const MotorType& m_type);
     VCI_INIT_CONFIG config_;  // 初始化参数，参考二次开发函数库说明书
 };
 
 /**
- * @brief 设置CAN通讯配置参数：CAN1接步进电机，CAN2接RE35
+ * @brief 根据电机类型设置CAN通讯配置参数
  * @param  m_type 电机类型
  */
-void CanInit::setCANParam(const MotorType& m_type)
-{
-    if (m_type == MotorType::STEPPER_MOTOR)
-    {
+void CanInit::setCANParam(const MotorType& m_type) {
+    if (m_type == MotorType::STEPPER_MOTOR) {
         config_.Timing0 = 0x03;  // 波特率125K（由CAN驱动器确定）
         config_.Timing1 = 0x1C;
-    }
-    else if (m_type == MotorType::MAXON_RE35)
-    {
+    } else if (m_type == MotorType::MAXON_RE35) {
         config_.Timing0 = 0x00;  // 波特率1M（由RoboModule驱动器确定）
         config_.Timing1 = 0x14;
     }
@@ -65,21 +55,18 @@ void CanInit::setCANParam(const MotorType& m_type)
  * @return true
  * @return false
  */
-void CanInit::initCAN(const int& dev_type, const int& dev_ind, const int& can_ind, const MotorType& m_type)
-{
+void CanInit::initCAN(const int& dev_type, const int& dev_ind, const int& can_ind, const MotorType& m_type) {
     // 配置CAN
     setCANParam(m_type);
     // 初始化CAN
-    if (VCI_InitCAN(dev_type, dev_ind, can_ind, &config_) != 1)
-    {
+    if (VCI_InitCAN(dev_type, dev_ind, can_ind, &config_) != 1) {
         VCI_CloseDevice(dev_type, dev_ind);
         ROS_WARN("Failed to initialize USBCAN%d CAN%d!", dev_ind, can_ind);
         return;
     }
     VCI_ClearBuffer(dev_type, dev_ind, can_ind);
     // 启动CAN
-    if (VCI_StartCAN(dev_type, dev_ind, can_ind) != 1)
-    {
+    if (VCI_StartCAN(dev_type, dev_ind, can_ind) != 1) {
         VCI_CloseDevice(dev_type, dev_ind);
         ROS_WARN("Failed to open USBCAN%d CAN%d!", dev_ind, can_ind);
         return;

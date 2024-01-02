@@ -1,5 +1,4 @@
 run_mode: 3   # 0: position, 1: close to motor, 2: away from motor, 3: reset, 4: config_param
-publish_rate: 300
 
 lead: 5
 step_angle: 1.8
@@ -18,16 +17,16 @@ cmd_config:
     can_ind: 0
     can_id: 0xc2
     direction: 1
-  # m2:  # left back
-  #   dev_ind: 0
-  #   can_ind: 0
-  #   can_id: 0xc3
-  #   direction: 1
-  # m3: # right back
-  #   dev_ind: 0
-  #   can_ind: 0
-  #   can_id: 0xc4
-  #   direction: -1
+  m2:  # left back
+    dev_ind: 1
+    can_ind: 0
+    can_id: 0xc3
+    direction: 1
+  m3: # right back
+    dev_ind: 1
+    can_ind: 0
+    can_id: 0xc4
+    direction: -1
 
 <<: &param
   plus_start_time: [0xf4, 0x00, 0, 0, 0x10] # startup cycle

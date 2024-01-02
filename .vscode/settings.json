@@ -83,7 +83,7 @@
     "python.analysis.extraPaths": [
         "/opt/ros/noetic/lib/python3/dist-packages"
     ],
-    "cmake.sourceDirectory": "/home/qz/Mobile_CDPR_WS/src/cdpr_teleop",
+    "cmake.sourceDirectory": "/home/g1019/Mobile_CDPR_WS/src/cdpr_teleop",
 
 
 }

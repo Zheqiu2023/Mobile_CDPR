@@ -6,6 +6,7 @@
     <node pkg="usb_can" type="usb_can_node" name="usbcan" output="screen"/>
     <!-- <include file="$(find stepper_motor_57)/launch/57_launch.launch"/> -->
     <include file="$(find maxon_re35)/launch/re35_launch.launch"/>
+    <include file="$(find cdpr_movable_archor)/launch/movable_archor.launch"/>
 
     <!-- <include file="$(find unitree_motor_a1)/launch/a1_launch.launch"/> -->
     <!-- <include file="$(find unitree_motor_go)/launch/go_launch.launch"/> -->
@@ -14,6 +15,5 @@
     <!-- <include file="$(find wit_ros_imu)/launch/wit_imu_launch/display_and_imu.launch"/> -->
     <!-- <include file="$(find wit_ros_imu)/launch/wit_imu_launch/rviz_and_imu.launch"/> -->
     <!-- <include file="$(find wit_ros_imu)/launch/wit_imu_launch/wit_imu.launch"/> -->
-
     
 </launch>

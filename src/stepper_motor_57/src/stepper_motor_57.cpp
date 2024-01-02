@@ -21,8 +21,7 @@
 
 using namespace stepper_57;
 
-MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh), is_traj_end_(false)
-{
+MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh), is_traj_end_(false) {
     // Configure command waited to be sent
     XmlRpc::XmlRpcValue cmd_config;
     name_space_ = nh_.getNamespace();
@@ -30,8 +29,7 @@ MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh), is_traj_end_(false)
           nh_.getParam("step_angle", step_angle_) && nh_.getParam("sub_divide", sub_divide_)))
         ROS_ERROR("Some motor params are not given in namespace: '%s')", name_space_.c_str());
     ROS_ASSERT(cmd_config.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    for (auto iter = cmd_config.begin(); iter != cmd_config.end(); ++iter)
-    {
+    for (auto iter = cmd_config.begin(); iter != cmd_config.end(); ++iter) {
         ROS_ASSERT(iter->second.hasMember("dev_ind") && iter->second.hasMember("can_ind") &&
                    iter->second.hasMember("can_id") && iter->second.hasMember("direction"));
 
@@ -51,10 +49,10 @@ MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh), is_traj_end_(false)
             static_cast<unsigned char>(pub_cmd.cmd.ID << 5);  // Lower 3 bits of the CAN driver's address, the last five
                                                               // bits are normally set to 0.
 
-        motor_data_.push_back(MotorData{ .is_reset_ = false,
-                                         .direction_ = static_cast<int>(iter->second["direction"]),
-                                         .target_pos_ = 0.0,
-                                         .pub_cmd_ = std::move(pub_cmd) });
+        motor_data_.push_back(MotorData{.is_reset_ = false,
+                                        .direction_ = static_cast<int>(iter->second["direction"]),
+                                        .target_pos_ = 0.0,
+                                        .pub_cmd_ = std::move(pub_cmd)});
     }
 
     pubs_.emplace_back(nh_.advertise<cdpr_bringup::CanCmd>("motor_cmd", 10));
@@ -65,37 +63,26 @@ MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh), is_traj_end_(false)
     ros::Duration(1.0).sleep();  // Sleep for 1s to ensure that the first message sent is received by USBCAN
 }
 
-void MotorDriver::cmdPosCallback(const cdpr_bringup::TrajCmd::ConstPtr& pos)
-{
+void MotorDriver::cmdPosCallback(const cdpr_bringup::TrajCmd::ConstPtr& pos) {
     std::lock_guard<std::mutex> guard(mutex_);
     is_traj_end_ = pos->is_traj_end;
-    for (size_t i = 0; i < motor_data_.size(); ++i)
-        motor_data_[i].target_pos_ = pos->target[i];
+    for (size_t i = 0; i < motor_data_.size(); ++i) motor_data_[i].target_pos_ = pos->target[i];
     ROS_INFO("target pos: %.5f, %.5f, %.5f, %.5f", motor_data_[0].target_pos_, motor_data_[1].target_pos_,
              motor_data_[2].target_pos_, motor_data_[3].target_pos_);
 }
 
-void MotorDriver::motorStateCallback(const cdpr_bringup::CanFrame::ConstPtr& state)
-{
-    if (state->Data[2] == 0x41 && state->Data[7] == 0)
-    {
-        for (auto& motor_data : motor_data_)
-        {
-            if (motor_data.pub_cmd_.cmd.ID == state->ID)
-                motor_data.is_reset_ = true;  // reset successfully
+void MotorDriver::motorStateCallback(const cdpr_bringup::CanFrame::ConstPtr& state) {
+    if (state->Data[2] == 0x41 && state->Data[7] == 0) {
+        for (auto& motor_data : motor_data_) {
+            if (motor_data.pub_cmd_.cmd.ID == state->ID) motor_data.is_reset_ = true;  // reset successfully
         }
     }
 }
 
-void MotorDriver::publishCmd(const cdpr_bringup::CanCmd& cmd_struct)
-{
-    pubs_[0].publish(cmd_struct);
-}
+void MotorDriver::publishCmd(const cdpr_bringup::CanCmd& cmd_struct) { pubs_[0].publish(cmd_struct); }
 
-void MotorDriver::setCmd(cdpr_bringup::CanFrame& cmd, RunMode cmd_mode, const std::vector<int>& pos_vec)
-{
-    switch (cmd_mode)
-    {
+void MotorDriver::setCmd(cdpr_bringup::CanFrame& cmd, RunMode cmd_mode, const std::vector<int>& pos_vec) {
+    switch (cmd_mode) {
         case RunMode::RESET:
             cmd.Data[2] = (CMD_REQUEST << 5) | 0X01;  // Reset command (return required)
             cmd.Data[7] = 1;                          // When reset complete, return command
@@ -120,37 +107,31 @@ void MotorDriver::setCmd(cdpr_bringup::CanFrame& cmd, RunMode cmd_mode, const st
             ROS_WARN_NAMED(name_space_, "Motor run mode error!");
             break;
     }
-    for (size_t i = 3; i < 7; ++i)
-    {
+    for (size_t i = 3; i < 7; ++i) {
         cmd.Data[i] = static_cast<unsigned char>(pos_vec[i - 3]);
     }
 }
 
-void MotorDriver::run()
-{
+void MotorDriver::run() {
     std::string is_stall{};
     int run_mode = nh_.param("run_mode", 0);
-    double publish_rate = nh_.param("publish_rate", 500);
     std::vector<int> pos_vec(4, 0);
 
-    switch (run_mode)
-    {
+    switch (run_mode) {
         case 0: {  // position
             ROS_INFO_NAMED(name_space_, "Reset before localization!");
             // Reset: move to zero position
-            while (ros::ok())
-            {
-                for (auto& motor_data : motor_data_)
-                {
-                    if (true == motor_data.is_reset_)
-                        continue;
+            while (ros::ok()) {
+                for (auto& motor_data : motor_data_) {
+                    if (true == motor_data.is_reset_) continue;
                     setCmd(motor_data.pub_cmd_.cmd, RunMode::RESET, pos_vec);
                     publishCmd(motor_data.pub_cmd_);
                 }
 
-                if (std::all_of(motor_data_.begin(), motor_data_.end(), [](const MotorData& motor_data) {
-                        return motor_data.is_reset_;
-                    }))  // all archores reset successfully
+                if (std::all_of(motor_data_.begin(), motor_data_.end(),
+                                [](const MotorData& motor_data) {
+                                    return motor_data.is_reset_;
+                                }))  // all archores reset successfully
                 {
                     subs_[0].shutdown();
                     break;
@@ -160,34 +141,24 @@ void MotorDriver::run()
             std_msgs::Bool is_ready{};
             is_ready.data = true;
             pubs_[1].publish(is_ready);
-            ROS_INFO_NAMED(name_space_, "Reset done, ready to follow the trajectory!");
+            ROS_INFO_NAMED(name_space_, "Stepper motor57 reset done, ready to follow the trajectory!");
 
             // follow the trajectory
-            ros::Rate loop_rate(publish_rate);
-            while (ros::ok())
-            {
+            while (ros::ok()) {
                 std::lock_guard<std::mutex> guard(mutex_);
-                for (auto& motor_data : motor_data_)
-                {
+                for (auto& motor_data : motor_data_) {
                     int cmd_pos =
                         std::round((motor_data.target_pos_ * 1000 * 360 / lead_) / (step_angle_ / sub_divide_));
-                    if (motor_data.direction_ == 1)
-                    {
-                        for (size_t i = 0; i < pos_vec.size(); ++i)
-                            pos_vec[i] = 0xff - (cmd_pos >> (8 * i)) & 0xff;
-                    }
-                    else if (motor_data.direction_ == -1)
-                    {
-                        for (size_t i = 0; i < pos_vec.size(); ++i)
-                            pos_vec[i] = (cmd_pos >> (8 * i)) & 0xff;
+                    if (motor_data.direction_ == 1) {
+                        for (size_t i = 0; i < pos_vec.size(); ++i) pos_vec[i] = 0xff - (cmd_pos >> (8 * i)) & 0xff;
+                    } else if (motor_data.direction_ == -1) {
+                        for (size_t i = 0; i < pos_vec.size(); ++i) pos_vec[i] = (cmd_pos >> (8 * i)) & 0xff;
                     }
 
                     setCmd(motor_data.pub_cmd_.cmd, RunMode::POS, pos_vec);
                     publishCmd(motor_data.pub_cmd_);
                 }
-                if (is_traj_end_)
-                    break;
-                loop_rate.sleep();
+                if (is_traj_end_) break;
             }
 
             ros::Duration(2.0).sleep();  // buffering time for motors moving back to zero position
@@ -198,10 +169,8 @@ void MotorDriver::run()
             ROS_INFO_NAMED(name_space_, "Move close to motor!");
 
             ROS_INFO_NAMED(name_space_, "Press p to stop moving: ");
-            while (ros::ok())
-            {
-                for (auto& motor_data : motor_data_)
-                {
+            while (ros::ok()) {
+                for (auto& motor_data : motor_data_) {
                     if (motor_data.direction_ == 1)
                         setCmd(motor_data.pub_cmd_.cmd, RunMode::VEL_FORWARD, pos_vec);
                     else if (motor_data.direction_ == -1)
@@ -209,12 +178,10 @@ void MotorDriver::run()
                     publishCmd(motor_data.pub_cmd_);
                 }
                 getline(std::cin, is_stall);
-                if (is_stall == "p")
-                    break;
+                if (is_stall == "p") break;
             }
 
-            for (auto& motor_data : motor_data_)
-            {
+            for (auto& motor_data : motor_data_) {
                 setCmd(motor_data.pub_cmd_.cmd, RunMode::STALL, pos_vec);
                 publishCmd(motor_data.pub_cmd_);
             }
@@ -224,8 +191,7 @@ void MotorDriver::run()
             nh_.getParam("target_data/target_vel_away_arr", pos_vec);
             ROS_INFO_NAMED(name_space_, "Move away from motor!");
 
-            for (auto& motor_data : motor_data_)
-            {
+            for (auto& motor_data : motor_data_) {
                 if (motor_data.direction_ == 1)
                     setCmd(motor_data.pub_cmd_.cmd, RunMode::VEL_REVERSE, pos_vec);
                 else if (motor_data.direction_ == -1)
@@ -234,15 +200,12 @@ void MotorDriver::run()
             }
 
             ROS_INFO_NAMED(name_space_, "Press p to stop moving: ");
-            while (ros::ok())
-            {
+            while (ros::ok()) {
                 getline(std::cin, is_stall);
-                if (is_stall == "p")
-                    break;
+                if (is_stall == "p") break;
             }
 
-            for (auto& motor_data : motor_data_)
-            {
+            for (auto& motor_data : motor_data_) {
                 setCmd(motor_data.pub_cmd_.cmd, RunMode::STALL, pos_vec);
                 publishCmd(motor_data.pub_cmd_);
             }
@@ -251,19 +214,17 @@ void MotorDriver::run()
         case 3: {  // reset
             ROS_INFO_NAMED(name_space_, "Reset!");
             // Reset: move to zero position
-            while (ros::ok())
-            {
-                for (auto& motor_data : motor_data_)
-                {
-                    if (true == motor_data.is_reset_)
-                        continue;
+            while (ros::ok()) {
+                for (auto& motor_data : motor_data_) {
+                    if (true == motor_data.is_reset_) continue;
                     setCmd(motor_data.pub_cmd_.cmd, RunMode::RESET, pos_vec);
                     publishCmd(motor_data.pub_cmd_);
                 }
 
-                if (std::all_of(motor_data_.begin(), motor_data_.end(), [](const MotorData& motor_data) {
-                        return motor_data.is_reset_;
-                    }))  // all archores reset successfully
+                if (std::all_of(motor_data_.begin(), motor_data_.end(),
+                                [](const MotorData& motor_data) {
+                                    return motor_data.is_reset_;
+                                }))  // all archores reset successfully
                 {
                     subs_[0].shutdown();
                     break;
@@ -276,8 +237,7 @@ void MotorDriver::run()
             nh_.getParam("operating_param", value);
             auto iter = value.begin();
 
-            for (auto& motor_data : motor_data_)
-            {
+            for (auto& motor_data : motor_data_) {
                 readParam(motor_data.pub_cmd_);
                 writeParam(motor_data.pub_cmd_, iter->second);
                 ++iter;
@@ -295,19 +255,16 @@ void MotorDriver::run()
  * @brief Sending operation parameters and save it to flash, data will not be lost even if power down, so only need to
  * send once.
  */
-void MotorDriver::writeParam(cdpr_bringup::CanCmd& cmd_struct, XmlRpc::XmlRpcValue& value)
-{
-    std::vector<std::string> param_type{ "plus_start_time", "plus_constant_time", "acc_steps",     "acc_cof",
-                                         "sub_divide",      "reset_mode",         "phase_current", "can_id" };
+void MotorDriver::writeParam(cdpr_bringup::CanCmd& cmd_struct, XmlRpc::XmlRpcValue& value) {
+    std::vector<std::string> param_type{"plus_start_time", "plus_constant_time", "acc_steps",     "acc_cof",
+                                        "sub_divide",      "reset_mode",         "phase_current", "can_id"};
 
     ROS_INFO_NAMED(name_space_, "Sending operating parameters!");
 
     cmd_struct.cmd.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X13);  // 运行参数保存到内存
-    for (const auto& type : param_type)
-    {
+    for (const auto& type : param_type) {
         ROS_ASSERT(value[type].size() == 5);
-        for (int j = 0; j < value[type].size(); ++j)
-        {
+        for (int j = 0; j < value[type].size(); ++j) {
             // 小端模式：低地址存放低位
             cmd_struct.cmd.Data[j + 3] = static_cast<unsigned char>(int(value[type][j]));
         }
@@ -326,17 +283,14 @@ void MotorDriver::writeParam(cdpr_bringup::CanCmd& cmd_struct, XmlRpc::XmlRpcVal
 /**
  * @brief Reading motor operating parameters from flash
  */
-void MotorDriver::readParam(cdpr_bringup::CanCmd& cmd_struct)
-{
+void MotorDriver::readParam(cdpr_bringup::CanCmd& cmd_struct) {
     cmd_struct.cmd.Data[2] = static_cast<unsigned char>((CMD_REQUEST << 5) | 0X13);  // 运行参数读取
-    for (size_t i = 3; i < cmd_struct.cmd.DataLen; ++i)
-    {
+    for (size_t i = 3; i < cmd_struct.cmd.DataLen; ++i) {
         cmd_struct.cmd.Data[i] = 0;
     }
 
-    std::vector<unsigned char> bytedata{ 17, 15, 1, 19, 11, 13, 23, 9 };
-    for (const auto& i : bytedata)
-    {
+    std::vector<unsigned char> bytedata{17, 15, 1, 19, 11, 13, 23, 9};
+    for (const auto& i : bytedata) {
         cmd_struct.cmd.Data[7] = i;
         publishCmd(cmd_struct);
         usleep(100000);

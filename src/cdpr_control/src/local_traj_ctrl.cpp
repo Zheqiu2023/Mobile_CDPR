@@ -9,35 +9,36 @@
 
 #include "cdpr_bringup/TrajCmd.h"
 
-namespace cable_archor_ctrl {
-class CableArchorCtrl {
+namespace local_traj_ctrl {
+class LocalTrajCtrl {
    public:
-    CableArchorCtrl(ros::NodeHandle& nh) : nh_(nh), is_re35_ready_(false), is_stepper57_ready_(false) {
-        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/stepper_57/archor_coor_z", 100));
+    LocalTrajCtrl(ros::NodeHandle& nh) : nh_(nh), is_cable_ready_(false), is_archor_ready_(false) {
+        // pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/stepper_57/archor_coor_z", 100));
+        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/movable_archor/archor_coor_z", 100));
         pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/maxon_re35/cable_length", 100));
-        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/maxon_re35/cable_force", 100));
-        subs_.emplace_back(nh.subscribe("/maxon_re35/ready_state", 10, &CableArchorCtrl::re35ResetCallback, this));
-        subs_.emplace_back(nh.subscribe("/stepper_57/ready_state", 10, &CableArchorCtrl::stepper57ResetCallback, this));
+        subs_.emplace_back(nh.subscribe("/maxon_re35/ready_state", 10, &LocalTrajCtrl::cableResetCallback, this));
+        // subs_.emplace_back(nh.subscribe("/stepper_57/ready_state", 10, &LocalTrajCtrl::archorResetCallback, this));
+        subs_.emplace_back(nh.subscribe("/movable_archor/ready_state", 10, &LocalTrajCtrl::archorResetCallback, this));
 
         archor_coor_z_.is_traj_end = false;
         cable_length_.is_traj_end = false;
     }
 
     void readPublishTraj() {
-        std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/updown.csv", std::ios::in);
+        // std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/updown.csv", std::ios::in);
         // std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/line.csv", std::ios::in);
         // std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/circle.csv", std::ios::in);
-        // std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/hit.csv", std::ios::in);
+        std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/hit.csv", std::ios::in);
         if (!f_in.is_open()) ROS_ERROR("Failed to open .csv file");
 
         std::string line, data;
         std::istringstream s;
         double traj_period = nh_.param("traj_period", 0.3);
 
-        // wait for motors reset to complete
-        while (!is_re35_ready_ || !is_stepper57_ready_) ros::spinOnce();
+        // wait for motors reset
+        while (ros::ok() && !(is_cable_ready_ && is_archor_ready_)) ros::spinOnce();
         // read data
-        while (getline(f_in, line)) {
+        while (ros::ok() && getline(f_in, line)) {
             s.clear();
             archor_coor_z_.target.clear();
             cable_length_.target.clear();
@@ -60,7 +61,6 @@ class CableArchorCtrl {
             ros::Duration(traj_period).sleep();
         }
         // End of trajectory, all motors move back to zero position then stop
-        ros::Duration(2.0).sleep();
         archor_coor_z_.is_traj_end = true;
         cable_length_.is_traj_end = true;
         std::fill(archor_coor_z_.target.begin(), archor_coor_z_.target.end(), 0.0);
@@ -72,25 +72,24 @@ class CableArchorCtrl {
     }
 
    private:
-    void re35ResetCallback(const std_msgs::Bool::ConstPtr& is_ready) { is_re35_ready_ = is_ready->data; }
-    void stepper57ResetCallback(const std_msgs::Bool::ConstPtr& is_ready) { is_stepper57_ready_ = is_ready->data; }
+    void cableResetCallback(const std_msgs::Bool::ConstPtr& is_ready) { is_cable_ready_ = is_ready->data; }
+    void archorResetCallback(const std_msgs::Bool::ConstPtr& is_ready) { is_archor_ready_ = is_ready->data; }
 
     cdpr_bringup::TrajCmd archor_coor_z_{}, cable_length_{};
-    bool is_re35_ready_, is_stepper57_ready_;
+    bool is_cable_ready_, is_archor_ready_;
 
     ros::NodeHandle nh_;
     ros::V_Publisher pubs_;
     ros::V_Subscriber subs_;
 };
-}  // namespace cable_archor_ctrl
+}  // namespace local_traj_ctrl
 
 int main(int argc, char* argv[]) {
-    ros::init(argc, argv, "cable_archor_ctrl");
+    ros::init(argc, argv, "local_traj_ctrl");
     ros::NodeHandle nh("~");
 
-    cable_archor_ctrl::CableArchorCtrl ctrl(nh);
-    ctrl.readPublishTraj();
+    local_traj_ctrl::LocalTrajCtrl local_traj_ctrl(nh);
+    local_traj_ctrl.readPublishTraj();
 
-    ros::waitForShutdown();
     return 0;
 }

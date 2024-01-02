@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <node pkg="cdpr_movable_archor" type="cdpr_movable_archor_node" name="movable_archor" output="screen" clear_params="true">
+        <rosparam command="load" file="$(find cdpr_movable_archor)/config/movable_archor.yaml"/>
+    </node>
+</launch>

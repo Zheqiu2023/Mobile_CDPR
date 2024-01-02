@@ -68,10 +68,9 @@ ChassisCtrl::ChassisCtrl(ros::NodeHandle& nh) : nh_(nh)
     }
 
     // Start command subscriber and publisher
-    cmd_chassis_sub_ = nh_.subscribe<geometry_msgs::TwistStamped>("/cmd_chassis", 1,
-                                                                  boost::bind(&ChassisCtrl::chassisCmdCB, this, _1));
-    state_steer_sub_ = nh_.subscribe<std_msgs::Float64MultiArray>("/steer_pos_state", 10,
-                                                                  boost::bind(&ChassisCtrl::steerStateCB, this, _1));
+    cmd_chassis_sub_ = nh_.subscribe<geometry_msgs::TwistStamped>("/cmd_chassis", 1, &ChassisCtrl::chassisCmdCB, this);
+    state_steer_sub_ =
+        nh_.subscribe<std_msgs::Float64MultiArray>("/steer_pos_state", 10, &ChassisCtrl::steerStateCB, this);
     cmd_wheelset_pubs_.push_back(nh_.advertise<std_msgs::Float64MultiArray>("/steer_pos_cmd", 100));
     cmd_wheelset_pubs_.push_back(nh_.advertise<std_msgs::Float64MultiArray>("/roll_vel_cmd", 100));
 }

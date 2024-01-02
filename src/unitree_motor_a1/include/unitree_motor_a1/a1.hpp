@@ -20,28 +20,37 @@
 
 namespace motor_a1
 {
+struct MotorParam
+{
+    int serial_num_;
+    double zero_position_, last_pos_;
+    MotorCmd init_param_, motor_cmd_;
+    MotorData motor_recv_;
+
+    SerialPort* port_;
+};
+
 class A1Control
 {
   public:
     A1Control(ros::NodeHandle nh);
-    void init(std::vector<SerialPort*>& port);
-    void drive(std::vector<SerialPort*>& port);
-    void stall(std::vector<SerialPort*>& port);
+    void init();
+    void drive();
+    void stall();
     void operator()();
 
   private:
-    void setCmd(const std::vector<float>& cmd);
+    void setCmd(const std::vector<double>& cmd);
     void setCommandCB(const std_msgs::Float64MultiArray::ConstPtr& cmd_vel);
+    void setPosCB(const std_msgs::Float64MultiArray::ConstPtr& pos);
 
-    int motor_num_ = 0;
-    float reduction_ratio_ = 0.0;
+    double reduction_ratio_ = 0.0, wheel_radius_ = 0.0;
     std::vector<int> id_{};
-    std::vector<float> motor_zero_position_{};
-    std::vector<MotorCmd> init_param_{}, motor_cmd_{};
-    std::vector<MotorData> motor_recv_{};
-    std::vector<std::string> serial_port_{};
+    std::vector<std::string> port_name_{};
+    std::vector<MotorParam> motor_param_;
 
-    ros::Subscriber sub_;
+    ros::V_Subscriber subs_;
+    ros::Publisher pub_;
     ros::NodeHandle nh_;
 };
 }  // namespace motor_a1

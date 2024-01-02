@@ -13,7 +13,8 @@
 
 #include "maxon_re35/maxon_re35.hpp"
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
     ros::init(argc, argv, "maxon_re35");
     ros::NodeHandle nh("~");
 
@@ -24,6 +25,5 @@ int main(int argc, char** argv) {
 
     m_run.run();
 
-    ros::waitForShutdown();
     return 0;
 }

@@ -103,12 +103,12 @@ y_t cubicBezierSecondDerivative(y_t y0, y_t yf, x_t x)
  * @param  end_pos
  * @param  phase
  * @param  total_run_time
- * @return std::vector<float>
+ * @return std::vector<double>
  */
-std::vector<float> cubicBezierTrajPlanner(const float& start_pos, const float& end_pos, const float& phase,
-                                          const float& total_run_time)
+std::vector<double> cubicBezierTrajPlanner(const double& start_pos, const double& end_pos, const double& phase,
+                                           const double& total_run_time)
 {
-    std::vector<float> result_vec(3, 0);
+    std::vector<double> result_vec(3, 0);
     result_vec[0] = cubicBezier(start_pos, end_pos, phase);  // Pos
     result_vec[1] =
         cubicBezierFirstDerivative(start_pos, end_pos, phase) /
@@ -124,15 +124,15 @@ std::vector<float> cubicBezierTrajPlanner(const float& start_pos, const float& e
  * @param  vel
  * @param  acc
  * @param  point_num
- * @return std::vector<std::vector<float>>
+ * @return std::vector<std::vector<double>>
  */
-std::vector<std::vector<float>> quinticPolynomial(const float& time, const std::vector<float>& pos,
-                                                  const std::vector<float>& vel, const std::vector<float>& acc,
-                                                  const int& point_num)
+std::vector<std::vector<double>> quinticPolynomial(const double& time, const std::vector<double>& pos,
+                                                   const std::vector<double>& vel, const std::vector<double>& acc,
+                                                   const int& point_num)
 {
-    std::vector<float> coef_vec(6, 0);
-    std::vector<std::vector<float>> result_vec(point_num, std::vector<float>(3, 0));
-    float pos_diff = pos[1] - pos[0];
+    std::vector<double> coef_vec(6, 0);
+    std::vector<std::vector<double>> result_vec(point_num, std::vector<double>(3, 0));
+    double pos_diff = pos[1] - pos[0];
 
     // 五次多项式系数
     coef_vec[0] = pos[0];
@@ -145,7 +145,7 @@ std::vector<std::vector<float>> quinticPolynomial(const float& time, const std::
     coef_vec[5] =
         1.0 / (2 * pow(time, 5)) * (12 * pos_diff - 6 * (vel[1] + vel[0]) * time + (acc[1] - acc[0]) / pow(time, 2));
 
-    float per_seg_time = time / (point_num - 1);
+    double per_seg_time = time / (point_num - 1);
     for (size_t i = 0; i < point_num; ++i)
     {
         // 位置

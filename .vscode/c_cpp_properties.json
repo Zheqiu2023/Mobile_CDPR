@@ -6,9 +6,9 @@
                 "/usr/include/**",
                 "/usr/include/eigen3/**",
                 "/usr/include/eigen3/Eigen",
-                "/opt/ros/noetic/include/**",
+                "/opt/ros/noetic/include",
                 "${workspaceFolder}/devel/include/**",
-                "${workspaceFolder}/src/cdpr_bringup/include/**",
+                "${workspaceFolder}/src/cdpr_bringup/include",
                 "${workspaceFolder}/src/maxon_re35/include/**",
                 "${workspaceFolder}/src/stepper_motor_57/include/**",
                 "${workspaceFolder}/src/unitree_motor_a1/include/**",
@@ -17,7 +17,9 @@
                 "${workspaceFolder}/src/cdpr_gazebo/include/**",
                 "${workspaceFolder}/src/cdpr_hw/include/**",
                 "${workspaceFolder}/src/cdpr_chassis_controller/include/**",
-                "${workspaceFolder}/src/cdpr_control/include/**"
+                "${workspaceFolder}/src/cdpr_control/include/**",
+                "${workspaceFolder}/src/cdpr_movable_archor/include",
+                "${workspaceFolder}/devel/.private/cdpr_bringup/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

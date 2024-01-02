@@ -126,7 +126,7 @@ link_directories(
 )
 
 ## Declare a C++ library
-add_library(Go
+add_library(${PROJECT_NAME}
   src/go.cpp
 )
 
@@ -152,7 +152,7 @@ add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catk
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME}_node
-  Go
+  ${PROJECT_NAME}
   ${catkin_LIBRARIES} 
   libUnitreeMotorSDK_M80106_amd64.so
 )

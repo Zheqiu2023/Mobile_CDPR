@@ -18,8 +18,7 @@
                 "${workspaceFolder}/src/cdpr_hw/include/**",
                 "${workspaceFolder}/src/cdpr_chassis_controller/include/**",
                 "${workspaceFolder}/src/cdpr_control/include/**",
-                "${workspaceFolder}/src/cdpr_movable_archor/include",
-                "${workspaceFolder}/devel/.private/cdpr_bringup/include"
+                "${workspaceFolder}/src/cdpr_movable_archor/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

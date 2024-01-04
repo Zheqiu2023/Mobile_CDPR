@@ -11,20 +11,20 @@ cmd_config:
   m0:  # left front
     dev_ind: 0
     can_ind: 0
-    driver_id: 4 
+    driver_id: 5 
     direction: -1
   m1: # right front
     dev_ind: 0
     can_ind: 0
-    driver_id: 5 
+    driver_id: 6 
     direction: -1
   m2: # left back
     dev_ind: 1
     can_ind: 0
-    driver_id: 6 
+    driver_id: 7 
     direction: -1
   m3: # right back
     dev_ind: 1
     can_ind: 0
-    driver_id: 7 
+    driver_id: 8 
     direction: -1

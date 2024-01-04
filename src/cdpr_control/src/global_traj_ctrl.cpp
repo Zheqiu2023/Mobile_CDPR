@@ -10,16 +10,13 @@
 #include "cdpr_bringup/TrajCmd.h"
 #include "cdpr_bringup/math_utilities.hpp"
 
-namespace global_traj_ctrl
-{
-class GlobalTrajCtrl
-{
-  public:
+namespace global_traj_ctrl {
+class GlobalTrajCtrl {
+   public:
     GlobalTrajCtrl(ros::NodeHandle& nh)
-      : nh_(nh), is_re35_ready_(false), is_stepper57_ready_(false), is_a1_ready_(false), is_go_ready_(false)
-    {
-        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/stepper_57/archor_coor_z", 100));
-        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/maxon_re35/cable_length", 100));
+        : nh_(nh), is_re35_ready_(false), is_stepper57_ready_(false), is_a1_ready_(false), is_go_ready_(false) {
+        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/archor_coor_z", 100));
+        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/cable_length", 100));
         pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/go/target_angle", 100));
         pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/a1/target_pos", 100));
         subs_.emplace_back(nh.subscribe("/maxon_re35/ready_state", 10, &GlobalTrajCtrl::re35ResetCallback, this));
@@ -33,25 +30,21 @@ class GlobalTrajCtrl
         target_pos_.is_traj_end = false;
     }
 
-    void readPublishTraj()
-    {
+    void readPublishTraj() {
         std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/updown.csv", std::ios::in);
         // std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/line.csv", std::ios::in);
         // std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/circle.csv", std::ios::in);
         // std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/hit.csv", std::ios::in);
-        if (!f_in.is_open())
-            ROS_ERROR("Failed to open .csv file");
+        if (!f_in.is_open()) ROS_ERROR("Failed to open .csv file");
 
         std::string line, data;
         std::istringstream s;
         double traj_period = nh_.param("traj_period", 0.3);
 
         // wait for motors reset
-        while (ros::ok() && !(is_re35_ready_ && is_stepper57_ready_ && is_a1_ready_ && is_go_ready_))
-            ros::spinOnce();
+        while (ros::ok() && !(is_re35_ready_ && is_stepper57_ready_ && is_a1_ready_ && is_go_ready_)) ros::spinOnce();
         // read data
-        while (ros::ok() && getline(f_in, line))
-        {
+        while (ros::ok() && getline(f_in, line)) {
             s.clear();
             archor_coor_z_.target.clear();
             cable_length_.target.clear();
@@ -64,24 +57,16 @@ class GlobalTrajCtrl
             double x = 0.0, y = 0.0, last_x = 0.0, last_y = 0.0;
 
             // read every column data of a row and store it in a string variable 'data'
-            while (std::getline(s, data, ','))
-            {
-                if (cnt >= 0 && cnt <= 3)
-                {
+            while (std::getline(s, data, ',')) {
+                if (cnt >= 0 && cnt <= 3) {
                     // add all the column data of a row to member variables
                     archor_coor_z_.target.emplace_back(stod(data));
-                }
-                else if (cnt >= 4 && cnt <= 7)
-                {
+                } else if (cnt >= 4 && cnt <= 7) {
                     cable_length_.target.emplace_back(stod(data));
-                }
-                else if (cnt == 8)
-                {
+                } else if (cnt == 8) {
                     last_x = x;
                     x = stod(data);
-                }
-                else if (cnt == 9)
-                {
+                } else if (cnt == 9) {
                     last_y = y;
                     y = stod(data);
                 }
@@ -113,23 +98,11 @@ class GlobalTrajCtrl
         f_in.close();
     }
 
-  private:
-    void re35ResetCallback(const std_msgs::Bool::ConstPtr& is_ready)
-    {
-        is_re35_ready_ = is_ready->data;
-    }
-    void stepper57ResetCallback(const std_msgs::Bool::ConstPtr& is_ready)
-    {
-        is_stepper57_ready_ = is_ready->data;
-    }
-    void a1ResetCallback(const std_msgs::Bool::ConstPtr& is_ready)
-    {
-        is_a1_ready_ = is_ready->data;
-    }
-    void goResetCallback(const std_msgs::Bool::ConstPtr& is_ready)
-    {
-        is_go_ready_ = is_ready->data;
-    }
+   private:
+    void re35ResetCallback(const std_msgs::Bool::ConstPtr& is_ready) { is_re35_ready_ = is_ready->data; }
+    void stepper57ResetCallback(const std_msgs::Bool::ConstPtr& is_ready) { is_stepper57_ready_ = is_ready->data; }
+    void a1ResetCallback(const std_msgs::Bool::ConstPtr& is_ready) { is_a1_ready_ = is_ready->data; }
+    void goResetCallback(const std_msgs::Bool::ConstPtr& is_ready) { is_go_ready_ = is_ready->data; }
 
     cdpr_bringup::TrajCmd archor_coor_z_{}, cable_length_{}, target_angle_{}, target_pos_{};
     bool is_re35_ready_, is_stepper57_ready_, is_a1_ready_, is_go_ready_;
@@ -140,8 +113,7 @@ class GlobalTrajCtrl
 };
 }  // namespace global_traj_ctrl
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     ros::init(argc, argv, "global_traj_ctrl");
     ros::NodeHandle nh("~");
 

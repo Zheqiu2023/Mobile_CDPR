@@ -13,6 +13,7 @@
 #pragma once
 
 #include <ros/ros.h>
+#include <std_msgs/Float64.h>
 
 #include <mutex>
 
@@ -22,7 +23,7 @@
 #include "cdpr_bringup/usb_can/controlcan.h"
 
 namespace movable_archor {
-constexpr unsigned short PWM_LIM = 5000;  // pwm限制值：0~5000，供电电压24V，额定电压48V
+constexpr unsigned short PWM_LIM = 5000;  // pwm限制值
 
 // maxon re35电机运行模式
 enum class RunMode {
@@ -54,9 +55,10 @@ class ArchorDriver {
 
     bool is_traj_end_ = false;
     std::vector<MotorData> motor_data_{};
+    std_msgs::Float64 cur_pos_;
 
     ros::NodeHandle nh_;
-    ros::V_Publisher pubs_;
+    ros::V_Publisher pubs_, cur_pos_pubs_;
     ros::V_Subscriber subs_;
 
     std::mutex pos_mutex_, state_mutex_;

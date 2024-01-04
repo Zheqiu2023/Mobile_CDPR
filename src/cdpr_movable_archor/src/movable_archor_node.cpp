@@ -12,8 +12,7 @@
  */
 #include "cdpr_movable_archor/movable_archor.hpp"
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     ros::init(argc, argv, "cdpr_movable_archor");
     ros::NodeHandle nh("~");
 

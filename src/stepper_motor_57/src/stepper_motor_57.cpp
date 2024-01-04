@@ -58,7 +58,7 @@ MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh), is_traj_end_(false) {
     pubs_.emplace_back(nh_.advertise<cdpr_bringup::CanCmd>("motor_cmd", 10));
     pubs_.emplace_back(nh_.advertise<std_msgs::Bool>("ready_state", 1));
     subs_.emplace_back(nh_.subscribe("/usbcan/motor_state", 10, &MotorDriver::motorStateCallback, this));
-    subs_.emplace_back(nh_.subscribe("archor_coor_z", 10, &MotorDriver::cmdPosCallback, this));
+    subs_.emplace_back(nh_.subscribe("/archor_coor_z", 10, &MotorDriver::cmdPosCallback, this));
 
     ros::Duration(1.0).sleep();  // Sleep for 1s to ensure that the first message sent is received by USBCAN
 }

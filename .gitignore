@@ -3,5 +3,6 @@ build/
 devel/
 logs/
 Reference/
-bags/
 .catkin_workspace
+/*.csv
+/*.bag

@@ -52,7 +52,11 @@ ArchorDriver::ArchorDriver(ros::NodeHandle& nh) : nh_(nh) {
 
     pubs_.push_back(nh_.advertise<cdpr_bringup::CanCmd>("motor_cmd", 10));
     pubs_.push_back(nh_.advertise<std_msgs::Bool>("ready_state", 1));
-    subs_.push_back(nh_.subscribe("archor_coor_z", 10, &ArchorDriver::cmdPosCallback, this));
+    cur_pos_pubs_.push_back(nh_.advertise<std_msgs::Float64>("/archor0_cur_pos", 10));
+    cur_pos_pubs_.push_back(nh_.advertise<std_msgs::Float64>("/archor1_cur_pos", 10));
+    cur_pos_pubs_.push_back(nh_.advertise<std_msgs::Float64>("/archor2_cur_pos", 10));
+    cur_pos_pubs_.push_back(nh_.advertise<std_msgs::Float64>("/archor3_cur_pos", 10));
+    subs_.push_back(nh_.subscribe("/archor_coor_z", 50, &ArchorDriver::cmdPosCallback, this));
     subs_.push_back(nh_.subscribe("/usbcan/motor_state", 10, &ArchorDriver::motorStateCB, this));
     ros::Duration(1.0).sleep();  // Sleep for 1s to ensure that the first message sent is received by USBCAN
 }
@@ -60,14 +64,18 @@ ArchorDriver::ArchorDriver(ros::NodeHandle& nh) : nh_(nh) {
 void ArchorDriver::motorStateCB(const cdpr_bringup::CanFrame::ConstPtr& state) {
     int id1 = state->ID - 0x0b;
     int id2 = state->ID - 0x0c;
+
     for (auto& motor_data : motor_data_) {
         if (id1 == (motor_data.driver_id_ << 4)) {
             // 接收到电流、速度、位置等信息
             short real_velocity = (state->Data[2] << 8) | state->Data[3];
             int real_position =
                 (state->Data[4] << 24) | (state->Data[5] << 16) | (state->Data[6] << 8) | state->Data[7];
-            double current_pos = real_position * lead_ / (1000 * reduction_ratio_ * encoder_lines_num_);
-            // ROS_INFO("driver id:%d, velocity:%d, position:%d", motor_data.driver_id_, real_velocity, real_position);
+            cur_pos_.data = (double)real_position * lead_ / (1000 * reduction_ratio_ * encoder_lines_num_);
+            cur_pos_pubs_[motor_data.driver_id_ - 5].publish(cur_pos_);
+
+            // ROS_INFO("driver id:%d, velocity:%d, position:%d, cur_pos:%.5f", motor_data.driver_id_, real_velocity,
+            //          real_position, cur_pos_.data);
             return;
         } else if (id2 == (motor_data.driver_id_ << 4) && state->Data[0] == 0x01) {
             // 接收到CTL1/CTL2的电平状态
@@ -98,15 +106,14 @@ void ArchorDriver::init(RunMode mode) {
         std::fill(motor_data.pub_cmd_.cmd.Data.begin(), motor_data.pub_cmd_.cmd.Data.end(), 0x55);
         publishCmd(motor_data.pub_cmd_);
     }
-    ros::Duration(0.5).sleep();
+    ros::Duration(0.6).sleep();
     for (auto& motor_data : motor_data_) {
         // 发送模式选择指令
         motor_data.pub_cmd_.cmd.ID = 0x001 | (motor_data.driver_id_ << 4);   // 模式选择指令
         motor_data.pub_cmd_.cmd.Data[0] = static_cast<unsigned char>(mode);  // 选择mode对应模式
         publishCmd(motor_data.pub_cmd_);
     }
-    ros::Duration(0.5).sleep();
-    ;
+    ros::Duration(0.6).sleep();
     for (auto& motor_data : motor_data_) {
         // 发送配置指令
         motor_data.pub_cmd_.cmd.ID = 0x00A | (motor_data.driver_id_ << 4);  // 配置指令
@@ -114,6 +121,7 @@ void ArchorDriver::init(RunMode mode) {
         motor_data.pub_cmd_.cmd.Data[1] = 0x05;  // 以 5 毫秒为周期对外发送CTL1/CTL2的电平状态
         publishCmd(motor_data.pub_cmd_);
     }
+    ros::Duration(0.6).sleep();
 }
 
 /**
@@ -224,6 +232,7 @@ void ArchorDriver::run() {
 
                     publishCmd(motor_data.pub_cmd_);
                 }
+
                 if (is_traj_end_) break;
             }
 

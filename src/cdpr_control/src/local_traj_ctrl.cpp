@@ -13,11 +13,9 @@ namespace local_traj_ctrl {
 class LocalTrajCtrl {
    public:
     LocalTrajCtrl(ros::NodeHandle& nh) : nh_(nh), is_cable_ready_(false), is_archor_ready_(false) {
-        // pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/archor_coor_z", 100));
-        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/archor_coor_z", 100));
-        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/cable_length", 100));
+        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/archor_coor_z", 10));
+        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/cable_length", 10));
         subs_.emplace_back(nh.subscribe("/maxon_re35/ready_state", 10, &LocalTrajCtrl::cableResetCallback, this));
-        // subs_.emplace_back(nh.subscribe("/stepper_57/ready_state", 10, &LocalTrajCtrl::archorResetCallback, this));
         subs_.emplace_back(nh.subscribe("/movable_archor/ready_state", 10, &LocalTrajCtrl::archorResetCallback, this));
 
         archor_coor_z_.is_traj_end = false;
@@ -25,9 +23,9 @@ class LocalTrajCtrl {
     }
 
     void readPublishTraj() {
-        // std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/updown.csv", std::ios::in);
+        std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/updown.csv", std::ios::in);
         // std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/line.csv", std::ios::in);
-        std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/circle.csv", std::ios::in);
+        // std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/circle.csv", std::ios::in);
         // std::ifstream f_in(ros::package::getPath("cdpr_control") + "/csv/hit.csv", std::ios::in);
         if (!f_in.is_open()) ROS_ERROR("Failed to open .csv file");
 

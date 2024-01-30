@@ -44,11 +44,12 @@ class ArchorDriver {
     void run();
 
    private:
-    void init(RunMode mode);
+    void init(RunMode mode, const int& period);
     void publishCmd(const cdpr_bringup::CanCmd& cmd_struct);
 
     void cmdPosCallback(const cdpr_bringup::TrajCmd::ConstPtr& pos);
     void motorStateCB(const cdpr_bringup::CanFrame::ConstPtr& state);
+    void resetStateCB(const cdpr_bringup::CanFrame::ConstPtr& state);
 
     int lead_ = 0, reduction_ratio_ = 0, encoder_lines_num_ = 0;
     double traj_period_ = 0.0;

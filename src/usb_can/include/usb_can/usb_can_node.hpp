@@ -52,7 +52,7 @@ TransferStation::TransferStation(ros::NodeHandle& nh) : nh_(nh) {
         nh_.subscribe<cdpr_bringup::CanCmd>("/maxon_re35/motor_cmd", 100, &TransferStation::cmdCallback, this));
     subs_.push_back(
         nh_.subscribe<cdpr_bringup::CanCmd>("/movable_archor/motor_cmd", 100, &TransferStation::cmdCallback, this));
-    pub_ = nh_.advertise<cdpr_bringup::CanFrame>("motor_state", 100);
+    pub_ = nh_.advertise<cdpr_bringup::CanFrame>("motor_state", 10);
 }
 
 void TransferStation::cmdCallback(const cdpr_bringup::CanCmd::ConstPtr& msg) {

@@ -1,0 +1,276 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<root>
+ <tabbed_widget parent="main_window" name="Main Window">
+  <Tab tab_name="tab6" containers="1">
+   <Container>
+    <DockSplitter orientation="-" sizes="0.5;0.5" count="2">
+     <DockSplitter orientation="|" sizes="0.500339;0.499661" count="2">
+      <DockArea name="...">
+       <plot mode="TimeSeries" flip_x="false" style="Lines" flip_y="false">
+        <range top="0.100000" bottom="-0.100000" left="625900032.000000" right="103180920064.000000"/>
+        <limitY/>
+        <curve name="archor0_cur_pos_compensation/data" color="#1f77b4"/>
+        <curve name="archor_target_pos/field.target0" color="#f14cc1"/>
+        <curve name="archor0_pos_error" color="#1f77b4"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot mode="TimeSeries" flip_x="false" style="Lines" flip_y="false">
+        <range top="0.095606" bottom="-0.004593" left="625900032.000000" right="103180920064.000000"/>
+        <limitY/>
+        <curve name="archor1_cur_pos_compensation/data" color="#d62728"/>
+        <curve name="archor_target_pos/field.target1" color="#9467bd"/>
+        <curve name="archor1_pos_error" color="#d62728"/>
+       </plot>
+      </DockArea>
+     </DockSplitter>
+     <DockSplitter orientation="|" sizes="0.502373;0.497627" count="2">
+      <DockArea name="...">
+       <plot mode="TimeSeries" flip_x="false" style="Lines" flip_y="false">
+        <range top="0.009447" bottom="-0.001356" left="625900032.000000" right="103180920064.000000"/>
+        <limitY/>
+        <curve name="archor2_cur_pos_compensation/data" color="#1ac938"/>
+        <curve name="archor_target_pos/field.target2" color="#17becf"/>
+        <curve name="archor2_pos_error" color="#1ac938"/>
+       </plot>
+      </DockArea>
+      <DockArea name="...">
+       <plot mode="TimeSeries" flip_x="false" style="Lines" flip_y="false">
+        <range top="0.358320" bottom="-0.018419" left="625900032.000000" right="103180920064.000000"/>
+        <limitY/>
+        <curve name="archor3_cur_pos_compensation/data" color="#ff7f0e"/>
+        <curve name="archor_target_pos/field.target3" color="#bcbd22"/>
+        <curve name="archor3_pos_error" color="#ff7f0e"/>
+       </plot>
+      </DockArea>
+     </DockSplitter>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <Tab tab_name="tab5" containers="1">
+   <Container>
+    <DockSplitter orientation="-" sizes="1" count="1">
+     <DockSplitter orientation="|" sizes="0.500339;0.499661" count="2">
+      <DockSplitter orientation="-" sizes="0.5;0.5" count="2">
+       <DockArea name="...">
+        <plot mode="TimeSeries" flip_x="false" style="Lines" flip_y="false">
+         <range top="0.012849" bottom="-0.361800" left="625900032.000000" right="103180920064.000000"/>
+         <limitY/>
+         <curve name="cable0_cur_pos_compensation/data" color="#1f77b4"/>
+         <curve name="cable_target_pos/field.target0" color="#f14cc1"/>
+         <curve name="cabel0_pos_error" color="#f14cc1"/>
+        </plot>
+       </DockArea>
+       <DockArea name="...">
+        <plot mode="TimeSeries" flip_x="false" style="Lines" flip_y="false">
+         <range top="0.007904" bottom="-0.199437" left="625900032.000000" right="103180920064.000000"/>
+         <limitY/>
+         <curve name="cable2_cur_pos_compensation/data" color="#1ac938"/>
+         <curve name="cable_target_pos/field.target2" color="#17becf"/>
+         <curve name="cabel2_pos_error" color="#17becf"/>
+        </plot>
+       </DockArea>
+      </DockSplitter>
+      <DockSplitter orientation="-" sizes="0.5;0.5" count="2">
+       <DockArea name="...">
+        <plot mode="TimeSeries" flip_x="false" style="Lines" flip_y="false">
+         <range top="0.005630" bottom="-0.133318" left="625900032.000000" right="103180920064.000000"/>
+         <limitY/>
+         <curve name="cable1_cur_pos_compensation/data" color="#d62728"/>
+         <curve name="cable_target_pos/field.target1" color="#9467bd"/>
+         <curve name="cabel1_pos_error" color="#9467bd"/>
+        </plot>
+       </DockArea>
+       <DockArea name="...">
+        <plot mode="TimeSeries" flip_x="false" style="Lines" flip_y="false">
+         <range top="0.007375" bottom="-0.183495" left="625900032.000000" right="103180920064.000000"/>
+         <limitY/>
+         <curve name="cable3_cur_pos_compensation/data" color="#ff7f0e"/>
+         <curve name="cable_target_pos/field.target3" color="#bcbd22"/>
+         <curve name="cabel3_pos_error" color="#bcbd22"/>
+        </plot>
+       </DockArea>
+      </DockSplitter>
+     </DockSplitter>
+    </DockSplitter>
+   </Container>
+  </Tab>
+  <currentTabIndex index="1"/>
+ </tabbed_widget>
+ <use_relative_time_offset enabled="1"/>
+ <!-- - - - - - - - - - - - - - - -->
+ <!-- - - - - - - - - - - - - - - -->
+ <Plugins>
+  <plugin ID="DataLoad CSV">
+   <default time_axis="%time" date_format="ss.zzz" delimiter="0"/>
+  </plugin>
+  <plugin ID="DataLoad MCAP"/>
+  <plugin ID="DataLoad ROS bags">
+   <use_header_stamp value="true"/>
+   <discard_large_arrays value="true"/>
+   <max_array_size value="100"/>
+   <boolean_strings_to_number value="true"/>
+   <remove_suffix_from_strings value="true"/>
+  </plugin>
+  <plugin ID="DataLoad ULog"/>
+  <plugin ID="MQTT Subscriber (Mosquitto)"/>
+  <plugin ID="ROS Topic Subscriber">
+   <use_header_stamp value="false"/>
+   <discard_large_arrays value="true"/>
+   <max_array_size value="100"/>
+   <boolean_strings_to_number value="true"/>
+   <remove_suffix_from_strings value="true"/>
+  </plugin>
+  <plugin ID="UDP Server"/>
+  <plugin ID="WebSocket Server"/>
+  <plugin ID="ZMQ Subscriber"/>
+  <plugin ID="Fast Fourier Transform"/>
+  <plugin ID="Quaternion to RPY"/>
+  <plugin ID="Reactive Script Editor">
+   <library code="--[[ Helper function to create a series from arrays&#xa;&#xa; new_series: a series previously created with ScatterXY.new(name)&#xa; prefix:     prefix of the timeseries, before the index of the array&#xa; suffix_X:   suffix to complete the name of the series containing the X value. If [nil], use the index of the array.&#xa; suffix_Y:   suffix to complete the name of the series containing the Y value&#xa; timestamp:   usually the tracker_time variable&#xa;              &#xa; Example:&#xa; &#xa; Assuming we have multiple series in the form:&#xa; &#xa;   /trajectory/node.{X}/position/x&#xa;   /trajectory/node.{X}/position/y&#xa;   &#xa; where {N} is the index of the array (integer). We can create a reactive series from the array with:&#xa; &#xa;   new_series = ScatterXY.new(&quot;my_trajectory&quot;) &#xa;   CreateSeriesFromArray( new_series, &quot;/trajectory/node&quot;, &quot;position/x&quot;, &quot;position/y&quot;, tracker_time );&#xa;--]]&#xa;&#xa;function CreateSeriesFromArray( new_series, prefix, suffix_X, suffix_Y, timestamp )&#xa;  &#xa;  --- clear previous values&#xa;  new_series:clear()&#xa;  &#xa;  --- Append points to new_series&#xa;  index = 0&#xa;  while(true) do&#xa;&#xa;    x = index;&#xa;    -- if not nil, get the X coordinate from a series&#xa;    if suffix_X ~= nil then &#xa;      series_x = TimeseriesView.find( string.format( &quot;%s.%d/%s&quot;, prefix, index, suffix_X) )&#xa;      if series_x == nil then break end&#xa;      x = series_x:atTime(timestamp)&#x9; &#xa;    end&#xa;    &#xa;    series_y = TimeseriesView.find( string.format( &quot;%s.%d/%s&quot;, prefix, index, suffix_Y) )&#xa;    if series_y == nil then break end &#xa;    y = series_y:atTime(timestamp)&#xa;    &#xa;    new_series:push_back(x,y)&#xa;    index = index+1&#xa;  end&#xa;end&#xa;&#xa;--[[ Similar to the built-in function GetSeriesNames(), but select only the names with a give prefix. --]]&#xa;&#xa;function GetSeriesNamesByPrefix(prefix)&#xa;  -- GetSeriesNames(9 is a built-in function&#xa;  all_names = GetSeriesNames()&#xa;  filtered_names = {}&#xa;  for i, name in ipairs(all_names)  do&#xa;    -- check the prefix&#xa;    if name:find(prefix, 1, #prefix) then&#xa;      table.insert(filtered_names, name);&#xa;    end&#xa;  end&#xa;  return filtered_names&#xa;end&#xa;&#xa;--[[ Modify an existing series, applying offsets to all their X and Y values&#xa;&#xa; series: an existing timeseries, obtained with TimeseriesView.find(name)&#xa; delta_x: offset to apply to each x value&#xa; delta_y: offset to apply to each y value &#xa;  &#xa;--]]&#xa;&#xa;function ApplyOffsetInPlace(series, delta_x, delta_y)&#xa;  -- use C++ indeces, not Lua indeces&#xa;  for index=0, series:size()-1 do&#xa;    x,y = series:at(index)&#xa;    series:set(index, x + delta_x, y + delta_y)&#xa;  end&#xa;end&#xa;"/>
+   <scripts/>
+  </plugin>
+  <plugin ID="CSV Exporter"/>
+  <plugin ID="ROS /rosout Visualization"/>
+  <plugin ID="ROS Topic Re-Publisher"/>
+ </Plugins>
+ <!-- - - - - - - - - - - - - - - -->
+ <previouslyLoaded_Datafiles>
+  <fileInfo prefix="archor0_cur_pos_compensation" filename="archor0_cur_pos_compensation.csv">
+   <selected_datasources value=""/>
+   <plugin ID="DataLoad CSV">
+    <default time_axis="%time" date_format="ss.zzz" delimiter="0"/>
+   </plugin>
+  </fileInfo>
+  <fileInfo prefix="archor1_cur_pos_compensation" filename="archor1_cur_pos_compensation.csv">
+   <selected_datasources value=""/>
+   <plugin ID="DataLoad CSV">
+    <default time_axis="%time" date_format="ss.zzz" delimiter="0"/>
+   </plugin>
+  </fileInfo>
+  <fileInfo prefix="archor2_cur_pos_compensation" filename="archor2_cur_pos_compensation.csv">
+   <selected_datasources value=""/>
+   <plugin ID="DataLoad CSV">
+    <default time_axis="%time" date_format="ss.zzz" delimiter="0"/>
+   </plugin>
+  </fileInfo>
+  <fileInfo prefix="archor_target_pos" filename="archor_target_pos.csv">
+   <selected_datasources value=""/>
+   <plugin ID="DataLoad CSV">
+    <default time_axis="%time" date_format="ss.zzz" delimiter="0"/>
+   </plugin>
+  </fileInfo>
+  <fileInfo prefix="cable0_cur_pos_compensation" filename="cable0_cur_pos_compensation.csv">
+   <selected_datasources value=""/>
+   <plugin ID="DataLoad CSV">
+    <default time_axis="%time" date_format="ss.zzz" delimiter="0"/>
+   </plugin>
+  </fileInfo>
+  <fileInfo prefix="cable1_cur_pos_compensation" filename="cable1_cur_pos_compensation.csv">
+   <selected_datasources value=""/>
+   <plugin ID="DataLoad CSV">
+    <default time_axis="%time" date_format="ss.zzz" delimiter="0"/>
+   </plugin>
+  </fileInfo>
+  <fileInfo prefix="cable2_cur_pos_compensation" filename="cable2_cur_pos_compensation.csv">
+   <selected_datasources value=""/>
+   <plugin ID="DataLoad CSV">
+    <default time_axis="%time" date_format="ss.zzz" delimiter="0"/>
+   </plugin>
+  </fileInfo>
+  <fileInfo prefix="cable3_cur_pos_compensation" filename="cable3_cur_pos_compensation.csv">
+   <selected_datasources value=""/>
+   <plugin ID="DataLoad CSV">
+    <default time_axis="%time" date_format="ss.zzz" delimiter="0"/>
+   </plugin>
+  </fileInfo>
+  <fileInfo prefix="cable_target_pos" filename="cable_target_pos.csv">
+   <selected_datasources value=""/>
+   <plugin ID="DataLoad CSV">
+    <default time_axis="%time" date_format="ss.zzz" delimiter="0"/>
+   </plugin>
+  </fileInfo>
+  <fileInfo prefix="" filename="archor3_cur_pos_compensation.csv">
+   <selected_datasources value=""/>
+   <plugin ID="DataLoad CSV">
+    <default time_axis="%time" date_format="ss.zzz" delimiter="0"/>
+   </plugin>
+  </fileInfo>
+  <fileInfo prefix="archor3_cur_pos_compensation" filename="archor3_cur_pos_compensation.csv">
+   <selected_datasources value=""/>
+   <plugin ID="DataLoad CSV">
+    <default time_axis="%time" date_format="ss.zzz" delimiter="0"/>
+   </plugin>
+  </fileInfo>
+ </previouslyLoaded_Datafiles>
+ <!-- - - - - - - - - - - - - - - -->
+ <customMathEquations>
+  <snippet name="cabel2_pos_error">
+   <global></global>
+   <function>return value-v1</function>
+   <linked_source>cable2_cur_pos_compensation/data</linked_source>
+   <additional_sources>
+    <v1>cable_target_pos/field.target2</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="cabel1_pos_error">
+   <global></global>
+   <function>return value-v1</function>
+   <linked_source>cable1_cur_pos_compensation/data</linked_source>
+   <additional_sources>
+    <v1>cable_target_pos/field.target1</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="cabel0_pos_error">
+   <global></global>
+   <function>return value-v1</function>
+   <linked_source>cable0_cur_pos_compensation/data</linked_source>
+   <additional_sources>
+    <v1>cable_target_pos/field.target0</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="archor3_pos_error">
+   <global></global>
+   <function>return value-v1</function>
+   <linked_source>archor3_cur_pos_compensation/data</linked_source>
+   <additional_sources>
+    <v1>archor_target_pos/field.target3</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="archor2_pos_error">
+   <global></global>
+   <function>return value-v1</function>
+   <linked_source>archor2_cur_pos_compensation/data</linked_source>
+   <additional_sources>
+    <v1>archor_target_pos/field.target2</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="cabel3_pos_error">
+   <global></global>
+   <function>return value-v1</function>
+   <linked_source>cable3_cur_pos_compensation/data</linked_source>
+   <additional_sources>
+    <v1>cable_target_pos/field.target3</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="archor1_pos_error">
+   <global></global>
+   <function>return value-v1</function>
+   <linked_source>archor1_cur_pos_compensation/data</linked_source>
+   <additional_sources>
+    <v1>archor_target_pos/field.target1</v1>
+   </additional_sources>
+  </snippet>
+  <snippet name="archor0_pos_error">
+   <global></global>
+   <function>return value-v1</function>
+   <linked_source>archor0_cur_pos_compensation/data</linked_source>
+   <additional_sources>
+    <v1>archor_target_pos/field.target0</v1>
+   </additional_sources>
+  </snippet>
+ </customMathEquations>
+ <snippets/>
+ <!-- - - - - - - - - - - - - - - -->
+</root>
+

@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     ros::Rate loop_rate(1000);
     while (ros::ok()) {
         transfer_station.publishMsg();
-        loop_rate.sleep();
+        // loop_rate.sleep();
     }
 
     VCI_CloseDevice(VCI_USBCAN2, DEV_IND0);

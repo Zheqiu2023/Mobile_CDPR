@@ -57,14 +57,13 @@ MotorDriver::MotorDriver(ros::NodeHandle& nh) : nh_(nh) {
     cur_pos_pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cable2_cur_pos", 10));
     cur_pos_pubs_.push_back(nh_.advertise<std_msgs::Float64>("/cable3_cur_pos", 10));
     subs_.emplace_back(nh_.subscribe("/cable_length", 50, &MotorDriver::cmdCableLengthCB, this));
-    subs_.emplace_back(nh_.subscribe("/usbcan/motor_state", 10, &MotorDriver::motorStateCB, this));
     ros::Duration(1.0).sleep();  // Sleep for 1s to ensure that the first message sent is received by USBCAN
 }
 
 void MotorDriver::motorStateCB(const cdpr_bringup::CanFrame::ConstPtr& state) {
-    int id = (state->ID - 0x0B) >> 4;
+    int id = state->ID - 0x0B;
     for (const auto& motor_data : motor_data_) {
-        if (id == motor_data.driver_id_) {
+        if (id == (motor_data.driver_id_ << 4)) {
             short real_velocity = (state->Data[2] << 8) | state->Data[3];
             int real_position =
                 (state->Data[4] << 24) | (state->Data[5] << 16) | (state->Data[6] << 8) | state->Data[7];
@@ -72,8 +71,8 @@ void MotorDriver::motorStateCB(const cdpr_bringup::CanFrame::ConstPtr& state) {
                 motor_data.direction_ * real_position * M_PI * reel_diameter_ / (reduction_ratio_ * encoder_lines_num_);
             cur_pos_pubs_[motor_data.driver_id_ - 1].publish(cur_pos_);
 
-            ROS_INFO("driver id:%d, velocity:%d, position:%d, cur_pos:%.5f", motor_data.driver_id_, real_velocity,
-                     real_position, cur_pos_.data);
+            // ROS_INFO("driver id:%d, velocity:%d, position:%d, cur_pos:%.5f", motor_data.driver_id_, real_velocity,
+            //          real_position, cur_pos_.data);
             return;
         }
     }
@@ -100,15 +99,7 @@ void MotorDriver::init(const int& run_mode) {
         std::fill(motor_data.pub_cmd_.cmd.Data.begin(), motor_data.pub_cmd_.cmd.Data.end(), 0x55);
         publishCmd(motor_data.pub_cmd_);
     }
-    ros::Duration(0.6).sleep();
-    for (auto& motor_data : motor_data_) {
-        // 发送配置指令
-        motor_data.pub_cmd_.cmd.ID = 0x00A | (motor_data.driver_id_ << 4);  // 配置指令
-        motor_data.pub_cmd_.cmd.Data[0] = 0x05;  // 以 5 毫秒为周期对外发送电流、速度、位置等信息
-        motor_data.pub_cmd_.cmd.Data[1] = 0x00;
-        publishCmd(motor_data.pub_cmd_);
-    }
-    ros::Duration(0.6).sleep();
+    ros::Duration(0.5).sleep();
     for (auto& motor_data : motor_data_) {
         // 发送模式选择指令
         motor_data.pub_cmd_.cmd.ID = 0x001 | (motor_data.driver_id_ << 4);  // 模式选择指令
@@ -128,7 +119,15 @@ void MotorDriver::init(const int& run_mode) {
         }
         publishCmd(motor_data.pub_cmd_);
     }
-    ros::Duration(0.6).sleep();
+    ros::Duration(0.5).sleep();
+    for (auto& motor_data : motor_data_) {
+        // 发送配置指令
+        motor_data.pub_cmd_.cmd.ID = 0x00A | (motor_data.driver_id_ << 4);  // 配置指令
+        motor_data.pub_cmd_.cmd.Data[0] = 0x01;  // 以 1 毫秒为周期对外发送电流、速度、位置等信息
+        motor_data.pub_cmd_.cmd.Data[1] = 0x00;
+        publishCmd(motor_data.pub_cmd_);
+    }
+    ros::Duration(0.5).sleep();
 }
 
 /**
@@ -174,6 +173,7 @@ void MotorDriver::run() {
             is_ready.data = true;
             pubs_[1].publish(is_ready);
             ROS_INFO("Motor RE35 Reset done, ready to follow the trajectory!");
+            subs_.emplace_back(nh_.subscribe("/usbcan/motor_state", 10, &MotorDriver::motorStateCB, this));
 
             // follow the trajectory
             while (ros::ok()) {

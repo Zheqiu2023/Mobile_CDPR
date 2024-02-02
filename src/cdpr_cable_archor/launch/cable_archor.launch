@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <node pkg="cdpr_cable_archor" type="cdpr_cable_archor_node" name="cable_archor" output="screen" clear_params="true">
+        <rosparam command="load" file="$(find cdpr_cable_archor)/config/cable_archor.yaml"/>
+    </node>
+</launch>

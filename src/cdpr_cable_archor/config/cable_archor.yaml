@@ -1,0 +1,64 @@
+cable_config:
+  run_mode: 1   # 0:复位  1:轨迹模式  2:收绳  3:放绳
+  target_vel: 1000
+
+  reduction_ratio: 35  
+  encoder_lines_num: 2000   # 4倍频后的编码器线数
+  reel_diameter: 0.031  # 绕线轮直径
+
+  # if read cmd_config with XmlRpc::XmlRpcValue, the data will be saved in alphabetic order, that is "left back", "left front", "right back", "right front"
+  # so use "m0 m1 m2 m3" as the key instead of "left front, right front, left back, right back"
+  cmd_config:
+    m0:  # left front
+      dev_ind: 0
+      can_ind: 1
+      driver_id: 1 
+      direction: -1
+    m1: # right front
+      dev_ind: 0
+      can_ind: 1
+      driver_id: 2 
+      direction: 1
+    m2: # left back
+      dev_ind: 1
+      can_ind: 1
+      driver_id: 3 
+      direction: 1
+    m3: # right back
+      dev_ind: 1
+      can_ind: 1
+      driver_id: 4 
+      direction: -1
+
+
+archor_config:
+  run_mode: 1   # 0:复位  1:轨迹模式  2:靠近电机  3:远离电机
+  target_vel: 2000
+
+  lead: 5
+  reduction_ratio: 35  
+  encoder_lines_num: 2000   # 4倍频后的编码器线数
+
+  # if read cmd_config with XmlRpc::XmlRpcValue, the data will be saved in alphabetic order, that is "left back", "left front", "right back", "right front"
+  # so use "m0 m1 m2 m3" as the key instead of "left front, right front, left back, right back"
+  cmd_config:
+    m0:  # left front
+      dev_ind: 0
+      can_ind: 0
+      driver_id: 5 
+      direction: -1
+    m1: # right front
+      dev_ind: 0
+      can_ind: 0
+      driver_id: 6 
+      direction: -1
+    m2: # left back
+      dev_ind: 1
+      can_ind: 0
+      driver_id: 7 
+      direction: -1
+    m3: # right back
+      dev_ind: 1
+      can_ind: 0
+      driver_id: 8 
+      direction: -1

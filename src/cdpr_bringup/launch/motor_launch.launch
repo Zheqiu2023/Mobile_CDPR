@@ -3,9 +3,10 @@
     <include file="$(find cdpr_control)/launch/cdpr_control.launch"/>
     
     <!-- run usb_can node when need to use USB_CAN -->
-    <node pkg="usb_can" type="usb_can_node" name="usbcan" output="screen"/>
-    <include file="$(find maxon_re35)/launch/re35_launch.launch"/>
-    <include file="$(find cdpr_movable_archor)/launch/movable_archor.launch"/>
+    <!-- <node pkg="usb_can" type="usb_can_node" name="usbcan" output="screen"/> -->
+    <!-- <include file="$(find maxon_re35)/launch/re35_launch.launch"/> -->
+    <!-- <include file="$(find cdpr_movable_archor)/launch/movable_archor.launch"/> -->
+    <include file="$(find cdpr_cable_archor)/launch/cable_archor.launch"/>
 
     <!-- <include file="$(find unitree_motor_a1)/launch/a1_launch.launch"/> -->
     <!-- <include file="$(find unitree_motor_go)/launch/go_launch.launch"/> -->

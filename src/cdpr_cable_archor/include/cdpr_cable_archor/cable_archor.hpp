@@ -22,22 +22,26 @@
 #include "cdpr_bringup/TrajCmd.h"
 #include "cdpr_bringup/usb_can/controlcan.h"
 
-namespace cable_archor {
+namespace cable_archor
+{
 constexpr unsigned short PWM_LIM = 5000;  // pwm限制值
 // maxon re35电机运行模式
-enum class RunMode {
+enum class RunMode
+{
     VEL = 0X03,     // 速度模式
     VEL_POS = 0X05  // 速度位置模式
 };
 
-struct CanCmd {
+struct CanCmd
+{
     int dev_ind;
     int can_ind;
     VCI_CAN_OBJ cmd;
 };
 
-class BaseDriver {
-   protected:
+class BaseDriver
+{
+  protected:
     void sendCmd(CanCmd& cmd_struct);
     void setVel(VCI_CAN_OBJ& cmd, const int& driver_id, const int& target_vel);
     void setVelPos(VCI_CAN_OBJ& cmd, const int& driver_id, const int& target_vel, const int& target_pos);
@@ -51,21 +55,23 @@ class BaseDriver {
     ros::Subscriber sub_;
 };
 
-struct CableData {
+struct CableData
+{
     int driver_id_, direction_;
     double target_pos_, last_pos_;
     CanCmd pub_cmd_;
 };
 
-class CableDriver : public BaseDriver {
+class CableDriver : public BaseDriver
+{
     friend class UsbCan;
 
-   public:
+  public:
     CableDriver(ros::NodeHandle& nh);
     void run();
     void creatThread();
 
-   private:
+  private:
     static void* threadFunc(void* arg);
     void init(const int& run_mode);
     void cmdCableLengthCB(const cdpr_bringup::TrajCmd::ConstPtr& length);
@@ -75,22 +81,24 @@ class CableDriver : public BaseDriver {
     std::vector<CableData> motor_data_{};
 };
 
-struct ArchorData {
+struct ArchorData
+{
     bool is_reset_;
     int driver_id_, direction_;
     double target_pos_, last_pos_;
     CanCmd pub_cmd_;
 };
 
-class ArchorDriver : public BaseDriver {
+class ArchorDriver : public BaseDriver
+{
     friend class UsbCan;
 
-   public:
+  public:
     ArchorDriver(ros::NodeHandle& nh);
     void run();
     void creatThread();
 
-   private:
+  private:
     static void* threadFunc(void* arg);
     void init(RunMode mode, const int& period);
     void cmdPosCallback(const cdpr_bringup::TrajCmd::ConstPtr& pos);
@@ -99,15 +107,20 @@ class ArchorDriver : public BaseDriver {
     std::vector<ArchorData> motor_data_{};
 };
 
-enum class MotorType { STEPPER_MOTOR, MAXON_RE35 };
+enum class MotorType
+{
+    STEPPER_MOTOR,
+    MAXON_RE35
+};
 
-class UsbCan {
-   public:
+class UsbCan
+{
+  public:
     UsbCan(ros::NodeHandle nh);
     ~UsbCan();
     void can_receive(CableDriver& cable_driver, ArchorDriver& archor_driver);
 
-   private:
+  private:
     void initCAN(const int& dev_type, const int& dev_ind, const int& can_ind, const MotorType& m_type);
     void setCANParam(const MotorType& m_type);
     void printMsg(uint32_t dev_ind, uint32_t can_ind, const VCI_CAN_OBJ& msg) const;

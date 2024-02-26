@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
     cable_driver.creatThread();
     archor_driver.creatThread();
 
-    ros::Rate loop(1000);
+    ros::Rate loop(100);
     while (ros::ok()) {
         can.can_receive(cable_driver, archor_driver);
         loop.sleep();

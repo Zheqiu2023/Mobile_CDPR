@@ -13,8 +13,8 @@ namespace local_traj_ctrl {
 class LocalTrajCtrl {
    public:
     LocalTrajCtrl(ros::NodeHandle& nh) : nh_(nh), is_cable_ready_(false), is_archor_ready_(false) {
-        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/archor_coor_z", 10));
-        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/cable_length", 10));
+        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/archor_coor_z", 1));
+        pubs_.emplace_back(nh.advertise<cdpr_bringup::TrajCmd>("/cable_length", 1));
         subs_.emplace_back(nh.subscribe("/maxon_re35/ready_state", 10, &LocalTrajCtrl::cableResetCallback, this));
         subs_.emplace_back(nh.subscribe("/movable_archor/ready_state", 10, &LocalTrajCtrl::archorResetCallback, this));
 
@@ -56,6 +56,8 @@ class LocalTrajCtrl {
             }
             pubs_[0].publish(archor_coor_z_);
             pubs_[1].publish(cable_length_);
+            ROS_INFO("Publish time is: %16f", ros::Time::now().toSec());  //打印，%16f表示的是16位宽度的float类型的数字;
+
             ros::Duration(traj_period).sleep();
         }
         // End of trajectory, all motors move back to zero position then stop

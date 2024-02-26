@@ -24,8 +24,8 @@ class Widget : public QWidget
 
   signals:
     void startArchorReset(int vel);
-    void startArchorRunTraj(int vel, double period);
-    void startCableRunTraj(double period);
+    void startArchorRunTraj(double period, QList<QList<double>> traj);
+    void startCableRunTraj(double period, QList<QList<double>> traj);
     void startCanRecv();
 
   private slots:

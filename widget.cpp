@@ -63,11 +63,9 @@ Widget::Widget(QWidget* parent) : QWidget(parent), ui(new Ui::Widget)
     connect(ui->startLocalTraj, &QPushButton::clicked, this, &Widget::on_startLocalTraj_clicked);
     // reset flag
     connect(usbcan_, &usb_can::UsbCan::resetMsg, archors_, &motor_driver::ArchorDriver::recvResetMsg);
-    // connect(archors_, &motor_driver::ArchorDriver::resetFinished, local_traj_, &local_traj_ctrl::LocalTrajCtrl::);
-    // connect(cables_, &motor_driver::CableDriver::resetFinished, local_traj_, &local_traj_ctrl::LocalTrajCtrl::);
 
-    // cables_->init(motor_driver::RunMode::VEL_POS);
-    // archors_->init(motor_driver::RunMode::VEL, 0x00);
+    cables_->init(motor_driver::RunMode::VEL_POS);
+    archors_->init(motor_driver::RunMode::VEL, 0x00);
 }
 
 Widget::~Widget()
@@ -368,8 +366,8 @@ void Widget::on_startLocalTraj_clicked()
         archor_thread_->start();
     if (cable_thread_->isFinished())
         cable_thread_->start();
-    emit startArchorRunTraj(ui->archorResetVel->value(), ui->localTrajPeriod->value());
-    emit startCableRunTraj(ui->localTrajPeriod->value());
+    emit startArchorRunTraj(ui->localTrajPeriod->value(), archor_traj_);
+    emit startCableRunTraj(ui->localTrajPeriod->value(), cable_traj_);
 }
 
 void Widget::on_readLocalTraj_clicked()
@@ -384,6 +382,4 @@ void Widget::on_readLocalTraj_clicked()
         path = QCoreApplication::applicationDirPath() + "/../csv/circle.csv";
 
     local_traj_.readTraj(path, archor_traj_, cable_traj_);
-
-    qDebug() << archor_traj_;
 }

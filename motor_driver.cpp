@@ -164,58 +164,35 @@ void ArchorDriver::reset(const int& vel)
 /**
  * @brief 运行轨迹
  */
-void ArchorDriver::run_traj(const int& vel, const double& period)
+void ArchorDriver::run_traj(const double& period, QList<QList<double>> traj)
 {
-    init(RunMode::VEL, 0x05);
-
-    for (auto& motor_data : motor_data_)
-    {
-        setVel(motor_data.pub_cmd_.cmd, motor_data.driver_id_, vel * motor_data.direction_);
-        sendCmd(motor_data.pub_cmd_);
-    }
-
-    qInfo() << "Anchors reseting...";
-    // Reset: move to bottom
-    while (!is_stop_)
-    {
-        for (auto& motor_data : motor_data_)
-        {
-            if (true == motor_data.is_reset_)
-            {
-                for (int i = 0; i < 4; ++i)
-                    motor_data.pub_cmd_.cmd.Data[i] = 0;
-                sendCmd(motor_data.pub_cmd_);
-            }
-        }
-
-        if (std::all_of(motor_data_.begin(), motor_data_.end(), [](const ArchorData& motor_data) {
-                return motor_data.is_reset_;
-            }))  // all archores reset successfully
-            break;
-    }
-
-    int cmd_pos = 0.0, cmd_vel = 0.0;  // 速度限制值(RPM)：0~32767
     init(RunMode::VEL_POS, 0x00);
-
-    emit resetFinished();
+    int cmd_pos = 0.0, cmd_vel = 0.0;  // 速度限制值(RPM)：0~32767
     qInfo() << "Movable archor reset done, ready to follow the trajectory!";
 
     // follow the trajectory
-    while (!is_stop_)
+    for (auto iter = traj.cbegin(); iter != traj.cend(); ++iter)
     {
-        for (auto& motor_data : motor_data_)
+        if (is_stop_)
         {
-            cmd_pos = motor_data.target_pos_ * 1000 * params_.reduction_ratio_ * params_.encoder_lines_num_ /
-                      params_.lead_;  // m转换为qc
-            cmd_vel = std::fabs((motor_data.target_pos_ - motor_data.last_pos_) * 60 * 1000 * params_.reduction_ratio_ /
-                                (period * params_.lead_));
-
-            setVelPos(motor_data.pub_cmd_.cmd, motor_data.driver_id_, cmd_vel, cmd_pos);
-            sendCmd(motor_data.pub_cmd_);
+            for (size_t i = 0; i < motor_data_.size(); ++i)
+            {
+                setSendVelPos(i, 0, 0);
+            }
+            return;
         }
+        for (size_t i = 0; i < motor_data_.size(); ++i)
+        {
+            motor_data_[i].last_pos_ = motor_data_[i].target_pos_;
+            motor_data_[i].target_pos_ = iter->at(i);
+            cmd_pos = motor_data_[i].target_pos_ * 1000 * params_.reduction_ratio_ * params_.encoder_lines_num_ /
+                      params_.lead_;  // m转换为qc
+            cmd_vel = std::fabs((motor_data_[i].target_pos_ - motor_data_[i].last_pos_) * 60 * 1000 *
+                                params_.reduction_ratio_ / (period * params_.lead_));
 
-        if (is_traj_end_)
-            break;
+            setSendVelPos(i, cmd_vel, cmd_pos);
+        }
+        QThread::msleep(static_cast<int>(period * 1000));
     }
 
     sleep_ms(2000);  // buffering time for archors moving back to zero position
@@ -276,12 +253,6 @@ void CableDriver::init(RunMode mode)
     sleep_ms(500);
 }
 
-void CableDriver::setSendVel(const unsigned int& i, const int& vel)
-{
-    setVel(motor_data_[i].pub_cmd_.cmd, motor_data_[i].driver_id_, vel);
-    sendCmd(motor_data_[i].pub_cmd_);
-}
-
 void CableDriver::setSendVelPos(const unsigned int& i, const int& vel, const int& pos)
 {
     setVelPos(motor_data_[i].pub_cmd_.cmd, motor_data_[i].driver_id_, vel, pos);
@@ -291,30 +262,35 @@ void CableDriver::setSendVelPos(const unsigned int& i, const int& vel, const int
 /**
  * @brief 运行轨迹
  */
-void CableDriver::run_traj(const double& period)
+void CableDriver::run_traj(const double& period, QList<QList<double>> traj)
 {
     init(RunMode::VEL_POS);
-
     int cmd_pos = 0.0, cmd_vel = 0.0;  // 速度限制值(RPM)：0~32767
 
-    emit resetFinished();
     qInfo() << "Cables reset done, ready to follow the trajectory!";
 
     // follow the trajectory
-    while (!is_stop_)
+    for (auto iter = traj.cbegin(); iter != traj.cend(); ++iter)
     {
-        for (auto& motor_data : motor_data_)
+        if (is_stop_)
         {
-            cmd_pos = std::round(motor_data.target_pos_ * params_.reduction_ratio_ * params_.encoder_lines_num_ /
-                                 (M_PI * params_.reel_diameter_));  // m转换为qc
-            cmd_vel = std::ceil(std::fabs((motor_data.target_pos_ - motor_data.last_pos_) * 60 *
-                                          params_.reduction_ratio_ / (period * M_PI * params_.reel_diameter_)));
-
-            setVelPos(motor_data.pub_cmd_.cmd, motor_data.driver_id_, cmd_vel, cmd_pos);
-            sendCmd(motor_data.pub_cmd_);
+            for (size_t i = 0; i < motor_data_.size(); ++i)
+            {
+                setSendVelPos(i, 0, 0);
+            }
+            return;
         }
-        if (is_traj_end_)
-            break;
+        for (size_t i = 0; i < motor_data_.size(); ++i)
+        {
+            motor_data_[i].last_pos_ = motor_data_[i].target_pos_;
+            motor_data_[i].target_pos_ = iter->at(i);
+            cmd_pos = std::round(motor_data_[i].target_pos_ * params_.reduction_ratio_ * params_.encoder_lines_num_ /
+                                 (M_PI * params_.reel_diameter_));  // m转换为qc
+            cmd_vel = std::ceil(std::fabs((motor_data_[i].target_pos_ - motor_data_[i].last_pos_) * 60 *
+                                          params_.reduction_ratio_ / (period * M_PI * params_.reel_diameter_)));
+            setSendVelPos(i, cmd_vel, cmd_pos);
+        }
+        QThread::msleep(static_cast<int>(period * 1000));
     }
 
     sleep_ms(2000);  // buffering time for motors moving back to zero position

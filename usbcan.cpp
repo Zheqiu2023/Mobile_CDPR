@@ -7,15 +7,15 @@ using namespace usb_can;
 
 UsbCan::UsbCan(QObject* parent)
 {
-    // // 打开设备：注意一个设备只能打开一次
-    // if (VCI_OpenDevice(VCI_USBCAN2, DEV_IND0, 0) != 1 || VCI_OpenDevice(VCI_USBCAN2, DEV_IND1, 0) != 1)
-    // {
-    //     qWarning() << "Failed to open at least one USBCAN!";
-    // }
-    // initCAN(VCI_USBCAN2, DEV_IND0, CAN_IND0, MotorType::MAXON_RE35);  // open USBCAN0 CNA1
-    // initCAN(VCI_USBCAN2, DEV_IND0, CAN_IND1, MotorType::MAXON_RE35);  // open USBCAN0 CNA2
-    // initCAN(VCI_USBCAN2, DEV_IND1, CAN_IND0, MotorType::MAXON_RE35);  // open USBCAN1 CNA1
-    // initCAN(VCI_USBCAN2, DEV_IND1, CAN_IND1, MotorType::MAXON_RE35);  // open USBCAN1 CNA2
+    // 打开设备：注意一个设备只能打开一次
+    if (VCI_OpenDevice(VCI_USBCAN2, DEV_IND0, 0) != 1 || VCI_OpenDevice(VCI_USBCAN2, DEV_IND1, 0) != 1)
+    {
+        qWarning() << "Failed to open at least one USBCAN!";
+    }
+    initCAN(VCI_USBCAN2, DEV_IND0, CAN_IND0, MotorType::MAXON_RE35);  // open USBCAN0 CNA1
+    initCAN(VCI_USBCAN2, DEV_IND0, CAN_IND1, MotorType::MAXON_RE35);  // open USBCAN0 CNA2
+    initCAN(VCI_USBCAN2, DEV_IND1, CAN_IND0, MotorType::MAXON_RE35);  // open USBCAN1 CNA1
+    initCAN(VCI_USBCAN2, DEV_IND1, CAN_IND1, MotorType::MAXON_RE35);  // open USBCAN1 CNA2
 }
 
 UsbCan::~UsbCan()

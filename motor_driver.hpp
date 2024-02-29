@@ -1,5 +1,8 @@
 #pragma once
 
+#include <QReadWriteLock>
+#include <QMutex>
+#include <QMutexLocker>
 #include <QThread>
 #include <termio.h>
 #include <vector>
@@ -30,9 +33,9 @@ class ArchorDriver : public QObject, public BaseDriver
   public:
     ArchorDriver(QObject* parent = nullptr);
 
-    void run_traj(const double& period, QList<QList<double>> traj);
+    void run_traj(const double& period, const QList<QList<double>>& traj);
     void reset(const int& vel);
-    void init(RunMode mode, const int& period);
+    void init(RunMode mode);
     void setSendVel(const unsigned int& i, const int& vel);
     void setSendVelPos(const unsigned int& i, const int& vel, const int& pos);
 
@@ -41,8 +44,8 @@ class ArchorDriver : public QObject, public BaseDriver
     const std::vector<int> dev_ind_ = { 0, 0, 1, 1 }, can_ind_ = { 0, 0, 0, 0 };
     std::vector<ArchorData> motor_data_{};
 
-  public slots:
-    void recvResetMsg(const int& id);
+    QReadWriteLock rwlock_;
+    QMutex mutex_;
 };
 
 class CableDriver : public QObject, public BaseDriver
@@ -52,9 +55,10 @@ class CableDriver : public QObject, public BaseDriver
   public:
     CableDriver(QObject* parent = nullptr);
 
-    void run_traj(const double& period, QList<QList<double>> traj);
+    void run_traj(const double& period, const QList<QList<double>>& traj);
     void init(RunMode mode);
     void setSendVelPos(const unsigned int& i, const int& vel, const int& pos);
+    double convertPos(double pos);
 
   private:
     TrajParams params_;

@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <property name="iconSize">
       <size>
@@ -25,6 +25,89 @@
        <height>60</height>
       </size>
      </property>
+     <widget class="QWidget" name="tab_3">
+      <attribute name="title">
+       <string>运行模式</string>
+      </attribute>
+      <widget class="QGroupBox" name="groupBox_6">
+       <property name="geometry">
+        <rect>
+         <x>130</x>
+         <y>150</y>
+         <width>141</width>
+         <height>111</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string>绳索电机</string>
+       </property>
+       <widget class="QWidget" name="layoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>17</x>
+          <y>35</y>
+          <width>99</width>
+          <height>56</height>
+         </rect>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_4">
+         <item>
+          <widget class="QRadioButton" name="cableVelMode">
+           <property name="text">
+            <string>速度模式</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="cableVelPosMode">
+           <property name="text">
+            <string>速度位置模式</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+      <widget class="QGroupBox" name="groupBox_8">
+       <property name="geometry">
+        <rect>
+         <x>320</x>
+         <y>150</y>
+         <width>141</width>
+         <height>111</height>
+        </rect>
+       </property>
+       <property name="title">
+        <string>锚点座电机</string>
+       </property>
+       <widget class="QWidget" name="layoutWidget_2">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>40</y>
+          <width>99</width>
+          <height>56</height>
+         </rect>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_6">
+         <item>
+          <widget class="QRadioButton" name="archorVelMode">
+           <property name="text">
+            <string>速度模式</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="archorVelPosMode">
+           <property name="text">
+            <string>速度位置模式</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+     </widget>
      <widget class="QWidget" name="tab">
       <attribute name="title">
        <string>轨迹规划</string>
@@ -87,7 +170,7 @@
           <widget class="QComboBox" name="localTraj">
            <item>
             <property name="text">
-             <string>上下轨迹</string>
+             <string>竖直轨迹</string>
             </property>
            </item>
            <item>
@@ -325,401 +408,325 @@
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>30</y>
+          <y>32</y>
           <width>591</width>
           <height>251</height>
          </rect>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout">
-         <item>
-          <layout class="QGridLayout" name="gridLayout_11">
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_22">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;LF&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_28">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;LB&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_27">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;RF&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0">
-            <widget class="QLabel" name="label_29">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;RB&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
-          </layout>
+        <layout class="QGridLayout" name="gridLayout">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_22">
+           <property name="font">
+            <font>
+             <family>AR PL UKai CN</family>
+            </font>
+           </property>
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;LF&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
          </item>
-         <item>
-          <layout class="QGridLayout" name="gridLayout_2">
-           <item row="0" column="1">
-            <widget class="QSpinBox" name="lfCableVel">
-             <property name="wrapping">
-              <bool>false</bool>
-             </property>
-             <property name="suffix">
-              <string>rpm</string>
-             </property>
-             <property name="minimum">
-              <number>0</number>
-             </property>
-             <property name="maximum">
-              <number>5000</number>
-             </property>
-             <property name="value">
-              <number>1000</number>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-            <widget class="QLabel" name="label_47">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>速度:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="1">
-            <widget class="QSpinBox" name="rbCableVel">
-             <property name="suffix">
-              <string>rpm</string>
-             </property>
-             <property name="maximum">
-              <number>5000</number>
-             </property>
-             <property name="value">
-              <number>1000</number>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="0" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-            <widget class="QLabel" name="label_30">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>速度:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QSpinBox" name="rfCableVel">
-             <property name="suffix">
-              <string>rpm</string>
-             </property>
-             <property name="maximum">
-              <number>5000</number>
-             </property>
-             <property name="value">
-              <number>1000</number>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-            <widget class="QLabel" name="label_46">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>速度:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QSpinBox" name="lbCableVel">
-             <property name="suffix">
-              <string>rpm</string>
-             </property>
-             <property name="maximum">
-              <number>5000</number>
-             </property>
-             <property name="value">
-              <number>1000</number>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-            <widget class="QLabel" name="label_45">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>速度:</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
+         <item row="0" column="1" alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="label_30">
+           <property name="font">
+            <font>
+             <family>AR PL UKai CN</family>
+            </font>
+           </property>
+           <property name="text">
+            <string>速度:</string>
+           </property>
+          </widget>
          </item>
-         <item>
-          <layout class="QGridLayout" name="gridLayout">
-           <item row="3" column="1">
-            <widget class="QSpinBox" name="rbCableLen">
-             <property name="suffix">
-              <string>mm</string>
-             </property>
-             <property name="maximum">
-              <number>1000</number>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-            <widget class="QLabel" name="label_40">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>绳长:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-            <widget class="QLabel" name="label_38">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>绳长:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-            <widget class="QLabel" name="label_39">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>绳长:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QSpinBox" name="lfCableLen">
-             <property name="suffix">
-              <string>mm</string>
-             </property>
-             <property name="maximum">
-              <number>1000</number>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="0" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-            <widget class="QLabel" name="label_36">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>绳长:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QSpinBox" name="rfCableLen">
-             <property name="suffix">
-              <string>mm</string>
-             </property>
-             <property name="maximum">
-              <number>1000</number>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QSpinBox" name="lbCableLen">
-             <property name="suffix">
-              <string>mm</string>
-             </property>
-             <property name="maximum">
-              <number>1000</number>
-             </property>
-            </widget>
-           </item>
-          </layout>
+         <item row="0" column="2">
+          <widget class="QSpinBox" name="lfCableVel">
+           <property name="wrapping">
+            <bool>false</bool>
+           </property>
+           <property name="suffix">
+            <string>rpm</string>
+           </property>
+           <property name="minimum">
+            <number>0</number>
+           </property>
+           <property name="maximum">
+            <number>5000</number>
+           </property>
+           <property name="value">
+            <number>1000</number>
+           </property>
+          </widget>
          </item>
-         <item>
-          <layout class="QGridLayout" name="gridLayout_4">
-           <item row="0" column="0" alignment="Qt::AlignHCenter">
-            <widget class="QRadioButton" name="lfPullCableButton">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>收绳</string>
-             </property>
-             <property name="autoExclusive">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1" alignment="Qt::AlignHCenter">
-            <widget class="QRadioButton" name="lfReleaseCableButton">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>放绳</string>
-             </property>
-             <property name="autoExclusive">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0" alignment="Qt::AlignHCenter">
-            <widget class="QRadioButton" name="rfPullCableButton">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>收绳</string>
-             </property>
-             <property name="autoExclusive">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1" alignment="Qt::AlignHCenter">
-            <widget class="QRadioButton" name="rfReleaseCableButton">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>放绳</string>
-             </property>
-             <property name="autoExclusive">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0" alignment="Qt::AlignHCenter">
-            <widget class="QRadioButton" name="lbPullCableButton">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>收绳</string>
-             </property>
-             <property name="autoExclusive">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-            <widget class="QRadioButton" name="lbReleaseCableButton">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>放绳</string>
-             </property>
-             <property name="autoExclusive">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-            <widget class="QRadioButton" name="rbPullCableButton">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>收绳</string>
-             </property>
-             <property name="autoExclusive">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="1" alignment="Qt::AlignHCenter">
-            <widget class="QRadioButton" name="rbReleaseCableButton">
-             <property name="font">
-              <font>
-               <family>AR PL UKai CN</family>
-              </font>
-             </property>
-             <property name="text">
-              <string>放绳</string>
-             </property>
-             <property name="autoExclusive">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-          </layout>
+         <item row="0" column="3" alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="label_36">
+           <property name="font">
+            <font>
+             <family>AR PL UKai CN</family>
+            </font>
+           </property>
+           <property name="text">
+            <string>绳长:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="4">
+          <widget class="QSpinBox" name="lfCableLen">
+           <property name="suffix">
+            <string>mm</string>
+           </property>
+           <property name="maximum">
+            <number>1000</number>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="5" alignment="Qt::AlignHCenter">
+          <widget class="QRadioButton" name="lfCableJogButton">
+           <property name="font">
+            <font>
+             <family>AR PL UKai CN</family>
+            </font>
+           </property>
+           <property name="text">
+            <string>开始/结束</string>
+           </property>
+           <property name="autoExclusive">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_28">
+           <property name="font">
+            <font>
+             <family>AR PL UKai CN</family>
+            </font>
+           </property>
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;LB&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1" alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="label_45">
+           <property name="font">
+            <font>
+             <family>AR PL UKai CN</family>
+            </font>
+           </property>
+           <property name="text">
+            <string>速度:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QSpinBox" name="rfCableVel">
+           <property name="suffix">
+            <string>rpm</string>
+           </property>
+           <property name="maximum">
+            <number>5000</number>
+           </property>
+           <property name="value">
+            <number>1000</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="3" alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="label_38">
+           <property name="font">
+            <font>
+             <family>AR PL UKai CN</family>
+            </font>
+           </property>
+           <property name="text">
+            <string>绳长:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="4">
+          <widget class="QSpinBox" name="rfCableLen">
+           <property name="suffix">
+            <string>mm</string>
+           </property>
+           <property name="maximum">
+            <number>1000</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="5" alignment="Qt::AlignHCenter">
+          <widget class="QRadioButton" name="rfCableJogButton">
+           <property name="font">
+            <font>
+             <family>AR PL UKai CN</family>
+            </font>
+           </property>
+           <property name="text">
+            <string>开始/结束</string>
+           </property>
+           <property name="autoExclusive">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_27">
+           <property name="font">
+            <font>
+             <family>AR PL UKai CN</family>
+            </font>
+           </property>
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;RF&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1" alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="label_46">
+           <property name="font">
+            <font>
+             <family>AR PL UKai CN</family>
+            </font>
+           </property>
+           <property name="text">
+            <string>速度:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2">
+          <widget class="QSpinBox" name="lbCableVel">
+           <property name="suffix">
+            <string>rpm</string>
+           </property>
+           <property name="maximum">
+            <number>5000</number>
+           </property>
+           <property name="value">
+            <number>1000</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="3" alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="label_39">
+           <property name="font">
+            <font>
+             <family>AR PL UKai CN</family>
+            </font>
+           </property>
+           <property name="text">
+            <string>绳长:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="4">
+          <widget class="QSpinBox" name="lbCableLen">
+           <property name="suffix">
+            <string>mm</string>
+           </property>
+           <property name="maximum">
+            <number>1000</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="5" alignment="Qt::AlignHCenter">
+          <widget class="QRadioButton" name="lbCableJogButton">
+           <property name="font">
+            <font>
+             <family>AR PL UKai CN</family>
+            </font>
+           </property>
+           <property name="text">
+            <string>开始/结束</string>
+           </property>
+           <property name="autoExclusive">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_29">
+           <property name="font">
+            <font>
+             <family>AR PL UKai CN</family>
+            </font>
+           </property>
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;RB&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1" alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="label_47">
+           <property name="font">
+            <font>
+             <family>AR PL UKai CN</family>
+            </font>
+           </property>
+           <property name="text">
+            <string>速度:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="2">
+          <widget class="QSpinBox" name="rbCableVel">
+           <property name="suffix">
+            <string>rpm</string>
+           </property>
+           <property name="maximum">
+            <number>5000</number>
+           </property>
+           <property name="value">
+            <number>1000</number>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="3" alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="label_40">
+           <property name="font">
+            <font>
+             <family>AR PL UKai CN</family>
+            </font>
+           </property>
+           <property name="text">
+            <string>绳长:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="4">
+          <widget class="QSpinBox" name="rbCableLen">
+           <property name="suffix">
+            <string>mm</string>
+           </property>
+           <property name="maximum">
+            <number>1000</number>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="5" alignment="Qt::AlignHCenter">
+          <widget class="QRadioButton" name="rbCableJogButton">
+           <property name="font">
+            <font>
+             <family>AR PL UKai CN</family>
+            </font>
+           </property>
+           <property name="text">
+            <string>开始/结束</string>
+           </property>
+           <property name="autoExclusive">
+            <bool>false</bool>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>

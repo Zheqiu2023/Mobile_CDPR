@@ -11,13 +11,14 @@ Widget::Widget(QWidget* parent) : QWidget(parent), ui(new Ui::Widget)
 {
     ui->setupUi(this);
     // 创建子线程
+    can_thread_ = new QThread;
     archor_thread_ = new QThread;
     cable_thread_ = new QThread;
-    can_thread_ = new QThread;
     // 创建任务对象
+    usbcan_ = new usb_can::UsbCan;
     archors_ = new motor_driver::ArchorDriver;
     cables_ = new motor_driver::CableDriver;
-    usbcan_ = new usb_can::UsbCan;
+
     // 移动任务对象到子线程中
     archors_->moveToThread(archor_thread_);
     cables_->moveToThread(cable_thread_);
@@ -34,68 +35,52 @@ Widget::Widget(QWidget* parent) : QWidget(parent), ui(new Ui::Widget)
     connect(this, &Widget::startArchorReset, archors_, &motor_driver::ArchorDriver::reset);
     connect(this, &Widget::startArchorRunTraj, archors_, &motor_driver::ArchorDriver::run_traj);
     connect(this, &Widget::startCableRunTraj, cables_, &motor_driver::CableDriver::run_traj);
-    connect(this, &Widget::startCanRecv, usbcan_, &usb_can::UsbCan::can_receive);
+    connect(this, &Widget::startCanRecvPos, usbcan_, &usb_can::UsbCan::recvPos);
 
-    // archor button
-    connect(ui->lfArchorUp, &QRadioButton::toggled, this, &Widget::on_lfArchorUp_toggled);
-    connect(ui->rfArchorUp, &QRadioButton::toggled, this, &Widget::on_rfArchorUp_toggled);
-    connect(ui->lbArchorUp, &QRadioButton::toggled, this, &Widget::on_lbArchorUp_toggled);
-    connect(ui->rbArchorUp, &QRadioButton::toggled, this, &Widget::on_rbArchorUp_toggled);
-    connect(ui->lfArchorDown, &QRadioButton::toggled, this, &Widget::on_lfArchorDown_toggled);
-    connect(ui->rfArchorDown, &QRadioButton::toggled, this, &Widget::on_rfArchorDown_toggled);
-    connect(ui->lbArchorDown, &QRadioButton::toggled, this, &Widget::on_lbArchorDown_toggled);
-    connect(ui->rbArchorDown, &QRadioButton::toggled, this, &Widget::on_rbArchorDown_toggled);
-    connect(ui->archorResetButton, &QPushButton::clicked, this, &Widget::on_archorResetButton_clicked);
-    // cable button
-    connect(ui->lfPullCableButton, &QRadioButton::toggled, this, &Widget::on_lfPullCableButton_toggled);
-    connect(ui->rfPullCableButton, &QRadioButton::toggled, this, &Widget::on_rfPullCableButton_toggled);
-    connect(ui->lbPullCableButton, &QRadioButton::toggled, this, &Widget::on_lbPullCableButton_toggled);
-    connect(ui->rbPullCableButton, &QRadioButton::toggled, this, &Widget::on_rbPullCableButton_toggled);
-    connect(ui->lfReleaseCableButton, &QRadioButton::toggled, this, &Widget::on_lfReleaseCableButton_toggled);
-    connect(ui->rfReleaseCableButton, &QRadioButton::toggled, this, &Widget::on_rfReleaseCableButton_toggled);
-    connect(ui->lbReleaseCableButton, &QRadioButton::toggled, this, &Widget::on_lbReleaseCableButton_toggled);
-    connect(ui->rbReleaseCableButton, &QRadioButton::toggled, this, &Widget::on_rbReleaseCableButton_toggled);
-    connect(ui->cableResetButton, &QPushButton::clicked, this, &Widget::on_cableResetButton_clicked);
-    // stop button
-    connect(ui->stopButton, &QPushButton::clicked, this, &Widget::on_stopButton_clicked);
-    // traj button
-    connect(ui->readLocalTraj, &QPushButton::clicked, this, &Widget::on_readLocalTraj_clicked);
-    connect(ui->startLocalTraj, &QPushButton::clicked, this, &Widget::on_startLocalTraj_clicked);
-    // reset flag
-    connect(usbcan_, &usb_can::UsbCan::resetMsg, archors_, &motor_driver::ArchorDriver::recvResetMsg);
+    // mode button
+    connect(ui->cableVelMode, &QRadioButton::toggled, this, &Widget::selectCableMode);
+    connect(ui->cableVelPosMode, &QRadioButton::toggled, this, &Widget::selectCableMode);
+    connect(ui->archorVelMode, &QRadioButton::toggled, this, &Widget::selectArchorMode);
+    connect(ui->archorVelPosMode, &QRadioButton::toggled, this, &Widget::selectArchorMode);
 
-    cables_->init(motor_driver::RunMode::VEL_POS);
-    archors_->init(motor_driver::RunMode::VEL, 0x00);
+    // 初始化QButtonGroup，添加相应的QRadioButton并设置ID
+    cableModeGroup = new QButtonGroup(this);
+    archorModeGroup = new QButtonGroup(this);
+    cableModeGroup->addButton(ui->cableVelMode, 0);
+    cableModeGroup->addButton(ui->cableVelPosMode, 1);
+    ui->cableVelPosMode->setChecked(true);
+    archorModeGroup->addButton(ui->archorVelMode, 0);
+    archorModeGroup->addButton(ui->archorVelPosMode, 1);
+    ui->archorVelMode->setChecked(true);
 }
 
 Widget::~Widget()
 {
     delete ui;
-    if (archor_thread_)
-    {
-        archor_thread_->quit();
-        archor_thread_->wait();
-    }
-    if (cable_thread_)
-    {
-        cable_thread_->quit();
-        cable_thread_->wait();
-    }
-    if (can_thread_)
-    {
-        can_thread_->quit();
-        can_thread_->wait();
-    }
+
+    archor_thread_->quit();
+    archor_thread_->wait();
+
+    cable_thread_->quit();
+    cable_thread_->wait();
+
+    can_thread_->quit();
+    can_thread_->wait();
 }
 
-void Widget::on_lfPullCableButton_toggled(bool checked)
+void Widget::on_lfCableJogButton_toggled(bool checked)
 {
-    int target_vel = 0, target_pos = 0;
+    if (!ui->cableVelPosMode->isChecked())
+    {
+        QMessageBox::critical(this, "run mode", "Wrong motor mode for cables");
+        return;
+    }
 
+    int target_vel = 0, target_pos = 0;
     if (true == checked)
     {
         target_vel = ui->lfCableVel->value();
-        target_pos = ui->lfCableLen->value();
+        target_pos = cables_->convertPos(ui->lfCableLen->value() / double(1000));
         qInfo() << "LF cable start pulling";
     }
     else
@@ -104,14 +89,19 @@ void Widget::on_lfPullCableButton_toggled(bool checked)
     cables_->setSendVelPos(0, target_vel, target_pos);
 }
 
-void Widget::on_rfPullCableButton_toggled(bool checked)
+void Widget::on_rfCableJogButton_toggled(bool checked)
 {
-    int target_vel = 0, target_pos = 0;
+    if (!ui->cableVelPosMode->isChecked())
+    {
+        QMessageBox::critical(this, "run mode", "Wrong motor mode for cables");
+        return;
+    }
 
+    int target_vel = 0, target_pos = 0;
     if (true == checked)
     {
         target_vel = ui->rfCableVel->value();
-        target_pos = ui->rfCableLen->value();
+        target_pos = cables_->convertPos(-ui->rfCableLen->value() / double(1000));
         qInfo() << "RF cable start pulling";
     }
     else
@@ -120,14 +110,19 @@ void Widget::on_rfPullCableButton_toggled(bool checked)
     cables_->setSendVelPos(1, target_vel, target_pos);
 }
 
-void Widget::on_lbPullCableButton_toggled(bool checked)
+void Widget::on_lbCableJogButton_toggled(bool checked)
 {
-    int target_vel = 0, target_pos = 0;
+    if (!ui->cableVelPosMode->isChecked())
+    {
+        QMessageBox::critical(this, "run mode", "Wrong motor mode for cables");
+        return;
+    }
 
+    int target_vel = 0, target_pos = 0;
     if (true == checked)
     {
         target_vel = ui->lbCableVel->value();
-        target_pos = ui->lbCableLen->value();
+        target_pos = cables_->convertPos(-ui->lbCableLen->value() / double(1000));
         qInfo() << "LB cable start pulling";
     }
     else
@@ -136,14 +131,19 @@ void Widget::on_lbPullCableButton_toggled(bool checked)
     cables_->setSendVelPos(2, target_vel, target_pos);
 }
 
-void Widget::on_rbPullCableButton_toggled(bool checked)
+void Widget::on_rbCableJogButton_toggled(bool checked)
 {
-    int target_vel = 0, target_pos = 0;
+    if (!ui->cableVelPosMode->isChecked())
+    {
+        QMessageBox::critical(this, "run mode", "Wrong motor mode for cables");
+        return;
+    }
 
+    int target_vel = 0, target_pos = 0;
     if (true == checked)
     {
         target_vel = -ui->rbCableVel->value();
-        target_pos = ui->rbCableLen->value();
+        target_pos = cables_->convertPos(ui->rbCableLen->value() / double(1000));
         qInfo() << "RB cable start pulling";
     }
     else
@@ -152,74 +152,15 @@ void Widget::on_rbPullCableButton_toggled(bool checked)
     cables_->setSendVelPos(3, target_vel, target_pos);
 }
 
-void Widget::on_lfReleaseCableButton_toggled(bool checked)
-{
-    int target_vel = 0, target_pos = 0;
-
-    if (true == checked)
-    {
-        target_vel = -ui->lfCableVel->value();
-        target_pos = ui->lfCableLen->value();
-        qInfo() << "LF cable start releasing";
-    }
-    else
-        qInfo() << "LF cable stop releasing";
-
-    cables_->setSendVelPos(0, target_vel, target_pos);
-}
-
-void Widget::on_rfReleaseCableButton_toggled(bool checked)
-{
-    int target_vel = 0, target_pos = 0;
-
-    if (true == checked)
-    {
-        target_vel = -ui->rfCableVel->value();
-        target_pos = ui->rfCableLen->value();
-        qInfo() << "RF cable start releasing";
-    }
-    else
-        qInfo() << "RF cable stop releasing";
-
-    cables_->setSendVelPos(1, target_vel, target_pos);
-}
-
-void Widget::on_lbReleaseCableButton_toggled(bool checked)
-{
-    int target_vel = 0, target_pos = 0;
-
-    if (true == checked)
-    {
-        target_vel = -ui->lbCableVel->value();
-        target_pos = ui->lbCableLen->value();
-        qInfo() << "LB cable start releasing";
-    }
-    else
-        qInfo() << "LB cable stop releasing";
-
-    cables_->setSendVelPos(2, target_vel, target_pos);
-}
-
-void Widget::on_rbReleaseCableButton_toggled(bool checked)
-{
-    int target_vel = 0, target_pos = 0;
-
-    if (true == checked)
-    {
-        target_vel = ui->rbCableVel->value();
-        target_pos = ui->rbCableLen->value();
-        qInfo() << "RB cable start releasing";
-    }
-    else
-        qInfo() << "RB cable stop releasing";
-
-    cables_->setSendVelPos(3, target_vel, target_pos);
-}
-
 void Widget::on_cableResetButton_clicked()
 {
-    std::vector<int> direction{ 1, 1, 1, -1 };
+    if (!ui->cableVelPosMode->isChecked())
+    {
+        QMessageBox::critical(this, "run mode", "Wrong motor mode for cables");
+        return;
+    }
 
+    std::vector<int> direction{ 1, 1, 1, -1 };
     qInfo() << "ALL cables start reseting";
     for (size_t i = 0; i < 4; ++i)
     {
@@ -229,8 +170,13 @@ void Widget::on_cableResetButton_clicked()
 
 void Widget::on_lfArchorUp_toggled(bool checked)
 {
-    int target_vel = 0;
+    if (!ui->archorVelMode->isChecked())
+    {
+        QMessageBox::critical(this, "run mode", "Wrong motor mode for archors");
+        return;
+    }
 
+    int target_vel = 0;
     if (true == checked)
     {
         target_vel = ui->lfArchorVel->value();
@@ -244,8 +190,13 @@ void Widget::on_lfArchorUp_toggled(bool checked)
 
 void Widget::on_rfArchorUp_toggled(bool checked)
 {
-    int target_vel = 0;
+    if (!ui->archorVelMode->isChecked())
+    {
+        QMessageBox::critical(this, "run mode", "Wrong motor mode for archors");
+        return;
+    }
 
+    int target_vel = 0;
     if (true == checked)
     {
         target_vel = ui->rfArchorVel->value();
@@ -259,8 +210,13 @@ void Widget::on_rfArchorUp_toggled(bool checked)
 
 void Widget::on_lbArchorUp_toggled(bool checked)
 {
-    int target_vel = 0;
+    if (!ui->archorVelMode->isChecked())
+    {
+        QMessageBox::critical(this, "run mode", "Wrong motor mode for archors");
+        return;
+    }
 
+    int target_vel = 0;
     if (true == checked)
     {
         target_vel = ui->lbArchorVel->value();
@@ -274,8 +230,13 @@ void Widget::on_lbArchorUp_toggled(bool checked)
 
 void Widget::on_rbArchorUp_toggled(bool checked)
 {
-    int target_vel = 0;
+    if (!ui->archorVelMode->isChecked())
+    {
+        QMessageBox::critical(this, "run mode", "Wrong motor mode for archors");
+        return;
+    }
 
+    int target_vel = 0;
     if (true == checked)
     {
         target_vel = ui->rbArchorVel->value();
@@ -289,8 +250,13 @@ void Widget::on_rbArchorUp_toggled(bool checked)
 
 void Widget::on_lfArchorDown_toggled(bool checked)
 {
-    int target_vel = 0;
+    if (!ui->archorVelMode->isChecked())
+    {
+        QMessageBox::critical(this, "run mode", "Wrong motor mode for archors");
+        return;
+    }
 
+    int target_vel = 0;
     if (true == checked)
     {
         target_vel = -ui->lfArchorVel->value();
@@ -304,8 +270,13 @@ void Widget::on_lfArchorDown_toggled(bool checked)
 
 void Widget::on_rfArchorDown_toggled(bool checked)
 {
-    int target_vel = 0;
+    if (!ui->archorVelMode->isChecked())
+    {
+        QMessageBox::critical(this, "run mode", "Wrong motor mode for archors");
+        return;
+    }
 
+    int target_vel = 0;
     if (true == checked)
     {
         target_vel = -ui->rfArchorVel->value();
@@ -319,8 +290,13 @@ void Widget::on_rfArchorDown_toggled(bool checked)
 
 void Widget::on_lbArchorDown_toggled(bool checked)
 {
-    int target_vel = 0;
+    if (!ui->archorVelMode->isChecked())
+    {
+        QMessageBox::critical(this, "run mode", "Wrong motor mode for archors");
+        return;
+    }
 
+    int target_vel = 0;
     if (true == checked)
     {
         target_vel = -ui->lbArchorVel->value();
@@ -334,8 +310,13 @@ void Widget::on_lbArchorDown_toggled(bool checked)
 
 void Widget::on_rbArchorDown_toggled(bool checked)
 {
-    int target_vel = 0;
+    if (!ui->archorVelMode->isChecked())
+    {
+        QMessageBox::critical(this, "run mode", "Wrong motor mode for archors");
+        return;
+    }
 
+    int target_vel = 0;
     if (true == checked)
     {
         target_vel = -ui->rbArchorVel->value();
@@ -349,23 +330,35 @@ void Widget::on_rbArchorDown_toggled(bool checked)
 
 void Widget::on_archorResetButton_clicked()
 {
-    if (archor_thread_->isFinished())
-        archor_thread_->start();
+    if (!ui->archorVelMode->isChecked())
+    {
+        QMessageBox::critical(this, "run mode", "Wrong motor mode for archors");
+        return;
+    }
+
+    can_thread_->start();
+    archor_thread_->start();
     emit startArchorReset(ui->archorResetVel->value());
 }
 
 void Widget::on_stopButton_clicked()
 {
+    usbcan_->stop();
     archors_->stop();
     cables_->stop();
 }
 
 void Widget::on_startLocalTraj_clicked()
 {
-    if (archor_thread_->isFinished())
-        archor_thread_->start();
-    if (cable_thread_->isFinished())
-        cable_thread_->start();
+    if (!(ui->cableVelPosMode->isChecked() && ui->archorVelPosMode->isChecked()))
+    {
+        QMessageBox::critical(this, "run mode", "Wrong motor mode for archors or cables");
+        return;
+    }
+    can_thread_->start();
+    archor_thread_->start();
+    cable_thread_->start();
+    emit startCanRecvPos();
     emit startArchorRunTraj(ui->localTrajPeriod->value(), archor_traj_);
     emit startCableRunTraj(ui->localTrajPeriod->value(), cable_traj_);
 }
@@ -374,7 +367,7 @@ void Widget::on_readLocalTraj_clicked()
 {
     QString traj = ui->localTraj->currentText();
     QString path{};
-    if ("上下轨迹" == traj)
+    if ("竖直轨迹" == traj)
         path = QCoreApplication::applicationDirPath() + "/../csv/updown.csv";
     else if ("斜线轨迹" == traj)
         path = QCoreApplication::applicationDirPath() + "/../csv/line.csv";
@@ -382,4 +375,26 @@ void Widget::on_readLocalTraj_clicked()
         path = QCoreApplication::applicationDirPath() + "/../csv/circle.csv";
 
     local_traj_.readTraj(path, archor_traj_, cable_traj_);
+}
+
+void Widget::selectCableMode(bool checked)
+{
+    if (checked)
+    {
+        if (0 == cableModeGroup->checkedId())
+            cables_->init(motor_driver::RunMode::VEL);
+        else if (1 == cableModeGroup->checkedId())
+            cables_->init(motor_driver::RunMode::VEL_POS);
+    }
+}
+
+void Widget::selectArchorMode(bool checked)
+{
+    if (checked)
+    {
+        if (0 == archorModeGroup->checkedId())
+            archors_->init(motor_driver::RunMode::VEL);
+        else if (1 == archorModeGroup->checkedId())
+            archors_->init(motor_driver::RunMode::VEL_POS);
+    }
 }

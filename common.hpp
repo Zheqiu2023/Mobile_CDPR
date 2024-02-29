@@ -26,9 +26,9 @@ enum class RunMode
 
 struct CanCmd
 {
-    int dev_ind;  // usbcan设备索引
-    int can_ind;  // can通道索引
-    VCI_CAN_OBJ cmd;
+    int dev_ind_;  // usbcan设备索引
+    int can_ind_;  // can通道索引
+    VCI_CAN_OBJ cmd_;
 };
 
 struct CableData

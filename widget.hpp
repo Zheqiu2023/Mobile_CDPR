@@ -26,24 +26,16 @@ class Widget : public QWidget
     void startArchorReset(int vel);
     void startArchorRunTraj(double period, QList<QList<double>> traj);
     void startCableRunTraj(double period, QList<QList<double>> traj);
-    void startCanRecv();
+    void startCanRecvPos();
 
   private slots:
-    void on_lfPullCableButton_toggled(bool checked);
+    void on_lfCableJogButton_toggled(bool checked);
 
-    void on_rfPullCableButton_toggled(bool checked);
+    void on_rfCableJogButton_toggled(bool checked);
 
-    void on_lbPullCableButton_toggled(bool checked);
+    void on_lbCableJogButton_toggled(bool checked);
 
-    void on_rbPullCableButton_toggled(bool checked);
-
-    void on_lfReleaseCableButton_toggled(bool checked);
-
-    void on_rfReleaseCableButton_toggled(bool checked);
-
-    void on_lbReleaseCableButton_toggled(bool checked);
-
-    void on_rbReleaseCableButton_toggled(bool checked);
+    void on_rbCableJogButton_toggled(bool checked);
 
     void on_cableResetButton_clicked();
 
@@ -71,10 +63,16 @@ class Widget : public QWidget
 
     void on_readLocalTraj_clicked();
 
+    void selectCableMode(bool checked);
+
+    void selectArchorMode(bool checked);
+
   private:
     Ui::Widget* ui;
+    QButtonGroup* cableModeGroup;
+    QButtonGroup* archorModeGroup;
 
-    QList<QList<double>> archor_traj_, cable_traj_;
+    QList<QList<double>> archor_traj_{}, cable_traj_{};
 
     motor_driver::ArchorDriver* archors_;
     motor_driver::CableDriver* cables_;

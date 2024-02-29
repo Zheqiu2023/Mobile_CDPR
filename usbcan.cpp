@@ -2,6 +2,7 @@
 
 #include <QDebug>
 #include <QTime>
+#include <QDir>
 
 using namespace usb_can;
 
@@ -75,59 +76,83 @@ void UsbCan::initCAN(const int& dev_type, const int& dev_ind, const int& can_ind
     qInfo() << "Initialize USBCAN" << dev_ind << " CAN" << can_ind << " successfully!";
 }
 
+void UsbCan::stop()
+{
+    is_stop_ = true;
+}
+
 /**
  * @brief 接收电机反馈数据
  */
-void UsbCan::can_receive()
+void UsbCan::recvPos()
 {
     int recv_len = 0;  // 接收到的消息长度
+    qint64 cur_time = 0;
+    QString message{};
+    // path to save .csv file
+    QString dir_path = QCoreApplication::applicationDirPath() + "/../data";
+    // check if file directory exists
+    QDir dir;
+    if (!dir.exists(dir_path))
+        dir.mkpath(dir_path);
+    // .csv file path
+    QString file_path =
+        dir_path + "/" + QString("recvPos%1.csv").arg(QDateTime::currentDateTime().toString("MM_dd_hh_mm_ss"));
+    // create and open .csv file
+    QFile file(file_path);
+    file.open(QIODevice::WriteOnly | QIODevice::Text);
+    QTextStream out(&file);
 
-    for (uint32_t dev_ind = 0; dev_ind < 2; ++dev_ind)
-        for (uint32_t can_ind = 0; can_ind < 2; ++can_ind)
-        {
-            if ((recv_len = VCI_Receive(VCI_USBCAN2, dev_ind, can_ind, recv_msgs_.begin(), 3000, 100)) > 0)
+    while (!is_stop_)
+    {
+        for (uint32_t dev_ind = 0; dev_ind < 2; ++dev_ind)
+            for (uint32_t can_ind = 0; can_ind < 2; ++can_ind)
             {
-                for (int j = 0; j < recv_len; ++j)
+                if ((recv_len = VCI_Receive(VCI_USBCAN2, dev_ind, can_ind, recv_msgs_.begin(), 3000, 100)) > 0)
                 {
-                    int id1 = recv_msgs_[j].ID - 0x0b;
-                    int id2 = recv_msgs_[j].ID - 0x0c;
-
-                    for (size_t i = 0; i < 4; ++i)
+                    for (int j = 0; j < recv_len; ++j)
                     {
-                        if (id1 == params_.archor_id_[i] << 4)
+                        int id1 = recv_msgs_[j].ID - 0x0b;
+                        for (size_t i = 0; i < 4; ++i)
                         {
-                            // 接收到电流、速度、位置等信息
-                            // short real_velocity = (recv_msgs_[j].Data[2] << 8) | recv_msgs_[j].Data[3];
-                            int real_position = (recv_msgs_[j].Data[4] << 24) | (recv_msgs_[j].Data[5] << 16) |
-                                                (recv_msgs_[j].Data[6] << 8) | recv_msgs_[j].Data[7];
+                            if (id1 == params_.archor_id_[i] << 4)
+                            {
+                                // 接收到锚点座驱动器电流、速度、位置等信息
+                                // short real_velocity = (recv_msgs_[j].Data[2] << 8) | recv_msgs_[j].Data[3];
+                                int real_position = (recv_msgs_[j].Data[4] << 24) | (recv_msgs_[j].Data[5] << 16) |
+                                                    (recv_msgs_[j].Data[6] << 8) | recv_msgs_[j].Data[7];
 
-                            archor_pos_ = (double)real_position * params_.lead_ /
-                                          (1000 * params_.reduction_ratio_ * params_.encoder_lines_num_);
-                            QDateTime current_time = QDateTime::currentDateTime();  // 打印当前时间;
-                            qInfo() << current_time.toString("hh:mm:ss.zzz");
-                        }
-                        else if (id2 == (params_.archor_id_[i] << 4) && recv_msgs_[j].Data[0] == 0x01)
-                        {
-                            // 接收到锚点座驱动器CTL1/CTL2的电平状态
-                            emit resetMsg(params_.archor_id_[i]);
-                        }
-                        else if (id1 == params_.cable_id_[i] << 4)
-                        {
-                            // 接收到电流、速度、位置等信息
-                            // short real_velocity = (recv_msgs_[j].Data[2] << 8) | recv_msgs_[j].Data[3];
-                            int real_position = (recv_msgs_[j].Data[4] << 24) | (recv_msgs_[j].Data[5] << 16) |
-                                                (recv_msgs_[j].Data[6] << 8) | recv_msgs_[j].Data[7];
+                                archor_pos_ = (double)real_position * params_.lead_ /
+                                              (1000 * params_.reduction_ratio_ * params_.encoder_lines_num_);
+                                cur_time = QDateTime::currentMSecsSinceEpoch();
+                                message =
+                                    QString(u8"%1, %2, %3").arg(cur_time).arg(params_.archor_id_[i]).arg(archor_pos_);
+                                out << message << '\n';
+                            }
+                            else if (id1 == params_.cable_id_[i] << 4)
+                            {
+                                // 接收到绳索驱动器电流、速度、位置等信息
+                                // short real_velocity = (recv_msgs_[j].Data[2] << 8) | recv_msgs_[j].Data[3];
+                                int real_position = (recv_msgs_[j].Data[4] << 24) | (recv_msgs_[j].Data[5] << 16) |
+                                                    (recv_msgs_[j].Data[6] << 8) | recv_msgs_[j].Data[7];
 
-                            cable_pos_ = params_.cable_direction_[i] * real_position * M_PI * params_.reel_diameter_ /
-                                         (params_.reduction_ratio_ * params_.encoder_lines_num_);
+                                cable_pos_ = (double)real_position * params_.cable_direction_[i] * M_PI *
+                                             params_.reel_diameter_ /
+                                             (params_.reduction_ratio_ * params_.encoder_lines_num_);
+                                cur_time = QDateTime::currentMSecsSinceEpoch();
+                                message =
+                                    QString(u8"%1, %2, %3").arg(cur_time).arg(params_.cable_id_[i]).arg(cable_pos_);
+                                out << message << '\n';
+                            }
                         }
+                        // printMsg(dev_ind, can_ind, recv_msgs_[j]);
                     }
-
-                    // printMsg(dev_ind, can_ind, recv_msgs_[j]);
                 }
+                memset(&recv_msgs_, 0, sizeof(recv_msgs_));
+                QThread::msleep(30);
             }
-            memset(&recv_msgs_, 0, sizeof(recv_msgs_));
-        }
+    }
+    file.close();
 }
 
 /**

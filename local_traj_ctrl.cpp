@@ -12,13 +12,14 @@ void LocalTrajCtrl::readTraj(const QString& path, QList<QList<double>>& archor_t
 {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly))
+    {
         QMessageBox::critical(nullptr, "Traj", "Read local trajectory failed.", QMessageBox::Ok);
-
+        return;
+    }
     QTextCodec* codec = QTextCodec::codecForName("UTF-8");  // 使用UTF-8编码
     QByteArray content = file.readAll();
     QString text = codec->toUnicode(content);
     QStringList lines = text.split('\n');
-    qDebug() << lines.size();
 
     for (int i = 0; i < lines.size(); ++i)
     {
@@ -39,7 +40,6 @@ void LocalTrajCtrl::readTraj(const QString& path, QList<QList<double>>& archor_t
         archor_traj.append(data1);
         cable_traj.append(data2);
     }
-
     file.close();
     QMessageBox::information(nullptr, "Traj", "Read local trajectory finished.", QMessageBox::Ok);
 }

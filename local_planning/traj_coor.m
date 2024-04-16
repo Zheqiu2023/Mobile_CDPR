@@ -1,0 +1,62 @@
+function [trj_type, param_trj] = traj_coor(ep_start,timestep)
+% 初始位置
+b0 = ep_start';
+%% 竖直轨迹
+a1 = [0.0, 0.0, 0.6] + b0;
+param_trj1 = {0,timestep,10,b0,a1};
+param_trj2 = {0,timestep,10,a1,b0};
+
+param_trj = {param_trj1};
+trj_type = {'line'};
+%% 直线轨迹
+% a1 = [0.1,0.2,0.4] + b0;
+% 
+% param_trj1 = {0,timestep,20,b0,a1};
+% param_trj2 = {0,timestep,20,a1,b0};
+% 
+% param_trj = {param_trj1};
+% trj_type = {'line'};
+%% 圆轨迹
+% a1=[0,0,0.4] + b0;
+% a2=[0,0.2,0.4] + b0;
+% 
+% param_trj1={0,timestep,10,b0,a1};
+% param_trj2={0,timestep,15,a1,a2};
+% param_trj3={0,timestep,140,a2,a1,a2};
+% param_trj4={0,timestep,20,a2,b0};
+% 
+% param_trj={param_trj1,param_trj2,param_trj3,param_trj4};
+% trj_type={'line','line','circle','line'};
+%% HIT轨迹
+% a1 = [0,-0.25,0.1];
+% a2 = [0,-0.25,0.5];
+% a3 = [0,-0.25,0.3];
+% a4 = [0,-0.1,0.3];
+% a5 = [0,-0.1,0.5];
+% a6 = [0,-0.1,0.1];
+% a7 = [0,0.075,0.1];
+% a8 = [0,0.075,0.5];
+% a9 = [0,0.075,0.1];
+% a10 = [0,0.25,0.1];
+% a11 = [0,0.25,0.5];
+% a12 = [0,0.15,0.5];
+% a13 = [0,0.35,0.5];
+% 
+% param_trj1 = {0,0.1,17,b0,a1};
+% param_trj2 = {0,0.1,12,a1,a2};
+% param_trj3 = {0,0.1,8,a2,a3};
+% param_trj4 = {0,0.1,6,a3,a4};
+% param_trj5 = {0,0.1,6,a4,a5};
+% param_trj6 = {0,0.1,10,a5,a6};
+% param_trj7 = {0,0.1,6,a6,a7};
+% param_trj8 = {0,0.1,10,a7,a8};
+% param_trj9 = {0,0.1,10,a8,a9};
+% param_trj10 = {0,0.1,6,a9,a10};
+% param_trj11 = {0,0.1,10,a10,a11};
+% param_trj12 = {0,0.1,6,a11,a12};
+% param_trj13 = {0,0.1,10,a12,a13};
+% param_trj14 = {0,0.1,18,a13,b0};
+% 
+% param_trj = {param_trj1,param_trj2,param_trj3,param_trj4,param_trj5,param_trj6,param_trj7,...
+%             param_trj8,param_trj9,param_trj10,param_trj11,param_trj12,param_trj13,param_trj14};
+% trj_type = {'line','line','line','line','line','line','line','line','line','line','line','line','line','line'};

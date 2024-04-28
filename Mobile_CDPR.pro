@@ -10,6 +10,13 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    a1.cpp \
+    cable_archor_button.cpp \
+    chassis_button.cpp \
+    chassis_ctrl.cpp \
+    filters.cpp \
+    global_traj_ctrl.cpp \
+    go.cpp \
     local_traj_ctrl.cpp \
     main.cpp \
     motor_driver.cpp \
@@ -17,10 +24,31 @@ SOURCES += \
     widget.cpp
 
 HEADERS += \
-    common.hpp \
+    chassis_ctrl.hpp \
     controlcan.hpp \
+    utilities/angles.hpp \
+    utilities/common.hpp \
+    utilities/eigen_types.hpp \
+    utilities/filters.hpp \
+    utilities/interpolation.hpp \
+    utilities/math_utilities.hpp \
+    global_traj_ctrl.hpp \
     local_traj_ctrl.hpp \
     motor_driver.hpp \
+    unitree_motor_a1/IOPort/IOPort.h \
+    unitree_motor_a1/a1.hpp \
+    unitree_motor_a1/crc/crc32.h \
+    unitree_motor_a1/serialPort/SerialPort.h \
+    unitree_motor_a1/serialPort/include/errorClass.h \
+    unitree_motor_a1/unitreeMotor/include/motor_msg.h \
+    unitree_motor_a1/unitreeMotor/unitreeMotor.h \
+    unitree_motor_go/IOPort/IOPort.h \
+    unitree_motor_go/crc/crc_ccitt.h \
+    unitree_motor_go/go.hpp \
+    unitree_motor_go/serialPort/SerialPort.h \
+    unitree_motor_go/serialPort/include/errorClass.h \
+    unitree_motor_go/unitreeMotor/include/motor_msg.h \
+    unitree_motor_go/unitreeMotor/unitreeMotor.h \
     usbcan.hpp \
     widget.hpp
 
@@ -35,6 +63,20 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 win32:CONFIG(release, debug|release): LIBS += -L$$PWD/./release/ -lcontrolcan
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/./debug/ -lcontrolcan
 else:unix: LIBS += -L$$PWD/./ -lcontrolcan
+
+INCLUDEPATH += $$PWD/''
+DEPENDPATH += $$PWD/''
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/./release/ -lunitreeMotorSDK_Linux64
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/./debug/ -lunitreeMotorSDK_Linux64
+else:unix: LIBS += -L$$PWD/./ -lunitreeMotorSDK_Linux64
+
+INCLUDEPATH += $$PWD/''
+DEPENDPATH += $$PWD/''
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/./release/ -lUnitreeMotorSDK_M80106_amd64
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/./debug/ -lUnitreeMotorSDK_M80106_amd64
+else:unix: LIBS += -L$$PWD/./ -lUnitreeMotorSDK_M80106_amd64
 
 INCLUDEPATH += $$PWD/''
 DEPENDPATH += $$PWD/''

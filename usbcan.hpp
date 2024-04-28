@@ -3,7 +3,7 @@
 #include <QThread>
 #include <array>
 
-#include "common.hpp"
+#include "utilities/common.hpp"
 
 namespace usb_can
 {
@@ -15,7 +15,7 @@ class UsbCan : public QObject
     UsbCan(QObject* parent = nullptr);
     ~UsbCan();
     void recvPos();
-    void stop();
+    void stopRun();
 
   private:
     void initCAN(const int& dev_type, const int& dev_ind, const int& can_ind, const MotorType& m_type);
@@ -25,7 +25,7 @@ class UsbCan : public QObject
     double archor_pos_ = 0.0, cable_pos_ = 0.0;
     VCI_INIT_CONFIG config_{};                   // 初始化参数，参考二次开发函数库说明书
     std::array<VCI_CAN_OBJ, 3000> recv_msgs_{};  // 接收缓存，设为3000为佳
-    bool is_stop_ = false;
+    bool stop_run_ = false;
     TrajParams params_;
 };
 }  // namespace usb_can

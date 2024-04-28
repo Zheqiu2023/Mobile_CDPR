@@ -21,7 +21,7 @@ void LocalTrajCtrl::readTraj(const QString& path, QList<QList<double>>& archor_t
     QString text = codec->toUnicode(content);
     QStringList lines = text.split('\n');
 
-    for (int i = 0; i < lines.size(); ++i)
+    for (int i = 0; i < (lines.size() - 1); ++i)
     {
         QList<double> data1, data2;
         if (!lines.at(i).isEmpty())

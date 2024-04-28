@@ -76,9 +76,9 @@ void UsbCan::initCAN(const int& dev_type, const int& dev_ind, const int& can_ind
     qInfo() << "Initialize USBCAN" << dev_ind << " CAN" << can_ind << " successfully!";
 }
 
-void UsbCan::stop()
+void UsbCan::stopRun()
 {
-    is_stop_ = true;
+    stop_run_ = true;
 }
 
 /**
@@ -103,7 +103,8 @@ void UsbCan::recvPos()
     file.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream out(&file);
 
-    while (!is_stop_)
+    stop_run_ = false;
+    while (!stop_run_)
     {
         for (uint32_t dev_ind = 0; dev_ind < 2; ++dev_ind)
             for (uint32_t can_ind = 0; can_ind < 2; ++can_ind)
@@ -128,6 +129,7 @@ void UsbCan::recvPos()
                                 message =
                                     QString(u8"%1, %2, %3").arg(cur_time).arg(params_.archor_id_[i]).arg(archor_pos_);
                                 out << message << '\n';
+                                break;
                             }
                             else if (id1 == params_.cable_id_[i] << 4)
                             {
@@ -143,13 +145,13 @@ void UsbCan::recvPos()
                                 message =
                                     QString(u8"%1, %2, %3").arg(cur_time).arg(params_.cable_id_[i]).arg(cable_pos_);
                                 out << message << '\n';
+                                break;
                             }
                         }
                         // printMsg(dev_ind, can_ind, recv_msgs_[j]);
                     }
                 }
                 memset(&recv_msgs_, 0, sizeof(recv_msgs_));
-                QThread::msleep(30);
             }
     }
     file.close();

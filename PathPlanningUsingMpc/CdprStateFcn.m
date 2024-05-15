@@ -17,13 +17,17 @@ function dxdt = CdprStateFcn(x,u,p)
 %
 %   All angles are set positive counter-clockwise.
 
+theta = x(3);
+v = x(4);
+alpha = x(5);
 
-theta = x(3);  
-alpha = u(1);
-v = u(2);
+a = u(1);
+w = u(2);
+
 L = p(1);
 dxdt = zeros(3,1);
-
 dxdt(1) = v*cos(theta);
 dxdt(2) = v*sin(theta);
 dxdt(3) = v*tan(alpha)/L;
+dxdt(4) = a;
+dxdt(5) = w;

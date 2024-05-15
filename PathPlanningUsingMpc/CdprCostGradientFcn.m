@@ -6,7 +6,7 @@ function [Gx,Gmv] = CdprCostGradientFcn(stage,x,u,p)
 % Gx = zeros(3,1);
 % Gmv = 2*Wmv*u;
 
-Qp = diag([0.1 0.1 0.1]);
+Qp = diag([0 0 0 0.1 0.1]);
 Rp =  2 * eye(2);
 
 % Running cost Jacobian

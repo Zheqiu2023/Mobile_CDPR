@@ -74,11 +74,11 @@ enable_obs = 1;
 % figure) in 20 seconds using reverse parking. In the process, the planned
 % path must avoid collisions with obstacles.
 if ~enable_obs
-    initialPose = [-3;0;0];
-    targetPose = [1;1;pi/6];
+    initialPose = [-3;0;0;0;0];
+    targetPose = [1;1;pi/6;0;0];
 else
-    initialPose = [-4.5;0;0];
-    targetPose = [4.5;0;0];
+    initialPose = [-4.5;0;0;0;0];
+    targetPose = [4.5;0;0;0;0];
 end
 CdprPlot(enable_obs,initialPose,targetPose,params);
 
@@ -119,9 +119,9 @@ end
 % 20.
 
 % Create the multistage nonlinear MPC controller.
-p = 1000;
-nlobj = nlmpcMultistage(p,3,2);
-nlobj.Ts = 0.02;
+p = 300;
+nlobj = nlmpcMultistage(p,5,2);
+nlobj.Ts = 0.05;
 
 %%
 % Specify the prediction model and its analytical Jacobian in the
@@ -135,13 +135,19 @@ nlobj.Model.ParameterLength = 1;
 % Specify hard bounds on the two manipulated variables. The steering angle
 % must remain in the range +/- 45 degrees. The maximum forward speed is 2
 % m/s and the maximum reverse speed is 2 m/s.
-nlobj.MV(1).Min = -pi/4;     % Minimum steering angle
-nlobj.MV(1).Max =  pi/4;     % Maximum steering angle
-nlobj.MV(2).Min = -2;       % Minimum velocity (reverse)
-nlobj.MV(2).Max =  2;       % Maximum velocity (forward)
+nlobj.States(4).Min = -2;   % Minimum steering angle
+nlobj.States(4).Max = 2;    % Maximum steering angle
+nlobj.States(5).Min = -pi/4;    % Minimum velocity (reverse)
+nlobj.States(5).Max = pi/4;     % Maximum velocity (forward)
 
-nlobj.MV(1).RateMax = 0.1;  % Maximum steering angle increment
-nlobj.MV(2).RateMax = 0.1;  % Maximum velocity increment
+
+nlobj.MV(1).Min = -3;     % Minimum steering angular velocity
+nlobj.MV(1).Max =  3;     % Maximum steering angular velocity
+nlobj.MV(2).Min = -3;       % Minimum acceleration 
+nlobj.MV(2).Max =  3;       % Maximum acceleration
+
+nlobj.MV(1).RateMax = 1;  % Maximum steering angle increment
+nlobj.MV(2).RateMax = 1;  % Maximum velocity increment
 
 %%
 % You can use different ways to define the cost terms. For example, you
@@ -185,7 +191,7 @@ end
 % target position. In this example, the target position is provided as a
 % run-time signal.  Here we use a dummy finite value to let MPC know which
 % states will have terminal values at run time.
-nlobj.Model.TerminalState = zeros(3,1);
+nlobj.Model.TerminalState = zeros(5,1);
 
 %%
 % At the end of multistage nonlinear MPC design, you can use the
@@ -201,7 +207,7 @@ simdata = getSimulationData(nlobj,'TerminalState');
 simdata.StateFcnParameter = params.L;
 simdata.StageParameter = repmat([params.L;params.W],p,1);
 simdata.TerminalState = targetPose;
-validateFcns(nlobj,[2;3;0.5],[0.1;0.2],simdata);
+validateFcns(nlobj,[2;3;0.5;0;0],[0.1;0.2],simdata);
 
 %%
 % Since the default nonlinear programming solver |fmincon| searches for a
@@ -238,12 +244,12 @@ analyzeResults(info, targetPose, t);
 num = size(info.MVopt, 1);
 alpha = zeros(num, 4);
 v = zeros(num, 4);
-alpha(:, 1) = info.MVopt(:, 1);
-alpha(:, 2) = info.MVopt(:, 1);
-v(:, 1) = info.MVopt(:, 2)./cos(info.MVopt(:, 1));
-v(:, 2) = info.MVopt(:, 2)./cos(info.MVopt(:, 1));
-v(:, 3) = info.MVopt(:, 2);
-v(:, 4) = info.MVopt(:, 2);
+alpha(:, 1) = info.Xopt(:, 5);
+alpha(:, 2) = info.Xopt(:, 5);
+v(:, 1) = info.Xopt(:, 4)./cos(alpha(:, 1));
+v(:, 2) = info.Xopt(:, 4)./cos(alpha(:, 2));
+v(:, 3) = info.Xopt(:, 4);
+v(:, 4) = info.Xopt(:, 4);
 writematrix([alpha v],'result.csv','WriteMode','append');
 
 %%

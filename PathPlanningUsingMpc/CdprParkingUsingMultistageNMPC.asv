@@ -74,11 +74,11 @@ enable_obs = 1;
 % figure) in 20 seconds using reverse parking. In the process, the planned
 % path must avoid collisions with obstacles.
 if ~enable_obs
-    initialPose = [-3;0;0];
-    targetPose = [1;1;pi/6];
+    initialPose = [-3;0;0;0;0];
+    targetPose = [1;1;pi/6;0;0];
 else
-    initialPose = [-4.5;0;0];
-    targetPose = [4.5;0;0];
+    initialPose = [-4.5;0;0;0;0];
+    targetPose = [4.5;0;0;0;0];
 end
 CdprPlot(enable_obs,initialPose,targetPose,params);
 
@@ -119,9 +119,9 @@ end
 % 20.
 
 % Create the multistage nonlinear MPC controller.
-p = 300;
+p = 200;
 nlobj = nlmpcMultistage(p,3,2);
-nlobj.Ts = 0.1;
+nlobj.Ts = 0.05;
 
 %%
 % Specify the prediction model and its analytical Jacobian in the
@@ -135,6 +135,9 @@ nlobj.Model.ParameterLength = 1;
 % Specify hard bounds on the two manipulated variables. The steering angle
 % must remain in the range +/- 45 degrees. The maximum forward speed is 2
 % m/s and the maximum reverse speed is 2 m/s.
+nlobj.States.Min = 
+
+
 nlobj.MV(1).Min = -pi/4;     % Minimum steering angle
 nlobj.MV(1).Max =  pi/4;     % Maximum steering angle
 nlobj.MV(2).Min = -2;       % Minimum velocity (reverse)

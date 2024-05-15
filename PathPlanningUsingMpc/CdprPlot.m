@@ -28,9 +28,8 @@ end
 
 if nargin<=5
     f.Name = 'Parking Lot with Initial and Target Positions';
-    animateCdpr(gca, 0, initialPose', [0 0], params);
+    animateCdpr(gca, 0, initialPose', params);
 else
-    cur_time = datestr(datetime('now'),'mm-dd-HH-MM');
     f.Name = ['Automated Parking Animation (x0 = ' num2str(initialPose(1)) ', y0 = ' num2str(initialPose(2)) ')'];
     % obtain optimal trajectory designed by MPC
     xTrackHistory = info.Xopt;
@@ -41,44 +40,48 @@ else
     % plot the optimal XY trajectory by MPC
     plot(xTrackHistory(:,1),xTrackHistory(:,2),'bo')
     % animate track trailer moves
-    animateCdpr(gca, tTrackHistory, xTrackHistory, uTrackHistory(:,1), params);
+    animateCdpr(gca, tTrackHistory, xTrackHistory, params);
     %
     if enable_obs
         legend('','','','Initial Guess','Optimal Path');
-        saveas(gcf, ['obs', cur_time, '].fig']);
+        saveas(gcf, strcat("obs", string(datetime, 'MM-dd-HH-mm'), '].fig'));
     else
         legend('','','Initial Guess','Optimal Path');
-        saveas(gcf, ['no_obs', cur_time, '].fig']);
+        saveas(gcf, strcat("no_obs", string(datetime, 'MM-dd-HH-mm'), '].fig'));
     end
     % plot optimal MV and states
     figure('NumberTitle','off','Name','Optimal Trajectory of MVs and States');
-    subplot(3,2,1)
-    plot(tTrackHistory(1:end-1),uTrackHistory((1:end-1),1),'g.');title('\alpha (rad)');grid on;
-    subplot(3,2,2)
-    plot(tTrackHistory(1:end-1),uTrackHistory((1:end-1),2),'g.');title('v (m/s)');grid on;
-    subplot(3,2,3)
+    subplot(4,2,1)
+    plot(tTrackHistory(1:end-1),uTrackHistory((1:end-1),1),'g.');title('$a(m/s^2)$', 'interpreter', 'latex');grid on;
+    subplot(4,2,2)
+    plot(tTrackHistory(1:end-1),uTrackHistory((1:end-1),2),'g.');title('w (rad/s)');grid on;
+    subplot(4,2,3)
     plot(tTrackHistory,xTrackHistory(:,1),'g.');title('x (m)');grid on;
-    subplot(3,2,4)
+    subplot(4,2,4)
     plot(tTrackHistory,xTrackHistory(:,2),'g.');title('y (m)');grid on;
-    subplot(3,2,5)
+    subplot(4,2,5)
     plot(tTrackHistory,xTrackHistory(:,3),'g.');title('\theta (rad)');grid on;
+    subplot(4,2,6)
+    plot(tTrackHistory,xTrackHistory(:,4),'g.');title('v (m/s)');grid on;
+    subplot(4,2,7)
+    plot(tTrackHistory,xTrackHistory(:,5),'g.');title('\alpha (rad)');grid on;
 
     if enable_obs
-        saveas(gcf, ['obs', cur_time, '.fig']);
+        saveas(gcf, strcat("obs", string(datetime, 'MM-dd-HH-mm'), '.fig'));
     else
-        saveas(gcf, ['no_obs', cur_time, '.fig']);
+        saveas(gcf, strcat("no_obs", string(datetime, 'MM-dd-HH-mm'), '.fig'));
     end
 end
 
 
-function animateCdpr(ax, tOut, qOut, alpha, params)
+function animateCdpr(ax, tOut, qOut, params)
 % Playback CDPR motions
 
 tSample = tOut;
 xSample = qOut(:,1);
 ySample = qOut(:,2);
 thSample = qOut(:,3);
-alphaSample = alpha;
+alphaSample = qOut(:,5);
 
 W1 = params.W;
 L1 = params.L;

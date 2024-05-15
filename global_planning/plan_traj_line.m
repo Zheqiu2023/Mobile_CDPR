@@ -10,6 +10,7 @@ t_num = length(t_vec);
 traj_x = traj_generator.QuinticInterpolation(p_start(1), 0, 0, p_end(1), 0, 0, t_vec);  % 轨迹位置
 traj_y = traj_generator.QuinticInterpolation(p_start(2), 0, 0, p_end(2), 0, 0, t_vec);
 traj_z = traj_generator.QuinticInterpolation(p_start(3), 0, 0, p_end(3), 0, 0, t_vec);
+steer_angle = atan2(p_end(2)-p_start(2), p_end(1)-p_start(1)) % 车轮转向角度，rad
 % 将规划结果写入文件，以和求解结果作对比
 writematrix(traj_x,'test.xlsx','WriteMode','append');   % 保存末端平台期望位置，期望姿态设为[0;0;0]
 writematrix(traj_y,'test.xlsx','WriteMode','append');
@@ -24,14 +25,17 @@ for i = 1:t_num
     [real_z, ~, real_cl, real_pose_cdpr] = inverse_kine(pose_traj, plan_result_last, param_cdpr);
     [real_pose, real_cf] = direct_kine(real_z, real_cl, real_pose_cdpr, plan_result_last, param_cdpr);
     
+    roll_angle = sqrt(sumsqr(real_pose_cdpr(1:2)-plan_result_last(19:20)))/param_cdpr.wheel_radius; % 车轮滚转角度，rad
+
     plan_result(:,i) = [real_z;real_cf;real_cl;real_pose;real_pose_cdpr]; 
     plan_result_last = [real_z;real_cf;real_cl;real_pose;real_pose_cdpr];    % 用来保证相邻轨迹点的求解结果不跳变
 
     % 正运动学求解的期望位姿，写入文件中，与实际位姿对比
-    fprintf(fid1, '%.5f,%.5f,%.5f,%.5f,%.5f,%.5f\n', real_pose);% 一行6个数据，用逗号分隔，每行结束后加上\n换行
+    fprintf(fid1, '%.5f,%.5f,%.5f,%.5f,%.5f,%.5f\n', real_pose);    % 一行6个数据，用逗号分隔，每行结束后加上\n换行
     % 将结果写入.csv文件，用来控制电机运行
-    fprintf(fid2, '%.5f,', real_z-param_cdpr.bp_z_init);
-    fprintf(fid2, '%.5f,%.5f,%.5f,%.5f\n', real_cl-param_cdpr.cl_init);% 一行8个数据，用逗号分隔，每行结束后加上\n换行 
+    fprintf(fid2, '%.5f,', real_z-param_cdpr.bp_z_init);    % 一行10个数据，用逗号分隔，每行结束后加上\n换行 
+    fprintf(fid2, '%.5f,%.5f,%.5f,%.5f,', real_cl-param_cdpr.cl_init);
+    fprintf(fid2, '%.5f,%.5f\n', steer_angle, roll_angle);
 end
 
 % 将求解结果写入文件，以便查看

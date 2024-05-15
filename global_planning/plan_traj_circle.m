@@ -37,14 +37,18 @@ for i=1:t_num
     [real_z, ~, real_cl, real_pose_cdpr] = inverse_kine(pose_traj, plan_result_last, param_cdpr);
     [real_pose, real_cf] = direct_kine(real_z, real_cl, real_pose_cdpr, plan_result_last, param_cdpr);
 
+    steer_angle = atan2(real_pose_cdpr(2)-plan_result_last(20), real_pose_cdpr(1)-plan_result_last(19)); % 车轮转向角度，rad
+    roll_angle = sqrt(sumsqr(real_pose_cdpr(1:2)-plan_result_last(19:20)))/param_cdpr.wheel_radius; % 车轮滚转角度，rad
+
     plan_result(:,i) = [real_z;real_cf;real_cl;real_pose;real_pose_cdpr]; 
     plan_result_last = [real_z;real_cf;real_cl;real_pose;real_pose_cdpr];% 用来保证相邻轨迹点的求解结果不跳变
 
     % 正运动学求解的期望位姿，写入文件中，与实际位姿对比
-    fprintf(fid1, '%.5f,%.5f,%.5f,%.5f,%.5f,%.5f\n', real_pose);% 一行6个数据，用逗号分隔，每行结束后加上\n换行
+    fprintf(fid1, '%.5f,%.5f,%.5f,%.5f,%.5f,%.5f\n', real_pose);    % 一行6个数据，用逗号分隔，每行结束后加上\n换行
     % 将结果写入.csv文件，用来控制电机运行
-    fprintf(fid2, '%.5f,', real_z-param_cdpr.bp_z_init);
-    fprintf(fid2, '%.5f,%.5f,%.5f,%.5f\n', real_cl-param_cdpr.cl_init);% 一行8个数据，用逗号分隔，每行结束后加上\n换行 
+    fprintf(fid2, '%.5f,', real_z-param_cdpr.bp_z_init);    % 一行10个数据，用逗号分隔，每行结束后加上\n换行 
+    fprintf(fid2, '%.5f,%.5f,%.5f,%.5f,', real_cl-param_cdpr.cl_init);
+    fprintf(fid2, '%.5f,%.5f\n', steer_angle, roll_angle);
 end
 
 % 将求解结果写入文件，以便查看

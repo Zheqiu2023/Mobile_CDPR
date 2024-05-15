@@ -24,13 +24,16 @@ traj_x=radius*cos(A_vec)+c_x;
 traj_y=radius*sin(A_vec)+c_y;
 traj_z=0*ones(1,t_num)+c_z;
 % 将规划结果写入文件，以和求解结果作对比
+% writematrix(traj_x,'test.xlsx','WriteMode','append');   % 保存末端平台期望位置，期望姿态设为[0;0;0]
+% writematrix(traj_y,'test.xlsx','WriteMode','append');
+% writematrix(traj_z,'test.xlsx','WriteMode','append');
 fid1 = fopen('ee_target_pose.csv', 'a', 'n', 'UTF-8');
 fid2 = fopen('test.csv', 'a', 'n', 'UTF-8');    % 创建一个csv文件,追加数据到文件末尾
 %% 求实际位姿
-real_Ax = zeros(1,t_num); real_Ay = zeros(1,t_num); real_Az = zeros(1,t_num);
+traj_Ax = zeros(1,t_num); traj_Ay = zeros(1,t_num); traj_Az = zeros(1,t_num);
 plan_result = zeros(18,t_num);
 for i = 1:t_num
-    pose_traj = [traj_x(i);traj_y(i);traj_z(i);real_Ax(i);real_Ay(i);real_Az(i)];
+    pose_traj = [traj_x(i);traj_y(i);traj_z(i);traj_Ax(i);traj_Ay(i);traj_Az(i)];
     [real_h, ~, real_cl] = inverse_kine(pose_traj, plan_result_last, param_cdpr);
     [real_pose, real_cf] = direct_kine(real_h, real_cl, plan_result_last, param_cdpr);
     

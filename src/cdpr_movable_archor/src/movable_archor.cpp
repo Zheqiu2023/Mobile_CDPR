@@ -22,14 +22,16 @@
 
 using namespace movable_archor;
 
-ArchorDriver::ArchorDriver(ros::NodeHandle& nh) : nh_(nh) {
+ArchorDriver::ArchorDriver(ros::NodeHandle& nh) : nh_(nh)
+{
     XmlRpc::XmlRpcValue cmd_config;
     if (!(nh_.getParam("reduction_ratio", reduction_ratio_) && nh_.getParam("encoder_lines_num", encoder_lines_num_) &&
           nh_.getParam("cmd_config", cmd_config)))
         ROS_ERROR("Some motor params are not given in namespace: '%s')", nh_.getNamespace().c_str());
 
     ROS_ASSERT(cmd_config.getType() == XmlRpc::XmlRpcValue::TypeStruct);
-    for (auto iter = cmd_config.begin(); iter != cmd_config.end(); ++iter) {
+    for (auto iter = cmd_config.begin(); iter != cmd_config.end(); ++iter)
+    {
         ROS_ASSERT(iter->second.hasMember("dev_ind") && iter->second.hasMember("can_ind") &&
                    iter->second.hasMember("driver_id") && iter->second.hasMember("direction"));
 
@@ -42,12 +44,12 @@ ArchorDriver::ArchorDriver(ros::NodeHandle& nh) : nh_(nh) {
         pub_cmd.cmd.ExternFlag = 0;  // 0 for standard frame, 1 for expanded frame
         pub_cmd.cmd.DataLen = 8;     // Data length 8 bytes
 
-        motor_data_.push_back(MotorData{.is_reset_ = false,
-                                        .driver_id_ = static_cast<int>(iter->second["driver_id"]),
-                                        .direction_ = static_cast<int>(iter->second["direction"]),
-                                        .target_pos_ = 0.0,
-                                        .last_pos_ = 0.0,
-                                        .pub_cmd_ = std::move(pub_cmd)});
+        motor_data_.push_back(MotorData{ .is_reset_ = false,
+                                         .driver_id_ = static_cast<int>(iter->second["driver_id"]),
+                                         .direction_ = static_cast<int>(iter->second["direction"]),
+                                         .target_pos_ = 0.0,
+                                         .last_pos_ = 0.0,
+                                         .pub_cmd_ = std::move(pub_cmd) });
     }
 
     pubs_.push_back(nh_.advertise<cdpr_bringup::CanCmd>("motor_cmd", 10));
@@ -58,13 +60,17 @@ ArchorDriver::ArchorDriver(ros::NodeHandle& nh) : nh_(nh) {
     cur_pos_pubs_.push_back(nh_.advertise<std_msgs::Float64>("/archor3_cur_pos", 10));
     subs_.push_back(nh_.subscribe("/archor_coor_z", 10, &ArchorDriver::cmdPosCallback, this));
     subs_.push_back(nh_.subscribe("/usbcan/motor_state", 10, &ArchorDriver::resetStateCB, this));
+
     ros::Duration(1.0).sleep();  // Sleep for 1s to ensure that the first message sent is received by USBCAN
 }
 
-void ArchorDriver::motorStateCB(const cdpr_bringup::CanFrame::ConstPtr& state) {
+void ArchorDriver::motorStateCB(const cdpr_bringup::CanFrame::ConstPtr& state)
+{
     int id = state->ID - 0x0b;
-    for (auto& motor_data : motor_data_) {
-        if (id == (motor_data.driver_id_ << 4)) {
+    for (auto& motor_data : motor_data_)
+    {
+        if (id == (motor_data.driver_id_ << 4))
+        {
             // 接收到电流、速度、位置等信息
             short real_velocity = (state->Data[2] << 8) | state->Data[3];
             int real_position =
@@ -79,10 +85,13 @@ void ArchorDriver::motorStateCB(const cdpr_bringup::CanFrame::ConstPtr& state) {
     }
 }
 
-void ArchorDriver::resetStateCB(const cdpr_bringup::CanFrame::ConstPtr& state) {
+void ArchorDriver::resetStateCB(const cdpr_bringup::CanFrame::ConstPtr& state)
+{
     int id = state->ID - 0x0c;
-    for (auto& motor_data : motor_data_) {
-        if (id == (motor_data.driver_id_ << 4) && state->Data[0] == 0x01) {
+    for (auto& motor_data : motor_data_)
+    {
+        if (id == (motor_data.driver_id_ << 4) && state->Data[0] == 0x01)
+        {
             // 接收到CTL1/CTL2的电平状态
             std::lock_guard<std::mutex> guard(state_mutex_);
             motor_data.is_reset_ = true;
@@ -91,10 +100,12 @@ void ArchorDriver::resetStateCB(const cdpr_bringup::CanFrame::ConstPtr& state) {
     }
 }
 
-void ArchorDriver::cmdPosCallback(const cdpr_bringup::TrajCmd::ConstPtr& pos) {
+void ArchorDriver::cmdPosCallback(const cdpr_bringup::TrajCmd::ConstPtr& pos)
+{
     std::lock_guard<std::mutex> guard(pos_mutex_);
     is_traj_end_ = pos->is_traj_end;
-    for (size_t i = 0; i < motor_data_.size(); ++i) {
+    for (size_t i = 0; i < motor_data_.size(); ++i)
+    {
         motor_data_[i].last_pos_ = motor_data_[i].target_pos_;
         motor_data_[i].target_pos_ = -pos->target[i] * motor_data_[i].direction_;
     }
@@ -102,10 +113,15 @@ void ArchorDriver::cmdPosCallback(const cdpr_bringup::TrajCmd::ConstPtr& pos) {
     // pos->target[3]);
 }
 
-void ArchorDriver::publishCmd(const cdpr_bringup::CanCmd& cmd_struct) { pubs_[0].publish(cmd_struct); }
+void ArchorDriver::publishCmd(const cdpr_bringup::CanCmd& cmd_struct)
+{
+    pubs_[0].publish(cmd_struct);
+}
 
-void ArchorDriver::init(RunMode mode, const int& period) {
-    for (auto& motor_data : motor_data_) {
+void ArchorDriver::init(RunMode mode, const int& period)
+{
+    for (auto& motor_data : motor_data_)
+    {
         // 发送复位指令
         motor_data.pub_cmd_.cmd.ID =
             0x000 | (motor_data.driver_id_ << 4);  // 复位指令（帧ID，由驱动器编号和功能序号决定）
@@ -113,14 +129,16 @@ void ArchorDriver::init(RunMode mode, const int& period) {
         publishCmd(motor_data.pub_cmd_);
     }
     ros::Duration(0.5).sleep();
-    for (auto& motor_data : motor_data_) {
+    for (auto& motor_data : motor_data_)
+    {
         // 发送模式选择指令
         motor_data.pub_cmd_.cmd.ID = 0x001 | (motor_data.driver_id_ << 4);   // 模式选择指令
         motor_data.pub_cmd_.cmd.Data[0] = static_cast<unsigned char>(mode);  // 选择mode对应模式
         publishCmd(motor_data.pub_cmd_);
     }
     ros::Duration(0.5).sleep();
-    for (auto& motor_data : motor_data_) {
+    for (auto& motor_data : motor_data_)
+    {
         // 发送配置指令
         std::fill(motor_data.pub_cmd_.cmd.Data.begin(), motor_data.pub_cmd_.cmd.Data.end(), 0x55);
         motor_data.pub_cmd_.cmd.ID = 0x00A | (motor_data.driver_id_ << 4);  // 配置指令
@@ -134,16 +152,19 @@ void ArchorDriver::init(RunMode mode, const int& period) {
 /**
  * @brief 按指定模式运行电机
  */
-void ArchorDriver::run() {
+void ArchorDriver::run()
+{
     init(RunMode::VEL, 0x05);
 
     int run_mode = nh_.param("run_mode", 0);
-    switch (run_mode) {
+    switch (run_mode)
+    {
         // reset
         case 0: {
             int target_vel = nh_.param("target_vel", 1000);  // 速度限制值(RPM)：0~32767
 
-            for (auto& motor_data : motor_data_) {
+            for (auto& motor_data : motor_data_)
+            {
                 motor_data.pub_cmd_.cmd.ID = 0x004 | (motor_data.driver_id_ << 4);  // 速度模式下的参数指令，非广播
                 motor_data.pub_cmd_.cmd.Data[0] = static_cast<unsigned char>((PWM_LIM >> 8) & 0xff);
                 motor_data.pub_cmd_.cmd.Data[1] = static_cast<unsigned char>(PWM_LIM & 0xff);
@@ -156,11 +177,15 @@ void ArchorDriver::run() {
 
             ROS_INFO("Anchors reseting...");
             // Reset: move to bottom
-            while (ros::ok()) {
+            while (ros::ok())
+            {
                 std::lock_guard<std::mutex> guard(state_mutex_);
-                for (auto& motor_data : motor_data_) {
-                    if (true == motor_data.is_reset_) {
-                        for (int i = 0; i < 4; ++i) motor_data.pub_cmd_.cmd.Data[i] = 0;
+                for (auto& motor_data : motor_data_)
+                {
+                    if (true == motor_data.is_reset_)
+                    {
+                        for (int i = 0; i < 4; ++i)
+                            motor_data.pub_cmd_.cmd.Data[i] = 0;
                         publishCmd(motor_data.pub_cmd_);
                     }
                 }
@@ -176,7 +201,8 @@ void ArchorDriver::run() {
         // 轨迹模式
         case 1: {
             int target_vel = nh_.param("target_vel", 1000);  // 速度限制值(RPM)：0~32767
-            for (auto& motor_data : motor_data_) {
+            for (auto& motor_data : motor_data_)
+            {
                 motor_data.pub_cmd_.cmd.ID = 0x004 | (motor_data.driver_id_ << 4);  // 速度模式下的参数指令，非广播
                 motor_data.pub_cmd_.cmd.Data[0] = static_cast<unsigned char>((PWM_LIM >> 8) & 0xff);
                 motor_data.pub_cmd_.cmd.Data[1] = static_cast<unsigned char>(PWM_LIM & 0xff);
@@ -189,11 +215,15 @@ void ArchorDriver::run() {
 
             ROS_INFO("Anchors reseting...");
             // Reset: move to bottom
-            while (ros::ok()) {
+            while (ros::ok())
+            {
                 std::lock_guard<std::mutex> guard(state_mutex_);
-                for (auto& motor_data : motor_data_) {
-                    if (true == motor_data.is_reset_) {
-                        for (int i = 0; i < 4; ++i) motor_data.pub_cmd_.cmd.Data[i] = 0;
+                for (auto& motor_data : motor_data_)
+                {
+                    if (true == motor_data.is_reset_)
+                    {
+                        for (int i = 0; i < 4; ++i)
+                            motor_data.pub_cmd_.cmd.Data[i] = 0;
                         publishCmd(motor_data.pub_cmd_);
                     }
                 }
@@ -205,11 +235,12 @@ void ArchorDriver::run() {
             }
 
             int cmd_pos = 0.0, cmd_vel = 0.0;  // 速度限制值(RPM)：0~32767
-            if (!(nh_.getParam("/traj/traj_period", traj_period_) && nh_.getParam("lead", lead_)))
+            if (!(nh_.getParam("/traj/cdpr_period", traj_period_) && nh_.getParam("lead", lead_)))
                 ROS_ERROR("Undefined parameter: traj_period, lead!");
 
             init(RunMode::VEL_POS, 0x00);
-            for (auto& motor_data : motor_data_) {
+            for (auto& motor_data : motor_data_)
+            {
                 motor_data.pub_cmd_.cmd.ID = 0x006 | (motor_data.driver_id_ << 4);  // 速度位置模式下的参数指令，非广播
                 motor_data.pub_cmd_.cmd.Data[0] = static_cast<unsigned char>((PWM_LIM >> 8) & 0xff);
                 motor_data.pub_cmd_.cmd.Data[1] = static_cast<unsigned char>(PWM_LIM & 0xff);
@@ -223,9 +254,11 @@ void ArchorDriver::run() {
             subs_.push_back(nh_.subscribe("/usbcan/motor_state", 10, &ArchorDriver::motorStateCB, this));
 
             // follow the trajectory
-            while (ros::ok()) {
+            while (ros::ok())
+            {
                 std::lock_guard<std::mutex> guard(pos_mutex_);
-                for (auto& motor_data : motor_data_) {
+                for (auto& motor_data : motor_data_)
+                {
                     cmd_pos =
                         motor_data.target_pos_ * 1000 * reduction_ratio_ * encoder_lines_num_ / lead_;  // m转换为qc
                     cmd_vel = std::fabs((motor_data.target_pos_ - motor_data.last_pos_) * 60 * 1000 * reduction_ratio_ /
@@ -242,7 +275,8 @@ void ArchorDriver::run() {
                     publishCmd(motor_data.pub_cmd_);
                 }
 
-                if (is_traj_end_) break;
+                if (is_traj_end_)
+                    break;
             }
 
             ros::Duration(2.0).sleep();  // buffering time for archors moving back to zero position
@@ -252,7 +286,8 @@ void ArchorDriver::run() {
         case 2: {
             std::string is_stall{};
             short target_vel = nh_.param("target_vel", 1000);  // 速度限制值(RPM)：-32768 ~ +32767
-            for (auto& motor_data : motor_data_) {
+            for (auto& motor_data : motor_data_)
+            {
                 motor_data.pub_cmd_.cmd.ID = 0x004 | (motor_data.driver_id_ << 4);  // 速度模式下的参数指令，非广播
                 motor_data.pub_cmd_.cmd.Data[0] = static_cast<unsigned char>((PWM_LIM >> 8) & 0xff);
                 motor_data.pub_cmd_.cmd.Data[1] = static_cast<unsigned char>(PWM_LIM & 0xff);
@@ -263,14 +298,19 @@ void ArchorDriver::run() {
                 publishCmd(motor_data.pub_cmd_);
             }
             ROS_INFO("Press p to stop moving: ");
-            while (ros::ok()) {
+            while (ros::ok())
+            {
                 getline(std::cin, is_stall);
-                if (is_stall == "p") break;
+                if (is_stall == "p")
+                    break;
             }
 
-            for (int i = 0; i < 5; ++i) {
-                for (auto& motor_data : motor_data_) {
-                    for (int i = 0; i < 4; ++i) motor_data.pub_cmd_.cmd.Data[i] = 0;
+            for (int i = 0; i < 5; ++i)
+            {
+                for (auto& motor_data : motor_data_)
+                {
+                    for (int i = 0; i < 4; ++i)
+                        motor_data.pub_cmd_.cmd.Data[i] = 0;
                     publishCmd(motor_data.pub_cmd_);
                 }
             }
@@ -281,7 +321,8 @@ void ArchorDriver::run() {
             std::string is_stall{};
             short target_vel = -nh_.param("target_vel", 1000);  // 速度限制值(RPM)：-32768 ~ +32767
 
-            for (auto& motor_data : motor_data_) {
+            for (auto& motor_data : motor_data_)
+            {
                 motor_data.pub_cmd_.cmd.ID = 0x004 | (motor_data.driver_id_ << 4);  // 速度模式下的参数指令，非广播
                 motor_data.pub_cmd_.cmd.Data[0] = static_cast<unsigned char>((PWM_LIM >> 8) & 0xff);
                 motor_data.pub_cmd_.cmd.Data[1] = static_cast<unsigned char>(PWM_LIM & 0xff);
@@ -293,14 +334,19 @@ void ArchorDriver::run() {
             }
 
             ROS_INFO("Press p to stop moving: ");
-            while (ros::ok()) {
+            while (ros::ok())
+            {
                 getline(std::cin, is_stall);
-                if (is_stall == "p") break;
+                if (is_stall == "p")
+                    break;
             }
 
-            for (int i = 0; i < 5; ++i) {
-                for (auto& motor_data : motor_data_) {
-                    for (int i = 0; i < 4; ++i) motor_data.pub_cmd_.cmd.Data[i] = 0;
+            for (int i = 0; i < 5; ++i)
+            {
+                for (auto& motor_data : motor_data_)
+                {
+                    for (int i = 0; i < 4; ++i)
+                        motor_data.pub_cmd_.cmd.Data[i] = 0;
                     publishCmd(motor_data.pub_cmd_);
                 }
             }

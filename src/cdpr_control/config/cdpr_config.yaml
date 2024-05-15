@@ -1,6 +1,5 @@
 chassis:
   update_rate: 400
-  timeout: 0.1
   accel: 1.0
   #  -------------
   # |  LF     RF  |       +X   
@@ -17,7 +16,7 @@ chassis:
       steer: 
         direction: 1.0
       roll:
-        direction: 1.0  
+        direction: -1.0   # 标签纸朝外
         radius: 0.1175
     w1:
       position: [ 0.557, -0.585 ]
@@ -31,7 +30,7 @@ chassis:
       steer: 
         direction: 1.0
       roll:
-        direction: 1.0  
+        direction: -1.0  
         radius: 0.1175
     w3:
       position: [ -0.557, -0.585 ]
@@ -42,4 +41,5 @@ chassis:
         radius: 0.1175
 
 traj:
-  traj_period: 0.5
+  cdpr_period: 0.01
+  chassis_period: 0.05

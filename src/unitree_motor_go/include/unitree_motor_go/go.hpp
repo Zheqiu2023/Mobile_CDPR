@@ -14,6 +14,7 @@
 #pragma once
 
 #include <ros/ros.h>
+#include <std_msgs/Bool.h>
 #include <std_msgs/Float64MultiArray.h>
 
 #include "serialPort/SerialPort.h"
@@ -24,7 +25,7 @@ struct MotorParam
 {
     int serial_num_;
     double zero_position_;
-    MotorCmd init_param_, motor_cmd_;
+    MotorCmd init_cmd_, motor_cmd_;
     MotorData motor_recv_;
 
     SerialPort* port_;
@@ -34,20 +35,26 @@ class GoControl
 {
   public:
     GoControl(ros::NodeHandle& nh);
-    void init();
-    void drive();
-    void stall();
     void operator()();
 
   private:
-    void setCmd(const std::vector<double>& cmd);
-    void setCommandCB(const std_msgs::Float64MultiArray::ConstPtr& cmd_pos);
-    void setAngleCB(const std_msgs::Float64MultiArray::ConstPtr& angle);
+    void init();
+    void drive();
+    void stall();
+
+    void setControlParam(const std::vector<double>& cmd);
+    void remoteControlCB(const std_msgs::Float64MultiArray::ConstPtr& angle);
+    void trajTrackingCB(const std_msgs::Float64MultiArray::ConstPtr& angle);
+    void startTrajCB(const std_msgs::Bool::ConstPtr& flag);
 
     double reduction_ratio_ = 0.0;
     std::vector<int> id_{};
     std::vector<std::string> port_name_{};
     std::vector<MotorParam> motor_param_;
+
+    double traj_period_ = 0.0;
+    bool start_traj_tracking_ = false;
+    std::vector<double> traj_{};
     std_msgs::Float64MultiArray pos_state_{};
 
     ros::V_Subscriber subs_;

@@ -1,32 +1,29 @@
 #pragma once
 
-#include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
-#include <std_msgs/Float64MultiArray.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <ros/ros.h>
+#include <std_msgs/Float64MultiArray.h>
 
+#include "cdpr_bringup/eigen_types.hpp"
 #include "cdpr_bringup/filters/filters.hpp"
 
-namespace chassis_ctrl
-{
-struct Wheelset
-{
+namespace chassis_ctrl {
+struct Wheelset {
     Vec2<double> position_;
     double roll_direction_, steer_direction_, wheel_radius_;
 };
 
-class ChassisCtrl
-{
-  public:
+class ChassisCtrl {
+   public:
     ChassisCtrl(ros::NodeHandle& nh);
-    void update(const ros::Time& time);
+    void update();
 
-  private:
+   private:
     void moveJoint();
     void chassisCmdCB(const geometry_msgs::TwistStampedConstPtr& msg);
     void steerStateCB(const std_msgs::Float64MultiArray::ConstPtr& state);
 
-    double timeout_{};
     std::string name_space_{};
     std::vector<Wheelset> wheelsets_{};
     std::vector<double> last_angle_{};

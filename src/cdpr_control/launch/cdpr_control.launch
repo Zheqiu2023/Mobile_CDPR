@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
     <rosparam command="load" file="$(find cdpr_control)/config/cdpr_config.yaml"/>
-    <!-- <node pkg="cdpr_control" type="chassis_ctrl" name="chassis" output="screen" clear_params="true"/> -->
-    <node pkg="cdpr_control" type="local_traj_ctrl" name="traj" output="screen" clear_params="true"/>
+    <node pkg="cdpr_control" type="chassis_ctrl" name="chassis" output="screen" clear_params="true"/>
+    <!-- <node pkg="cdpr_control" type="local_traj_ctrl" name="traj" output="screen" clear_params="true"/> -->
     <!-- <node pkg="cdpr_control" type="global_traj_ctrl" name="traj" output="screen" clear_params="true"/> -->
 </launch>

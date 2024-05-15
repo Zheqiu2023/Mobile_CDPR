@@ -14,40 +14,42 @@
 #pragma once
 
 #include <ros/ros.h>
+#include <std_msgs/Bool.h>
 #include <std_msgs/Float64MultiArray.h>
 
 #include "serialPort/SerialPort.h"
 
-namespace motor_a1
-{
-struct MotorParam
-{
-    int serial_num_;
+namespace motor_a1 {
+struct MotorParam {
+    int serial_num_, direction_;
     double zero_position_, last_pos_;
-    MotorCmd init_param_, motor_cmd_;
+    MotorCmd init_cmd_, motor_cmd_;
     MotorData motor_recv_;
 
     SerialPort* port_;
 };
 
-class A1Control
-{
-  public:
-    A1Control(ros::NodeHandle nh);
+class A1Control {
+   public:
+    A1Control(ros::NodeHandle& nh);
+    void operator()();
+
+   private:
     void init();
     void drive();
     void stall();
-    void operator()();
 
-  private:
-    void setCmd(const std::vector<double>& cmd);
-    void setCommandCB(const std_msgs::Float64MultiArray::ConstPtr& cmd_vel);
-    void setPosCB(const std_msgs::Float64MultiArray::ConstPtr& pos);
+    void setControlParam(const std::vector<double>& cmd);
+    void remoteControlCB(const std_msgs::Float64MultiArray::ConstPtr& vel);
+    void trajTrackingCB(const std_msgs::Float64MultiArray::ConstPtr& vel);
+    void startTrajCB(const std_msgs::Bool::ConstPtr& flag);
 
     double reduction_ratio_ = 0.0, wheel_radius_ = 0.0;
-    std::vector<int> id_{};
-    std::vector<std::string> port_name_{};
     std::vector<MotorParam> motor_param_;
+
+    double traj_period_ = 0.0;
+    bool start_traj_tracking_ = false;
+    std::vector<double> traj_{};
 
     ros::V_Subscriber subs_;
     ros::Publisher pub_;

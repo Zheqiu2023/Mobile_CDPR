@@ -12,9 +12,7 @@
  */
 #include "cdpr_cable_archor/cable_archor.hpp"
 
-#include <std_msgs/Bool.h>
 #include <unistd.h>
-
 #include <algorithm>
 #include <vector>
 
@@ -45,9 +43,7 @@ void BaseDriver::setVelPos(VCI_CAN_OBJ& cmd, const int& driver_id, const int& ta
 void BaseDriver::sendCmd(CanCmd& cmd_struct)
 {
     if (VCI_Transmit(VCI_USBCAN2, cmd_struct.dev_ind, cmd_struct.can_ind, &cmd_struct.cmd, 1) <= 0)
-    {
         ROS_ERROR("USBCAN%d CAN%d failed to send command!", cmd_struct.dev_ind, cmd_struct.can_ind);
-    }
 }
 
 ArchorDriver::ArchorDriver(ros::NodeHandle& nh)
@@ -82,18 +78,20 @@ ArchorDriver::ArchorDriver(ros::NodeHandle& nh)
     }
 
     pub_ = nh_.advertise<std_msgs::Bool>("/movable_archor/ready_state", 1);
-    sub_ = nh_.subscribe("/archor_coor_z", 1, &ArchorDriver::cmdPosCallback, this, ros::TransportHints().tcpNoDelay());
-    ros::Duration(1.0).sleep();  // Sleep for 1s to ensure that the first message sent is received by USBCAN
+    subs_.push_back(nh_.subscribe("/archor_coor_z", 1, &ArchorDriver::cmdPosCallback, this));
+    subs_.push_back(nh_.subscribe("/start_traj_tracking", 10, &ArchorDriver::startTrajCB, this));
+
+    // ros::Duration(1).sleep();
 }
 
-void ArchorDriver::cmdPosCallback(const cdpr_bringup::TrajCmd::ConstPtr& pos)
+void ArchorDriver::cmdPosCallback(const std_msgs::Float64MultiArray::ConstPtr& pos)
 {
-    is_traj_end_ = pos->is_traj_end;
-    for (size_t i = 0; i < motor_data_.size(); ++i)
-    {
-        motor_data_[i].last_pos_ = motor_data_[i].target_pos_;
-        motor_data_[i].target_pos_ = -pos->target[i] * motor_data_[i].direction_;
-    }
+    traj_ = std::move(pos->data);
+}
+
+void ArchorDriver::startTrajCB(const std_msgs::Bool::ConstPtr& flag)
+{
+    start_traj_tracking_ = flag->data;
 }
 
 void ArchorDriver::init(RunMode mode, const int& period)
@@ -159,13 +157,13 @@ void* ArchorDriver::threadFunc(void* arg)
  */
 void ArchorDriver::run()
 {
-    init(RunMode::VEL, 0x05);
-
     int run_mode = nh_.param("archor_config/run_mode", 0);
     switch (run_mode)
     {
-        // reset
+        // 回到底部
         case 0: {
+            init(RunMode::VEL, 0x05);
+
             int target_vel = nh_.param("archor_config/target_vel", 1000);  // 速度限制值(RPM)：0~32767
 
             for (auto& motor_data : motor_data_)
@@ -198,66 +196,46 @@ void ArchorDriver::run()
         }
         // 轨迹模式
         case 1: {
-            int target_vel = nh_.param("archor_config/target_vel", 1000);  // 速度限制值(RPM)：0~32767
-            for (auto& motor_data : motor_data_)
-            {
-                setVel(motor_data.pub_cmd_.cmd, motor_data.driver_id_, target_vel * motor_data.direction_);
-                sendCmd(motor_data.pub_cmd_);
-            }
-
-            ROS_INFO("Anchors reseting...");
-            // Reset: move to bottom
-            while (ros::ok())
-            {
-                for (auto& motor_data : motor_data_)
-                {
-                    if (true == motor_data.is_reset_)
-                    {
-                        for (int i = 0; i < 4; ++i)
-                            motor_data.pub_cmd_.cmd.Data[i] = 0;
-                        sendCmd(motor_data.pub_cmd_);
-                    }
-                }
-
-                if (std::all_of(motor_data_.begin(), motor_data_.end(), [](const ArchorData& motor_data) {
-                        return motor_data.is_reset_;
-                    }))  // all archores reset successfully
-                    break;
-            }
-
             int cmd_pos = 0.0, cmd_vel = 0.0;  // 速度限制值(RPM)：0~32767
-            init(RunMode::VEL_POS, 0x00);
-            if (!(nh_.getParam("/traj/traj_period", traj_period_) && nh_.getParam("archor_config/lead", lead_)))
+            if (!(nh_.getParam("/traj/cdpr_period", traj_period_) && nh_.getParam("archor_config/lead", lead_)))
                 ROS_ERROR("Undefined parameter: traj_period, lead!");
+
+            init(RunMode::VEL_POS, 0x00);
 
             std_msgs::Bool is_ready{};
             is_ready.data = true;
             pub_.publish(is_ready);
             ROS_INFO("Movable archor reset done, ready to follow the trajectory!");
+            while (ros::ok() && !start_traj_tracking_)
+                ros::spinOnce();
 
             // follow the trajectory
-            while (ros::ok())
+            for (size_t i = 0; i < traj_.size() / 4; ++i)
             {
-                for (auto& motor_data : motor_data_)
-                {
-                    cmd_pos =
-                        motor_data.target_pos_ * 1000 * reduction_ratio_ * encoder_lines_num_ / lead_;  // m转换为qc
-                    cmd_vel = std::fabs((motor_data.target_pos_ - motor_data.last_pos_) * 60 * 1000 * reduction_ratio_ /
-                                        (traj_period_ * lead_));
-
-                    setVelPos(motor_data.pub_cmd_.cmd, motor_data.driver_id_, cmd_vel, cmd_pos);
-                    sendCmd(motor_data.pub_cmd_);
-                }
-
-                if (is_traj_end_)
+                if (false == start_traj_tracking_)
                     break;
+
+                for (size_t j = 0; j < motor_data_.size(); ++j)
+                {
+                    motor_data_[j].last_pos_ = motor_data_[j].target_pos_;
+                    motor_data_[j].target_pos_ = -traj_[i * 4 + j] * motor_data_[j].direction_;
+                    cmd_pos =
+                        motor_data_[j].target_pos_ * 1000 * reduction_ratio_ * encoder_lines_num_ / lead_;  // m转换为qc
+                    cmd_vel = std::fabs((motor_data_[j].target_pos_ - motor_data_[j].last_pos_) * 60 * 1000 *
+                                        reduction_ratio_ / (traj_period_ * lead_));
+
+                    setVelPos(motor_data_[j].pub_cmd_.cmd, motor_data_[j].driver_id_, cmd_vel, cmd_pos);
+                    sendCmd(motor_data_[j].pub_cmd_);
+                }
+                ros::Duration(traj_period_).sleep();
             }
 
-            ros::Duration(2.0).sleep();  // buffering time for archors moving back to zero position
             break;
         }
         // 靠近电机
         case 2: {
+            init(RunMode::VEL, 0);
+
             std::string is_stall{};
             short target_vel = nh_.param("archor_config/target_vel", 1000);  // 速度限制值(RPM)：-32768 ~ +32767
             for (auto& motor_data : motor_data_)
@@ -273,19 +251,19 @@ void ArchorDriver::run()
                     break;
             }
 
-            for (int i = 0; i < 5; ++i)
+            for (auto& motor_data : motor_data_)
             {
-                for (auto& motor_data : motor_data_)
-                {
-                    for (int i = 0; i < 4; ++i)
-                        motor_data.pub_cmd_.cmd.Data[i] = 0;
-                    sendCmd(motor_data.pub_cmd_);
-                }
+                for (int i = 0; i < 4; ++i)
+                    motor_data.pub_cmd_.cmd.Data[i] = 0;
+                sendCmd(motor_data.pub_cmd_);
             }
+
             break;
         }
         // 远离电机
         case 3: {
+            init(RunMode::VEL, 0);
+
             std::string is_stall{};
             short target_vel = -nh_.param("archor_config/target_vel", 1000);  // 速度限制值(RPM)：-32768 ~ +32767
 
@@ -303,15 +281,13 @@ void ArchorDriver::run()
                     break;
             }
 
-            for (int i = 0; i < 5; ++i)
+            for (auto& motor_data : motor_data_)
             {
-                for (auto& motor_data : motor_data_)
-                {
-                    for (int i = 0; i < 4; ++i)
-                        motor_data.pub_cmd_.cmd.Data[i] = 0;
-                    sendCmd(motor_data.pub_cmd_);
-                }
+                for (int i = 0; i < 4; ++i)
+                    motor_data.pub_cmd_.cmd.Data[i] = 0;
+                sendCmd(motor_data.pub_cmd_);
             }
+
             break;
         }
         default:
@@ -351,20 +327,20 @@ CableDriver::CableDriver(ros::NodeHandle& nh)
     }
 
     pub_ = nh_.advertise<std_msgs::Bool>("/maxon_re35/ready_state", 1);
-    sub_ = nh_.subscribe("/cable_length", 1, &CableDriver::cmdCableLengthCB, this, ros::TransportHints().tcpNoDelay());
-    ros::Duration(1.0).sleep();  // Sleep for 1s to ensure that the first message sent is received by USBCAN
+    subs_.push_back(nh_.subscribe("/cable_length", 1, &CableDriver::cmdCableLengthCB, this));
+    subs_.push_back(nh_.subscribe("/start_traj_tracking", 10, &CableDriver::startTrajCB, this));
+
+    // ros::Duration(1).sleep();
 }
 
-void CableDriver::cmdCableLengthCB(const cdpr_bringup::TrajCmd::ConstPtr& length)
+void CableDriver::cmdCableLengthCB(const std_msgs::Float64MultiArray::ConstPtr& length)
 {
-    ROS_INFO("Current time is: %16f", ros::Time::now().toSec());  // 打印，%16f表示的是16位宽度的float类型的数字;
+    traj_ = std::move(length->data);
+}
 
-    is_traj_end_ = length->is_traj_end;
-    for (size_t i = 0; i < motor_data_.size(); ++i)
-    {
-        motor_data_[i].last_pos_ = motor_data_[i].target_pos_;
-        motor_data_[i].target_pos_ = length->target[i] * motor_data_[i].direction_;
-    }
+void CableDriver::startTrajCB(const std_msgs::Bool::ConstPtr& flag)
+{
+    start_traj_tracking_ = flag->data;
 }
 
 void CableDriver::init(const int& run_mode)
@@ -464,32 +440,37 @@ void CableDriver::run()
         // 轨迹模式
         case 1: {
             int cmd_pos = 0.0, cmd_vel = 0.0;  // 速度限制值(RPM)：0~32767
-            if (!(nh_.getParam("/traj/traj_period", traj_period_)))
+            if (!(nh_.getParam("/traj/cdpr_period", traj_period_)))
                 ROS_ERROR("Some motor params are not given in namespace: 'traj'");
 
             std_msgs::Bool is_ready{};
             is_ready.data = true;
             pub_.publish(is_ready);
             ROS_INFO("Motor RE35 Reset done, ready to follow the trajectory!");
+            while (ros::ok() && !start_traj_tracking_)
+                ros::spinOnce();
 
             // follow the trajectory
-            while (ros::ok())
+            for (size_t i = 0; i < traj_.size() / 4; ++i)
             {
-                for (auto& motor_data : motor_data_)
+                if (false == start_traj_tracking_)
+                    break;
+
+                for (size_t j = 0; j < motor_data_.size(); ++j)
                 {
-                    cmd_pos = std::round(motor_data.target_pos_ * reduction_ratio_ * encoder_lines_num_ /
+                    motor_data_[j].last_pos_ = motor_data_[j].target_pos_;
+                    motor_data_[j].target_pos_ = traj_[i * 4 + j] * motor_data_[j].direction_;
+                    cmd_pos = std::round(motor_data_[j].target_pos_ * reduction_ratio_ * encoder_lines_num_ /
                                          (M_PI * reel_diameter_));  // m转换为qc
-                    cmd_vel = std::ceil(std::fabs((motor_data.target_pos_ - motor_data.last_pos_) * 60 *
+                    cmd_vel = std::ceil(std::fabs((motor_data_[j].target_pos_ - motor_data_[j].last_pos_) * 60 *
                                                   reduction_ratio_ / (traj_period_ * M_PI * reel_diameter_)));
 
-                    setVelPos(motor_data.pub_cmd_.cmd, motor_data.driver_id_, cmd_vel, cmd_pos);
-                    sendCmd(motor_data.pub_cmd_);
+                    setVelPos(motor_data_[j].pub_cmd_.cmd, motor_data_[j].driver_id_, cmd_vel, cmd_pos);
+                    sendCmd(motor_data_[j].pub_cmd_);
                 }
-                if (is_traj_end_)
-                    break;
+                ros::Duration(traj_period_).sleep();
             }
 
-            ros::Duration(2.0).sleep();  // buffering time for motors moving back to zero position
             break;
         }
         // 收绳: 按下按键 p
@@ -564,7 +545,7 @@ int CableDriver::scanKeyboard()
     return in;
 }
 
-UsbCan::UsbCan(ros::NodeHandle nh) : nh_(nh)
+UsbCan::UsbCan(ros::NodeHandle& nh) : nh_(nh)
 {
     archor_pos_pubs_.push_back(nh_.advertise<std_msgs::Float64>("/archor0_cur_pos", 1));
     archor_pos_pubs_.push_back(nh_.advertise<std_msgs::Float64>("/archor1_cur_pos", 1));

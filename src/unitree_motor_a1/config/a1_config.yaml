@@ -1,13 +1,14 @@
 id: [0, 0, 0, 0]
 # 4个port分别对应LF RF LB RB
-port_name: ["/dev/ttyUSB0","/dev/ttyUSB1","/dev/ttyUSB2","/dev/ttyUSB3"]  # 串口控制权限在/etc/udev/rules.d/70-ttyusb.rules中
+port_name: ["/dev/ttyUSB0","/dev/ttyUSB1","/dev/ttyUSB2","/dev/ttyUSB3"]  # 串口控制权限在/etc/udev/rules.d/70-ttyusb.rules中   
+direction: [-1, 1, -1, 1]   # 标签纸朝外
 reduction_ratio: 9.1   # 减速比
-wheel_radius: 0.1175
+wheel_radius: 0.1175  # 车轮半径
 
-cmd_type: 1 # 0：键盘远程控制，1：按轨迹运行，2：位置控制，3：贝塞尔轨迹规划，4：五次多项式轨迹规划
+cmd_type: 0 # 0：键盘远程控制，1：轨迹跟踪，2：位置控制，3：贝塞尔轨迹规划，4：五次多项式轨迹规划
 
 motor_ctrl_data:
-  mode: 10   # 控制方式：空闲==0，开环==5，FOC闭环控制==10
+  mode: 10   # 控制方式：空闲=0，开环=5，FOC闭环控制=10
   ctrl_frequency: 500   # 控制频率
 
   #FOC闭环控制参数

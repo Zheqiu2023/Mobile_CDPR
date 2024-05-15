@@ -18,6 +18,9 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "unitree_motor_a1");
     ros::NodeHandle nh("~");
 
+    ros::AsyncSpinner spinner(1);
+    spinner.start();
+
     motor_a1::A1Control a1_control(nh);
     a1_control();
 

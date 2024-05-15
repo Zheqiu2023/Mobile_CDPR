@@ -14,12 +14,11 @@
 
 #include <ros/ros.h>
 #include <std_msgs/Float64.h>
+#include <std_msgs/Bool.h>
+#include <std_msgs/Float64MultiArray.h>
 #include <stdio.h>
 #include <termio.h>
 
-#include <mutex>
-
-#include "cdpr_bringup/TrajCmd.h"
 #include "cdpr_bringup/usb_can/controlcan.h"
 
 namespace cable_archor
@@ -48,11 +47,11 @@ class BaseDriver
 
     int reduction_ratio_ = 0, encoder_lines_num_ = 0;
     double traj_period_ = 0.0;
-    bool is_traj_end_ = false;
+    bool start_traj_tracking_ = false;
 
     ros::NodeHandle nh_;
     ros::Publisher pub_;
-    ros::Subscriber sub_;
+    ros::V_Subscriber subs_;
 };
 
 struct CableData
@@ -74,10 +73,13 @@ class CableDriver : public BaseDriver
   private:
     static void* threadFunc(void* arg);
     void init(const int& run_mode);
-    void cmdCableLengthCB(const cdpr_bringup::TrajCmd::ConstPtr& length);
     int scanKeyboard();
 
+    void cmdCableLengthCB(const std_msgs::Float64MultiArray::ConstPtr& length);
+    void startTrajCB(const std_msgs::Bool::ConstPtr& flag);
+
     double reel_diameter_ = 0.0;
+    std::vector<double> traj_{};
     std::vector<CableData> motor_data_{};
 };
 
@@ -101,9 +103,12 @@ class ArchorDriver : public BaseDriver
   private:
     static void* threadFunc(void* arg);
     void init(RunMode mode, const int& period);
-    void cmdPosCallback(const cdpr_bringup::TrajCmd::ConstPtr& pos);
+
+    void cmdPosCallback(const std_msgs::Float64MultiArray::ConstPtr& pos);
+    void startTrajCB(const std_msgs::Bool::ConstPtr& flag);
 
     int lead_ = 0;
+    std::vector<double> traj_{};
     std::vector<ArchorData> motor_data_{};
 };
 
@@ -116,7 +121,7 @@ enum class MotorType
 class UsbCan
 {
   public:
-    UsbCan(ros::NodeHandle nh);
+    UsbCan(ros::NodeHandle& nh);
     ~UsbCan();
     void can_receive(CableDriver& cable_driver, ArchorDriver& archor_driver);
 

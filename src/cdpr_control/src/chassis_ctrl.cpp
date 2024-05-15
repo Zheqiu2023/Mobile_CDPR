@@ -1,14 +1,11 @@
+#include "cdpr_control/chassis_ctrl.hpp"
+
 #include <angles/angles.h>
 
 #include "cdpr_bringup/eigen_types.hpp"
-#include "cdpr_control/chassis_ctrl.hpp"
 
 using namespace chassis_ctrl;
 
-/**
- * @brief set the chassis command
- * @param  cmd
- */
 void ChassisCtrl::chassisCmdCB(const geometry_msgs::TwistStampedConstPtr& cmd)
 {
     chassis_cmd_ = std::move(*cmd);
@@ -22,12 +19,11 @@ void ChassisCtrl::steerStateCB(const std_msgs::Float64MultiArray::ConstPtr& stat
 ChassisCtrl::ChassisCtrl(ros::NodeHandle& nh) : nh_(nh)
 {
     name_space_ = nh_.getNamespace();
-    ROS_INFO_STREAM("class ChassisCtrl namespace: " << name_space_);
 
     // get parameters from .yaml file
     XmlRpc::XmlRpcValue wheelsets;
     double accel = 0.0;
-    if (!nh_.getParam("wheelsets", wheelsets) || !nh_.getParam("accel", accel) || !nh_.getParam("timeout", timeout_))
+    if (!nh_.getParam("wheelsets", wheelsets) || !nh_.getParam("accel", accel))
     {
         ROS_ERROR("Some chassis params are not given in namespace: '%s')", name_space_.c_str());
         return;
@@ -68,14 +64,13 @@ ChassisCtrl::ChassisCtrl(ros::NodeHandle& nh) : nh_(nh)
     }
 
     // Start command subscriber and publisher
-    cmd_chassis_sub_ = nh_.subscribe<geometry_msgs::TwistStamped>("/cmd_chassis", 1, &ChassisCtrl::chassisCmdCB, this);
-    state_steer_sub_ =
-        nh_.subscribe<std_msgs::Float64MultiArray>("/steer_pos_state", 10, &ChassisCtrl::steerStateCB, this);
-    cmd_wheelset_pubs_.push_back(nh_.advertise<std_msgs::Float64MultiArray>("/steer_pos_cmd", 100));
-    cmd_wheelset_pubs_.push_back(nh_.advertise<std_msgs::Float64MultiArray>("/roll_vel_cmd", 100));
+    cmd_chassis_sub_ = nh_.subscribe("/cmd_chassis", 1, &ChassisCtrl::chassisCmdCB, this);
+    state_steer_sub_ = nh_.subscribe("/current_steer_angle", 10, &ChassisCtrl::steerStateCB, this);
+    cmd_wheelset_pubs_.push_back(nh_.advertise<std_msgs::Float64MultiArray>("/remote_steer_angle", 100));
+    cmd_wheelset_pubs_.push_back(nh_.advertise<std_msgs::Float64MultiArray>("/remote_roll_vel", 100));
 }
 
-void ChassisCtrl::update(const ros::Time& time)
+void ChassisCtrl::update()
 {
     cmd_vel_.x = chassis_cmd_.twist.linear.x;
     cmd_vel_.y = chassis_cmd_.twist.linear.y;
@@ -108,10 +103,11 @@ void ChassisCtrl::moveJoint()
             // Direction flipping and Stray wheelset mitigation
             double a = angles::shortest_angular_distance(steer_state_.data[i], vel_angle);
             double b = angles::shortest_angular_distance(steer_state_.data[i], vel_angle + M_PI);
-            if (std::abs(a) > std::abs(b))
-                target_angle = (vel_angle + M_PI) > M_PI ? angles::normalize_angle(vel_angle + M_PI) : vel_angle + M_PI;
-            else
-                target_angle = vel_angle;
+
+            target_angle =
+                (std::abs(a) > std::abs(b)) ?
+                    ((vel_angle + M_PI) > M_PI ? angles::normalize_angle(vel_angle + M_PI) : vel_angle + M_PI) :
+                    vel_angle;
             last_angle_[i] = target_angle;
             target_vel = vel.norm() / wheelsets_[i].wheel_radius_ * std::cos(a) * wheelsets_[i].roll_direction_;
         }
@@ -136,13 +132,11 @@ int main(int argc, char** argv)
     ros::AsyncSpinner spinner(2);
     spinner.start();
 
-    ROS_ASSERT(nh.hasParam("update_rate"));
     int update_rate = nh.param("update_rate", 200);
-
     ros::Rate loop_rate(update_rate);
     while (ros::ok())
     {
-        chassis_ctrl.update(ros::Time::now());
+        chassis_ctrl.update();
         loop_rate.sleep();
     }
 

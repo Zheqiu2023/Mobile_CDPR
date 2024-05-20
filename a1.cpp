@@ -16,18 +16,18 @@ using namespace motor_a1;
 A1Driver::A1Driver(QObject* parent)
 {
     // open serial port
-    Q_ASSERT(4 == port_name_.size());
-    static std::array<SerialPort, 4> serial_port{ SerialPort(port_name_[0]), SerialPort(port_name_[1]),
-                                                  SerialPort(port_name_[2]), SerialPort(port_name_[3]) };
-    motor_param_.resize(serial_port.size());
-    for (size_t i = 0; i < motor_param_.size(); ++i)
-    {
-        motor_param_[i].serial_num_ = i;
-        motor_param_[i].init_param_.id = static_cast<unsigned short>(id_[i]);
-        motor_param_[i].motor_cmd_.id = static_cast<unsigned short>(id_[i]);
-        motor_param_[i].port_ = &serial_port[i];
-    }
-    init();
+    // Q_ASSERT(4 == port_name_.size());
+    // static std::array<SerialPort, 4> serial_port{ SerialPort(port_name_[0]), SerialPort(port_name_[1]),
+    //                                               SerialPort(port_name_[2]), SerialPort(port_name_[3]) };
+    // motor_param_.resize(serial_port.size());
+    // for (size_t i = 0; i < motor_param_.size(); ++i)
+    // {
+    //     motor_param_[i].serial_num_ = i;
+    //     motor_param_[i].init_cmd_.id = static_cast<unsigned short>(id_[i]);
+    //     motor_param_[i].motor_cmd_.id = static_cast<unsigned short>(id_[i]);
+    //     motor_param_[i].port_ = &serial_port[i];
+    // }
+    // init();
 }
 
 void A1Driver::setCmd(const std::vector<double>& cmd, const RunMode& mode)
@@ -47,8 +47,8 @@ void A1Driver::init()
     for (auto& motor_param : motor_param_)
     {
         // initial parameters
-        motor_param.init_param_.mode = 0;
-        motor_param.port_->sendRecv(&motor_param.init_param_, &motor_param.motor_recv_);
+        motor_param.init_cmd_.mode = static_cast<unsigned short>(RunMode::FREE);
+        motor_param.port_->sendRecv(&motor_param.init_cmd_, &motor_param.motor_recv_);
         // get current position and set it as zero point
         motor_param.zero_position_ = motor_param.motor_recv_.Pos;
         motor_param.last_pos_ = motor_param.motor_recv_.Pos;
@@ -92,7 +92,8 @@ void A1Driver::runTraj(const double& period, const QList<QList<double>>& traj)
         for (size_t i = 0; i < motor_param_.size(); ++i)
         {
             motor_param_[i].motor_cmd_.W = iter->at(i) * reduction_ratio_;
-            motor_param_[i].port_->sendRecv(&motor_param_[i].motor_cmd_, &motor_param_[i].motor_recv_);
+            // motor_param_[i].port_->sendRecv(&motor_param_[i].motor_cmd_, &motor_param_[i].motor_recv_);
+            qInfo("Received cmd of motor A1[%d]: %f", motor_param_[i].serial_num_, iter->at(i));
 
             cur_time = QDateTime::currentMSecsSinceEpoch();
             message = QString(u8"%1, %2, %3").arg(cur_time).arg(motor_param_[i].serial_num_).arg(iter->at(i));
@@ -117,8 +118,9 @@ void A1Driver::recvVel(const std::vector<double>& cmd_vel)
     for (size_t i = 0; i < motor_param_.size(); ++i)
     {
         motor_param_[i].motor_cmd_.W = cmd_vel[i] * reduction_ratio_;
-        motor_param_[i].port_->sendRecv(&motor_param_[i].motor_cmd_, &motor_param_[i].motor_recv_);
-        qInfo("Received velocity of motor A1[%d]: %f", motor_param_[i].serial_num_, motor_param_[i].motor_recv_.W);
+        qInfo("Received cmd of motor A1[%d]: %f", motor_param_[i].serial_num_, cmd_vel[i]);
+        // motor_param_[i].port_->sendRecv(&motor_param_[i].motor_cmd_, &motor_param_[i].motor_recv_);
+        // qInfo("Received velocity of motor A1[%d]: %f", motor_param_[i].serial_num_, motor_param_[i].motor_recv_.W);
     }
 }
 
@@ -126,7 +128,7 @@ void A1Driver::stall()
 {
     for (auto& motor_param : motor_param_)
     {
-        while (!(motor_param.port_->sendRecv(&motor_param.init_param_, &motor_param.motor_recv_)))
+        while (!(motor_param.port_->sendRecv(&motor_param.init_cmd_, &motor_param.motor_recv_)))
             QThread::msleep(100);
         qDebug() << "position: " << motor_param.motor_recv_.Pos << motor_param.motor_recv_.T;
     }

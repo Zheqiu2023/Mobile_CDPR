@@ -1,6 +1,7 @@
 #ifndef __IOPORT_H
 #define __IOPORT_H
 
+#include <bits/types/struct_timeval.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <vector>

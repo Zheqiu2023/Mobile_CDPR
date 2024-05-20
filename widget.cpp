@@ -57,7 +57,7 @@ Widget::Widget(QWidget* parent) : QWidget(parent), ui(new Ui::Widget)
 
     connect(this, &Widget::sendChassisVel, chassis_, &chassis_ctrl::ChassisCtrl::updateVel);
     connect(chassis_, &chassis_ctrl::ChassisCtrl::sendA1Vel, a1_, &motor_a1::A1Driver::recvVel);
-    connect(chassis_, &chassis_ctrl::ChassisCtrl::sendGOVel, go_, &motor_go::GoDriver::recvAngle);
+    connect(chassis_, &chassis_ctrl::ChassisCtrl::sendGOPos, go_, &motor_go::GoDriver::recvAngle);
     connect(go_, &motor_go::GoDriver::sendSteerState, chassis_, &chassis_ctrl::ChassisCtrl::updateSteerState);
 
     // mode button
@@ -153,7 +153,7 @@ void Widget::selectChassisMode(bool checked)
         else if (1 == chassisModeGroup->checkedId())
         {
             chassis_->stopRun();
-            a1_->setCmd(std::vector<double>{ ui->a1VelKw->value() });
+            a1_->setCmd(std::vector<double>{ 0, ui->a1VelKw->value() });
             go_->setCmd(std::vector<double>{ ui->goPosKp->value(), ui->goPosKw->value() });
         }
     }

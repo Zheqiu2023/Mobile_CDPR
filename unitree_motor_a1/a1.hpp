@@ -2,7 +2,7 @@
 
 #include <QThread>
 
-#include "serialPort/SerialPort.h"
+#include "unitree_motor_a1/serialPort/SerialPort.h"
 
 namespace motor_a1
 {
@@ -17,7 +17,7 @@ struct MotorParam
 {
     int serial_num_;
     double zero_position_, last_pos_;
-    MotorCmd init_param_, motor_cmd_;
+    MotorCmd init_cmd_, motor_cmd_;
     MotorData motor_recv_;
 
     SerialPort* port_;
@@ -43,6 +43,6 @@ class A1Driver : public QObject
     const std::vector<std::string> port_name_{ "/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3" };
 
     bool stop_run_ = false;
-    std::vector<MotorParam> motor_param_;
+    std::vector<MotorParam> motor_param_{};
 };
 }  // namespace motor_a1

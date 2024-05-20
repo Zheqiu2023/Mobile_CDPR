@@ -16,19 +16,20 @@ using namespace motor_go;
 GoDriver::GoDriver(QObject* parent)
 {
     // open serial port
-    Q_ASSERT(4 == port_name_.size());
-    static std::array<SerialPort, 4> serial_port{ SerialPort(port_name_[0]), SerialPort(port_name_[1]),
-                                                  SerialPort(port_name_[2]), SerialPort(port_name_[3]) };
-    motor_param_.resize(serial_port.size());
-    pos_state_.resize(serial_port.size());
-    for (size_t i = 0; i < motor_param_.size(); ++i)
-    {
-        motor_param_[i].serial_num_ = i;
-        motor_param_[i].init_param_.id = static_cast<unsigned short>(id_[i]);
-        motor_param_[i].motor_cmd_.id = static_cast<unsigned short>(id_[i]);
-        motor_param_[i].port_ = &serial_port[i];
-    }
-    init();
+    // Q_ASSERT(4 == port_name_.size());
+    // static std::array<SerialPort, 4> serial_port{ SerialPort(port_name_[0]), SerialPort(port_name_[1]),
+    //                                               SerialPort(port_name_[2]), SerialPort(port_name_[3]) };
+    // motor_param_.resize(serial_port.size());
+    // pos_state_.resize(serial_port.size());
+    // for (size_t i = 0; i < motor_param_.size(); ++i)
+    // {
+    //     motor_param_[i].serial_num_ = i;
+    //     motor_param_[i].init_cmd_.id = static_cast<unsigned short>(id_[i]);
+    //     motor_param_[i].motor_cmd_.id = static_cast<unsigned short>(id_[i]);
+    //     motor_param_[i].port_ = &serial_port[i];
+    // }
+
+    // init();
 }
 
 void GoDriver::setCmd(const std::vector<double>& cmd, const RunMode& mode)
@@ -47,9 +48,9 @@ void GoDriver::init()
 {
     for (auto& motor_param : motor_param_)
     {
+        motor_param.init_cmd_.mode = static_cast<unsigned short>(RunMode::BRAKE);
         // initial parameters
-        motor_param.init_param_.mode = 0;
-        motor_param.port_->sendRecv(&motor_param.init_param_, &motor_param.motor_recv_);
+        motor_param.port_->sendRecv(&motor_param.init_cmd_, &motor_param.motor_recv_);
         // record the position at each motor power-up and set it as zero point
         motor_param.zero_position_ = motor_param.motor_recv_.Pos;
         motor_param.motor_cmd_.Pos = motor_param.motor_recv_.Pos;
@@ -117,7 +118,8 @@ void GoDriver::runTraj(const double& period, const QList<QList<double>>& traj)
 
 void GoDriver::recvAngle(const std::vector<double>& cmd_angle)
 {
-    for (size_t i = 0; i < cmd_angle.size(); ++i)
+    pos_state_.clear();
+    for (size_t i = 0; i < motor_param_.size(); ++i)
     {
         motor_param_[i].motor_cmd_.Pos = motor_param_[i].zero_position_ + cmd_angle[i] * reduction_ratio_;
         motor_param_[i].motor_cmd_.T = 0.2;  // feed-forward torque(0.2 is an estimated value)
@@ -125,14 +127,13 @@ void GoDriver::recvAngle(const std::vector<double>& cmd_angle)
         pos_state_.push_back((motor_param_[i].motor_recv_.Pos - motor_param_[i].zero_position_) / reduction_ratio_);
     }
     emit sendSteerState(pos_state_);
-    pos_state_.clear();
 }
 
 void GoDriver::stall()
 {
     for (auto& motor_param : motor_param_)
     {
-        while (!(motor_param.port_->sendRecv(&motor_param.init_param_, &motor_param.motor_recv_)))
+        while (!(motor_param.port_->sendRecv(&motor_param.init_cmd_, &motor_param.motor_recv_)))
             QThread::msleep(100);
         qDebug() << "position: " << motor_param.motor_recv_.Pos << motor_param.motor_recv_.T;
     }

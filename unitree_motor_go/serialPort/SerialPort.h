@@ -14,7 +14,6 @@ Not that common, but useful for motor communication.
 #include <sys/ioctl.h>
 #include <linux/serial.h>
 #include <unistd.h>
-#include <iostream>
 
 #include "unitree_motor_go/serialPort/include/errorClass.h"
 #include "unitree_motor_go/unitreeMotor/unitreeMotor.h"

@@ -44,6 +44,6 @@ class ChassisCtrl : public QObject
 
   signals:
     void sendA1Vel(std::vector<double> roll);
-    void sendGOVel(std::vector<double> steer);
+    void sendGOPos(std::vector<double> steer);
 };
 }  // namespace chassis_ctrl

@@ -1,7 +1,7 @@
 #ifndef __CRC_CCITT_H
 #define __CRC_CCITT_H
-#include <inttypes.h>
-#include <cstddef>
+
+#include <cstdint>
 /*
  * This mysterious table is just the CRC of each possible byte. It can be
  * computed using the standard bit-at-a-time methods. The polynomial can
@@ -9,6 +9,7 @@
  * Add the implicit x^16, and you have the standard CRC-CCITT.
  * https://github.com/torvalds/linux/blob/5bfc75d92efd494db37f5c4c173d3639d4772966/lib/crc-ccitt.c
  */
+
 uint16_t const crc_ccitt_table[256] = {
     0x0000, 0x1189, 0x2312, 0x329b, 0x4624, 0x57ad, 0x6536, 0x74bf, 0x8c48, 0x9dc1, 0xaf5a, 0xbed3, 0xca6c, 0xdbe5,
     0xe97e, 0xf8f7, 0x1081, 0x0108, 0x3393, 0x221a, 0x56a5, 0x472c, 0x75b7, 0x643e, 0x9cc9, 0x8d40, 0xbfdb, 0xae52,
@@ -43,7 +44,7 @@ static uint16_t crc_ccitt_byte(uint16_t crc, const uint8_t c)
  *	@buffer: data pointer
  *	@len: number of bytes in the buffer
  */
-inline uint16_t crc_ccitt(uint16_t crc, uint8_t const* buffer, size_t len)
+inline uint16_t crc_ccitt(uint16_t crc, uint8_t const* buffer, std::size_t len)
 {
     while (len--)
         crc = crc_ccitt_byte(crc, *buffer++);

@@ -60,23 +60,18 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/./release/ -lcontrolcan
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/./debug/ -lcontrolcan
-else:unix: LIBS += -L$$PWD/./ -lcontrolcan
 
-INCLUDEPATH += $$PWD/''
-DEPENDPATH += $$PWD/''
+unix:!macx: LIBS += -L$$PWD/./ -lcontrolcan
 
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/./release/ -lunitreeMotorSDK_Linux64
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/./debug/ -lunitreeMotorSDK_Linux64
-else:unix: LIBS += -L$$PWD/./ -lunitreeMotorSDK_Linux64
+INCLUDEPATH += $$PWD/.
+DEPENDPATH += $$PWD/.
 
-INCLUDEPATH += $$PWD/''
-DEPENDPATH += $$PWD/''
+unix:!macx: LIBS += -L$$PWD/./ -lunitreeMotorSDK_Linux64
 
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/./release/ -lUnitreeMotorSDK_M80106_amd64
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/./debug/ -lUnitreeMotorSDK_M80106_amd64
-else:unix: LIBS += -L$$PWD/./ -lUnitreeMotorSDK_M80106_amd64
+INCLUDEPATH += $$PWD/.
+DEPENDPATH += $$PWD/.
+
+unix:!macx: LIBS += -L$$PWD/./ -lUnitreeMotorSDK_M80106_Linux64
 
 INCLUDEPATH += $$PWD/''
 DEPENDPATH += $$PWD/''

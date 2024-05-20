@@ -87,7 +87,7 @@ void ChassisCtrl::move()
         }
 
         emit sendA1Vel(roll_cmd_);
-        emit sendGOVel(steer_cmd_);
+        emit sendGOPos(steer_cmd_);
         steer_cmd_.clear();
         roll_cmd_.clear();
     }

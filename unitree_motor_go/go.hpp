@@ -2,7 +2,7 @@
 
 #include <QThread>
 
-#include "serialPort/SerialPort.h"
+#include "unitree_motor_go/serialPort/SerialPort.h"
 
 namespace motor_go
 {
@@ -17,7 +17,7 @@ struct MotorParam
 {
     int serial_num_;
     double zero_position_;
-    MotorCmd init_param_, motor_cmd_;
+    MotorCmd init_cmd_, motor_cmd_;
     MotorData motor_recv_;
 
     SerialPort* port_;
@@ -39,12 +39,12 @@ class GoDriver : public QObject
     void stall();
 
     const double reduction_ratio_ = 6.33;
-    const std::vector<int> id_{ 0, 0, 0, 0 };
+    const std::vector<unsigned short> id_{ 0, 0, 0, 0 };
     const std::vector<std::string> port_name_{ "/dev/ttyUSB4", "/dev/ttyUSB5", "/dev/ttyUSB6", "/dev/ttyUSB7" };
 
     bool stop_run_ = false;
     std::vector<double> pos_state_{};
-    std::vector<MotorParam> motor_param_;
+    std::vector<MotorParam> motor_param_{};
 
   signals:
     void sendSteerState(std::vector<double> state);

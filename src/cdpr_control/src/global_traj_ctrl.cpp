@@ -31,8 +31,8 @@ class GlobalTrajCtrl {
         std::ifstream file1(ros::package::getPath("cdpr_control") + "/csv/global/updown.csv", std::ios::in);
 
         // read chassis trajectory
-        std::ifstream file2(ros::package::getPath("cdpr_control") + "/csv/global/no_obs.csv", std::ios::in);
-        // std::ifstream file2(ros::package::getPath("cdpr_control") + "/csv/global/obs.csv", std::ios::in);
+        // std::ifstream file2(ros::package::getPath("cdpr_control") + "/csv/global/no_obs.csv", std::ios::in);
+        std::ifstream file2(ros::package::getPath("cdpr_control") + "/csv/global/obs.csv", std::ios::in);
 
         if (!file1.is_open() || !file2.is_open()) ROS_ERROR("Failed to open .csv file");
 

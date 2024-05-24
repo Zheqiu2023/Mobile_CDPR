@@ -14,6 +14,7 @@ void ChassisCtrl::chassisCmdCB(const geometry_msgs::TwistStampedConstPtr& cmd)
 void ChassisCtrl::steerStateCB(const std_msgs::Float64MultiArray::ConstPtr& state)
 {
     steer_state_ = std::move(*state);
+    ROS_INFO("steering state: %f", steer_state_.data[1]);
 }
 
 ChassisCtrl::ChassisCtrl(ros::NodeHandle& nh) : nh_(nh)
@@ -103,11 +104,12 @@ void ChassisCtrl::moveJoint()
             // Direction flipping and Stray wheelset mitigation
             double a = angles::shortest_angular_distance(steer_state_.data[i], vel_angle);
             double b = angles::shortest_angular_distance(steer_state_.data[i], vel_angle + M_PI);
+            ROS_INFO("Angular distance: %f", a);
 
-            target_angle =
-                (std::abs(a) > std::abs(b)) ?
-                    ((vel_angle + M_PI) > M_PI ? angles::normalize_angle(vel_angle + M_PI) : vel_angle + M_PI) :
-                    vel_angle;
+            if (std::abs(a) > std::abs(b))
+                target_angle = (vel_angle + M_PI) > M_PI ? angles::normalize_angle(vel_angle + M_PI) : vel_angle + M_PI;
+            else
+                target_angle = vel_angle;
             last_angle_[i] = target_angle;
             target_vel = vel.norm() / wheelsets_[i].wheel_radius_ * std::cos(a) * wheelsets_[i].roll_direction_;
         }

@@ -9,8 +9,8 @@
     
     <!-- <include file="$(find cdpr_cable_archor)/launch/cable_archor.launch"/> -->
 
-    <!-- <include file="$(find unitree_motor_a1)/launch/a1_launch.launch"/>
-    <include file="$(find unitree_motor_go)/launch/go_launch.launch"/> -->
+    <include file="$(find unitree_motor_a1)/launch/a1_launch.launch"/>
+    <include file="$(find unitree_motor_go)/launch/go_launch.launch"/>
 
     <!-- imu control node -->
     <!-- <include file="$(find wit_ros_imu)/launch/wit_imu_launch/display_and_imu.launch"/> -->

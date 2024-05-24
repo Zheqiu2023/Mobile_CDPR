@@ -12,6 +12,8 @@
  */
 #include "unitree_motor_a1/a1.hpp"
 
+#include <std_msgs/Float64.h>
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -26,9 +28,17 @@ A1Control::A1Control(ros::NodeHandle& nh) : nh_(nh) {
     subs_.push_back(nh_.subscribe("/remote_roll_vel", 10, &A1Control::remoteControlCB, this));
     subs_.push_back(nh_.subscribe("/traj_roll_vel", 10, &A1Control::trajTrackingCB, this));
     subs_.push_back(nh_.subscribe("/start_traj_tracking", 10, &A1Control::startTrajCB, this));
-    pub_ = nh_.advertise<std_msgs::Bool>("ready_state", 10);
+    pub_ = nh_.advertise<std_msgs::Bool>("ready_state", 1);
+    traj_cmd_pubs_.push_back(nh_.advertise<std_msgs::Float64>("/traj_vel_cmd0", 100));
+    traj_cmd_pubs_.push_back(nh_.advertise<std_msgs::Float64>("/traj_vel_cmd1", 100));
+    traj_cmd_pubs_.push_back(nh_.advertise<std_msgs::Float64>("/traj_vel_cmd2", 100));
+    traj_cmd_pubs_.push_back(nh_.advertise<std_msgs::Float64>("/traj_vel_cmd3", 100));
+    traj_state_pubs_.push_back(nh_.advertise<std_msgs::Float64>("/traj_vel_state0", 100));
+    traj_state_pubs_.push_back(nh_.advertise<std_msgs::Float64>("/traj_vel_state1", 100));
+    traj_state_pubs_.push_back(nh_.advertise<std_msgs::Float64>("/traj_vel_state2", 100));
+    traj_state_pubs_.push_back(nh_.advertise<std_msgs::Float64>("/traj_vel_state3", 100));
 
-    ros::Duration(0.5).sleep();  // 延时，保证pub_注册成功
+    ros::Duration(2).sleep();  // 延时，保证pub_注册成功(必须有)
 }
 
 /**
@@ -127,6 +137,7 @@ void A1Control::drive() {
             while (ros::ok() && !start_traj_tracking_) ros::spinOnce();
 
             // receive target position from topic "/traj_roll_vel"
+            std_msgs::Float64 temp_val{};
             for (size_t i = 0; i < traj_.size() / 4; ++i) {
                 if (false == start_traj_tracking_) break;
 
@@ -134,8 +145,12 @@ void A1Control::drive() {
                     motor_param_[j].motor_cmd_.W = traj_[i * 4 + j] * reduction_ratio_ * motor_param_[j].direction_ /
                                                    wheel_radius_;  //   m/s转换为rad/s
                     motor_param_[j].port_->sendRecv(&motor_param_[j].motor_cmd_, &motor_param_[j].motor_recv_);
-                    ROS_INFO("Received velocity of motor A1[%d]: %f", motor_param_[j].serial_num_,
-                             motor_param_[j].motor_recv_.W);
+                    temp_val.data =
+                        motor_param_[j].motor_cmd_.W * wheel_radius_ / (reduction_ratio_ * motor_param_[j].direction_);
+                    traj_cmd_pubs_[j].publish(temp_val);
+                    temp_val.data =
+                        motor_param_[j].motor_recv_.W * wheel_radius_ / (reduction_ratio_ * motor_param_[j].direction_);
+                    traj_state_pubs_[j].publish(temp_val);
                 }
                 ros::Duration(traj_period_).sleep();
             }

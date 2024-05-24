@@ -13,12 +13,11 @@
 
 #include "unitree_motor_a1/a1.hpp"
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     ros::init(argc, argv, "unitree_motor_a1");
     ros::NodeHandle nh("~");
 
-    ros::AsyncSpinner spinner(1);
+    ros::AsyncSpinner spinner(2);
     spinner.start();
 
     motor_a1::A1Control a1_control(nh);

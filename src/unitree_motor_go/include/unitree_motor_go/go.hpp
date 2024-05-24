@@ -48,8 +48,6 @@ class GoControl
     void startTrajCB(const std_msgs::Bool::ConstPtr& flag);
 
     double reduction_ratio_ = 0.0;
-    std::vector<int> id_{};
-    std::vector<std::string> port_name_{};
     std::vector<MotorParam> motor_param_;
 
     double traj_period_ = 0.0;
@@ -58,7 +56,7 @@ class GoControl
     std_msgs::Float64MultiArray pos_state_{};
 
     ros::V_Subscriber subs_;
-    ros::V_Publisher pubs_;
+    ros::V_Publisher pubs_, traj_cmd_pubs_, traj_state_pubs_;
     ros::NodeHandle nh_;
 };
 }  // namespace motor_go

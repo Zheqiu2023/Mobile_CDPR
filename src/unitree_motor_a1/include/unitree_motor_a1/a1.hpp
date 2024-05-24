@@ -19,8 +19,10 @@
 
 #include "serialPort/SerialPort.h"
 
-namespace motor_a1 {
-struct MotorParam {
+namespace motor_a1
+{
+struct MotorParam
+{
     int serial_num_, direction_;
     double zero_position_, last_pos_;
     MotorCmd init_cmd_, motor_cmd_;
@@ -29,12 +31,13 @@ struct MotorParam {
     SerialPort* port_;
 };
 
-class A1Control {
-   public:
+class A1Control
+{
+  public:
     A1Control(ros::NodeHandle& nh);
     void operator()();
 
-   private:
+  private:
     void init();
     void drive();
     void stall();
@@ -53,6 +56,7 @@ class A1Control {
 
     ros::V_Subscriber subs_;
     ros::Publisher pub_;
+    ros::V_Publisher traj_cmd_pubs_, traj_state_pubs_;
     ros::NodeHandle nh_;
 };
 }  // namespace motor_a1

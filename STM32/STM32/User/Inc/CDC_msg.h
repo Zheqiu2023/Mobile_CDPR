@@ -1,0 +1,73 @@
+/*
+ * CDC_msg.h
+ *
+ *  Created on: May 30, 2024
+ *      Author: 23877
+ */
+
+#ifndef CDC_MSG_H_
+#define CDC_MSG_H_
+
+#include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+enum CmdMode {
+	M,  // 电机模式选择指令
+	J,  // 点动指令
+	T   // 轨迹指令
+};
+
+#pragma pack(1)
+typedef struct {
+	bool start;
+	unsigned char motor_mode;
+	float vel;
+	float pos;
+} MotorMsg;
+#pragma pack()
+
+enum NewCmd {
+	CABLE, ARCHOR, GO, A1
+};
+
+#pragma pack(1)
+typedef struct {
+	unsigned char cmd_mode;
+	unsigned char new_cmd;
+	MotorMsg cable_cmd;
+	MotorMsg archor_cmd;
+	MotorMsg go_cmd;
+	MotorMsg a1_cmd;
+} CmdMsg;
+#pragma pack()
+
+enum LocalTrajType {
+	EMPTY1, UPDOWN, LINE, CIRCLE
+};
+
+enum GlobalTrajType {
+	EMPTY2, NO_OBS, OBS
+};
+
+#pragma pack(1)
+typedef struct {
+	unsigned char cmd_mode;
+	bool start;
+	unsigned char cdpr_traj;
+	unsigned char chassis_traj;
+	float period;
+} TrajMsg;
+#pragma pack()
+
+// 将结构体转换为char数组
+void MotorMsg_toCharArray(const MotorMsg *msg, uint8_t *buffer, size_t size);
+void CmdMsg_toCharArray(const CmdMsg *msg, uint8_t *buffer, size_t size);
+void TrajMsg_toCharArray(const TrajMsg *msg, uint8_t *buffer, size_t size);
+
+// 从char数组转换回结构体
+MotorMsg MotorMsg_fromCharArray(const uint8_t *data, size_t size);
+CmdMsg CmdMsg_fromCharArray(const uint8_t *data, size_t size);
+TrajMsg TrajMsg_fromCharArray(const uint8_t *data, size_t size);
+
+#endif /* CDC_MSG_H_ */

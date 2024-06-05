@@ -1,0 +1,202 @@
+/*
+ * bsp.c
+ *
+ *  Created on: May 22, 2024
+ *      Author: 23877
+ */
+
+#include "bsp.h"
+#include "board.h"
+#include "unitree_a1.h"
+#include "unitree_go.h"
+#include "traj.h"
+
+#include "main.h"
+#include "can.h"
+#include "usbd_cdc_if.h"
+
+RS485_port_info unitree_port[2];
+CAN_info CAN_port[2];
+
+
+void BSP_Init() {
+	unitree_port[0].port = RS485_DIR1_GPIO_Port;	// A1 motor
+	unitree_port[0].pin = RS485_DIR1_Pin;
+	unitree_port[0].uart.handle = &huart1;
+	unitree_port[1].port = RS485_DIR2_GPIO_Port;	// GO motor
+	unitree_port[1].pin = RS485_DIR2_Pin;
+	unitree_port[1].uart.handle = &huart2;
+	for (uint8_t i = 0; i < 2; ++i) {
+		//使能串口空闲中断
+		__HAL_UART_ENABLE_IT(unitree_port[i].uart.handle, UART_IT_IDLE);
+		//开启DMA接收
+		HAL_UART_Receive_DMA(unitree_port[i].uart.handle, unitree_port[i].uart.rx_buff, UART_BUFFER_SIZE);
+	}
+
+	CAN_port[0].handle = &hcan1;
+}
+
+void RS485_Send(uint8_t ind, const uint8_t *data, uint16_t size, uint32_t timeout) {
+	HAL_GPIO_WritePin(unitree_port[ind].port, unitree_port[ind].pin, GPIO_PIN_SET);
+	if (HAL_UART_Transmit(unitree_port[ind].uart.handle, data, size, timeout) != HAL_OK) //判断是否发送正常，如果出现异常则进入异常中断函数
+		Error_Handler();
+	HAL_GPIO_WritePin(unitree_port[ind].port, unitree_port[ind].pin, GPIO_PIN_RESET);
+}
+
+void RS485_Send_DMA(uint8_t ind, const uint8_t *data, uint16_t size) {
+	HAL_GPIO_WritePin(unitree_port[ind].port, unitree_port[ind].pin, GPIO_PIN_SET);
+	if (HAL_UART_Transmit_DMA(unitree_port[ind].uart.handle, data, size) != HAL_OK) //判断是否发送正常，如果出现异常则进入异常中断函数
+		Error_Handler();
+	while (__HAL_UART_GET_FLAG(unitree_port[ind].uart.handle,UART_FLAG_TC) != SET) {
+	}
+	HAL_GPIO_WritePin(unitree_port[ind].port, unitree_port[ind].pin, GPIO_PIN_RESET);
+}
+
+
+void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
+	//判断是否进入空闲中断
+	if (__HAL_UART_GET_FLAG(huart, UART_FLAG_IDLE) != RESET) {
+		__HAL_UART_CLEAR_IDLEFLAG(huart); //清楚空闲中断标志
+		HAL_UART_DMAStop(huart); //暂停本次DMA传输，进行数据处理
+		uint8_t data_length = UART_BUFFER_SIZE - __HAL_DMA_GET_COUNTER(huart->hdmarx); //计算接收到的数据长度
+		//数据处理回调函数
+		if (huart == unitree_port[0].uart.handle) {
+			A1_Motor_RecvData_Process(board.roll_motor, unitree_port[0].uart.rx_buff, data_length);
+			HAL_UART_Receive_DMA(huart, unitree_port[0].uart.rx_buff, UART_BUFFER_SIZE); //重启DMA接收
+		} else if (huart == unitree_port[1].uart.handle) {
+			GO_Motor_RecvData_Process(board.steer_motor, unitree_port[1].uart.rx_buff, data_length);
+			HAL_UART_Receive_DMA(huart, unitree_port[1].uart.rx_buff, UART_BUFFER_SIZE); //重启DMA接收
+		}
+	}
+}
+
+/* 放在"stm32f4xx_it.c"里形如"void USART2_IRQHandler(void)"类的函数中，只要用了DMA接收的串口都放 */
+void USER_UART_IRQHandler(UART_HandleTypeDef *huart) {
+	if (huart == unitree_port[0].uart.handle) {
+		USER_UART_IDLECallback(huart);
+	} else if (huart == unitree_port[1].uart.handle) {
+		USER_UART_IDLECallback(huart);
+	}
+}
+
+
+/* CAN过滤器初始化 */
+void CAN_Filter_Init() {
+	CAN_FilterTypeDef fcan;
+
+	fcan.FilterBank = 0;
+	fcan.FilterMode = CAN_FILTERMODE_IDMASK;
+	fcan.FilterScale = CAN_FILTERSCALE_32BIT;
+
+	fcan.FilterIdHigh = 0;
+	fcan.FilterIdLow = 0;
+	fcan.FilterMaskIdHigh = 0;
+	fcan.FilterMaskIdLow = 0;
+	fcan.FilterFIFOAssignment = CAN_RX_FIFO0;
+	fcan.FilterActivation = ENABLE;
+	fcan.SlaveStartFilterBank = 0;
+
+	/* Filter configuration */
+	if (HAL_CAN_ConfigFilter(&hcan1, &fcan) != HAL_OK)
+		Error_Handler();
+	/* Start CAN */
+	if (HAL_CAN_Start(&hcan1) != HAL_OK)
+		Error_Handler();
+	/*enable can interrupt*/
+	if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
+		Error_Handler();
+}
+
+/* CAN发送数据函数 */
+void CAN_Send_Msg(uint8_t can_ind, uint8_t id, uint8_t *msg, uint8_t len) {
+	uint32_t TxMailbox;
+
+	CAN_port[can_ind].TxHeader.StdId = id;
+	CAN_port[can_ind].TxHeader.ExtId = 0;
+	CAN_port[can_ind].TxHeader.IDE = CAN_ID_STD;
+	CAN_port[can_ind].TxHeader.RTR = CAN_RTR_DATA;
+	CAN_port[can_ind].TxHeader.DLC = len;
+
+//	while(HAL_CAN_GetTxMailboxesFreeLevel(CAN_port[can_ind].handle) == 0) {}
+
+	if (HAL_CAN_AddTxMessage(CAN_port[can_ind].handle, &CAN_port[can_ind].TxHeader, msg, &TxMailbox) != HAL_OK) //发送
+		Error_Handler();
+}
+
+/* CAN接收中断回调函数 */
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
+	uint8_t rxdata[8] = { 0 };
+	if (hcan->Instance == CAN1) {
+		HAL_CAN_GetRxMessage(CAN_port[0].handle, CAN_RX_FIFO0, &CAN_port[0].RxHeader, rxdata);
+		uint8_t temp_id = (CAN_port[0].RxHeader.StdId >> 4) & 0x0f;
+		if (temp_id == board.cable_motor->config.driver_id)
+			RE35_Motor_RecvData_Process(board.cable_motor, CAN_port[0].RxHeader.StdId, rxdata);
+		else if (temp_id == board.archor_motor->config.driver_id)
+			RE35_Motor_RecvData_Process(board.archor_motor, CAN_port[0].RxHeader.StdId, rxdata);
+	} else if (hcan->Instance == CAN2) {
+		HAL_CAN_GetRxMessage(CAN_port[1].handle, CAN_RX_FIFO0, &CAN_port[1].RxHeader, rxdata);
+	}
+}
+
+
+void Process_Cable_Cmd(MotorMsg *data ) {
+	RE35_Motor_SetCmd(board.cable_motor, data->motor_mode, data->vel, Cable_Convert_Pos(data->pos));
+	RE35_Motor_Send(board.cable_motor);
+}
+
+void Process_Archor_Cmd(MotorMsg *data ) {
+	RE35_Motor_SetCmd(board.archor_motor, data->motor_mode, data->vel, Archor_Convert_Pos(data->pos));
+	RE35_Motor_Send(board.archor_motor);
+}
+
+void Process_GO_Cmd(MotorMsg *data ) {
+	GO_Motor_SetCmd(board.steer_motor, data->motor_mode, 0, data->vel, data->pos);
+	GO_Motor_Send(board.steer_motor);
+}
+
+void Process_A1_Cmd(MotorMsg *data ) {
+	A1_Motor_SetCmd(board.roll_motor, data->motor_mode, 0, data->vel, data->pos);
+	A1_Motor_Send(board.roll_motor);
+}
+
+void Process_Traj_Cmd(TrajMsg *data ) {
+	if(false==data->start || (data->cdpr_traj == EMPTY1 && data->chassis_traj == EMPTY2)){
+		RE35_Motor_SetCmd(board.cable_motor, VEL_POS, 0, 0);
+		RE35_Motor_SetCmd(board.archor_motor, VEL_POS, 0, 0);
+		GO_Motor_SetCmd(board.steer_motor, GO_MODE_STOP, 0, 0, 0);
+		A1_Motor_SetCmd(board.roll_motor, A1_MODE_STOP, 0, 0, 0);
+		RE35_Motor_Send(board.cable_motor);
+		RE35_Motor_Send(board.archor_motor);
+		GO_Motor_Send(board.steer_motor);
+		A1_Motor_Send(board.roll_motor);
+	} else {
+		if(data->chassis_traj == EMPTY2)
+		{
+			switch (data->cdpr_traj)
+			{
+				case UPDOWN:
+					break;
+				case LINE:
+					break;
+				case CIRCLE:
+					break;
+				default:
+					break;
+			}
+			Start_Local_Traj();
+		}
+		if(data->cdpr_traj == EMPTY1){
+			switch (data->chassis_traj)
+			{
+				case NO_OBS:
+					break;
+				case OBS:
+					break;
+				default:
+					break;
+			}
+			Start_Global_Traj();
+		}
+	}
+}
+

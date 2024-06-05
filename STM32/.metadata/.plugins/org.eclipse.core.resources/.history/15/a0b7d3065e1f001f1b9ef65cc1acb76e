@@ -1,0 +1,27 @@
+/*
+ * board.c
+ *
+ *  Created on: May 23, 2024
+ *      Author: 23877
+ */
+
+#include "board.h"
+
+Board board;
+
+void Board_Init() {
+	// GO接串口1，波特率4M，使用转接板时485的GND和B口线序需调换
+	// A1接串口2，波特率4.8M，使用转接板时485的GND和B口线序需调换
+	GO_config config2 = { 0, 0, 1 };
+	board.steer_motor = GO_Motor_Create(config2);
+	A1_config config1 = { 1, 0, -1 };
+	board.roll_motor = A1_Motor_Create(config1);
+	RE35_config config3 = { 0, 1, -1, 0 };
+	board.cable_motor = RE35_Motor_Create(config3);
+	RE35_config config4 = { 0, 5, -1, 5 };
+	board.archor_motor = RE35_Motor_Create(config4);
+
+	RE35_Motor_Init(board.cable_motor, VEL_POS);
+	RE35_Motor_Init(board.archor_motor, VEL_POS);
+}
+

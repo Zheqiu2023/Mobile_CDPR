@@ -1,0 +1,29 @@
+/*
+ * traj.h
+ *
+ *  Created on: May 30, 2024
+ *      Author: 23877
+ */
+
+#ifndef TRAJ_H_
+#define TRAJ_H_
+
+#include <stdint.h>
+
+#define COLS 2
+
+// 定义一个结构体来存储 CSV 解析后的数据
+typedef struct {
+	float **data;
+	uint16_t rows;
+	uint16_t cols;
+} CSVData;
+
+int parseLine(char *line, float *row, int maxCols);
+CSVData Read_CSV(const char *filename);
+void Free_CSVData(CSVData csvData);
+
+void Start_Local_Traj(CSVData traj, float period);
+void Start_Global_Traj(CSVData traj, float period);
+
+#endif /* TRAJ_H_ */

@@ -1,0 +1,144 @@
+/*
+ * CDC_msg.h
+ *
+ *  Created on: May 30, 2024
+ *      Author: 23877
+ */
+
+#ifndef CDC_MSG_H_
+#define CDC_MSG_H_
+
+
+#include <string.h>
+
+enum class A1Mode
+{
+    STOP,  // 电机停止
+    T,     // 力矩模式
+    W,     // 速度模式
+    POS,   // 位置模式
+    HB     // 混控模式
+};
+
+enum class GOMode
+{
+    STOP,  // 电机停止
+    T,     // 力矩模式
+    W,     // 速度模式
+    POS,   // 位置模式
+    HB     // 混控模式
+};
+
+enum class CmdMode
+{
+    M,  // 电机模式选择指令
+    J,  // 点动指令
+    T   // 轨迹指令
+};
+
+#pragma pack(1)
+struct MotorCmd
+{
+    bool start;
+    unsigned char motor_mode;
+    float vel;
+    float pos;
+
+    // 将结构体转换为char数组
+    std::vector<char> toCharArray() const
+    {
+        std::vector<char> buffer(sizeof(MotorCmd));
+        std::memcpy(buffer.data(), this, sizeof(MotorCmd));
+        return buffer;
+    }
+
+    // 从char数组转换回结构体
+    static MotorCmd fromCharArray(const std::vector<char>& data)
+    {
+        MotorCmd cmd;
+        std::memcpy(&cmd, data.data(), sizeof(MotorCmd));
+        return cmd;
+    }
+};
+#pragma pack()
+
+enum class NewCmd
+{
+    CABLE,
+    ARCHOR,
+    GO,
+    A1
+};
+
+#pragma pack(1)
+struct CmdMsg
+{
+    unsigned char cmd_mode;
+    unsigned char new_cmd;
+    MotorCmd cable_cmd;
+    MotorCmd archor_cmd;
+    MotorCmd go_cmd;
+    MotorCmd a1_cmd;
+
+    // 将结构体转换为char数组
+    std::vector<char> toCharArray() const
+    {
+        std::vector<char> buffer(sizeof(CmdMsg));
+        std::memcpy(buffer.data(), this, sizeof(CmdMsg));
+        return buffer;
+    }
+
+    // 从char数组转换回结构体
+    static CmdMsg fromCharArray(const std::vector<char>& data)
+    {
+        CmdMsg msg;
+        std::memcpy(&msg, data.data(), sizeof(CmdMsg));
+        return msg;
+    }
+};
+#pragma pack()
+
+enum class LocalTrajType
+{
+    EMPTY,
+    UPDOWN,
+    LINE,
+    CIRCLE
+};
+
+enum class GlobalTrajType
+{
+    EMPTY,
+    NO_OBS,
+    OBS
+};
+
+#pragma pack(1)
+struct TrajMsg
+{
+    unsigned char cmd_mode;
+    bool start;
+    unsigned char cdpr_traj;
+    unsigned char chassis_traj;
+    float period;
+
+    // 将结构体转换为char数组
+    std::vector<char> toCharArray() const
+    {
+        std::vector<char> buffer(sizeof(TrajMsg));
+        std::memcpy(buffer.data(), this, sizeof(TrajMsg));
+        return buffer;
+    }
+
+    // 从char数组转换回结构体
+    static TrajMsg fromCharArray(const std::vector<char>& data)
+    {
+        TrajMsg msg;
+        std::memcpy(&msg, data.data(), sizeof(TrajMsg));
+        return msg;
+    }
+};
+#pragma pack()
+
+
+#endif /* CDC_MSG_H_ */

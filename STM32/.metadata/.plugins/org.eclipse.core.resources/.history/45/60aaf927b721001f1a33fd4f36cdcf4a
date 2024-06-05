@@ -1,0 +1,249 @@
+/* USER CODE BEGIN Header */
+/**
+ ******************************************************************************
+ * File Name          : freertos.c
+ * Description        : Code for freertos applications
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2024 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
+/* USER CODE END Header */
+
+/* Includes ------------------------------------------------------------------*/
+#include "FreeRTOS.h"
+#include "task.h"
+#include "main.h"
+#include "cmsis_os.h"
+
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
+#include "bsp.h"
+/* USER CODE END Includes */
+
+/* Private typedef -----------------------------------------------------------*/
+/* USER CODE BEGIN PTD */
+
+/* USER CODE END PTD */
+
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
+
+/* USER CODE END PD */
+
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
+
+/* USER CODE END PM */
+
+/* Private variables ---------------------------------------------------------*/
+/* USER CODE BEGIN Variables */
+
+/* USER CODE END Variables */
+osThreadId defaultTaskHandle;
+osThreadId TrajectoryTaskHandle;
+osThreadId JogTaskHandle;
+osMessageQId JogCmdQueueHandle;
+osMessageQId TrajCmdQueueHandle;
+osMessageQId myQueue03Handle;
+
+/* Private function prototypes -----------------------------------------------*/
+/* USER CODE BEGIN FunctionPrototypes */
+/* 虚拟串口接收数据处理函数 */
+void CDC_Process_Recv_Data(uint8_t *data, uint32_t Len) {
+	switch (data[0]) {
+		case M:	// 电机模式选择
+		case J:	// 点动
+			g_cmd_msg = CmdMsg_fromCharArray(data, Len);
+			xQueueSendToBack(JogCmdQueueHandle, &g_cmd_msg, 0);
+			break;
+		case T:	// 轨迹
+			g_traj_msg = TrajMsg_fromCharArray(data, Len);
+			xQueueSendToBack(TrajCmdQueueHandle, &g_traj_msg, 0);
+			break;
+		default:
+			break;
+	}
+}
+/* USER CODE END FunctionPrototypes */
+
+void StartDefaultTask(void const * argument);
+void StartTrajectoryTask(void const * argument);
+void StartJogTask(void const * argument);
+
+extern void MX_USB_DEVICE_Init(void);
+void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
+
+/* GetIdleTaskMemory prototype (linked to static allocation support) */
+void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, uint32_t *pulIdleTaskStackSize );
+
+/* USER CODE BEGIN GET_IDLE_TASK_MEMORY */
+static StaticTask_t xIdleTaskTCBBuffer;
+static StackType_t xIdleStack[configMINIMAL_STACK_SIZE];
+
+void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer,
+        uint32_t *pulIdleTaskStackSize) {
+	*ppxIdleTaskTCBBuffer = &xIdleTaskTCBBuffer;
+	*ppxIdleTaskStackBuffer = &xIdleStack[0];
+	*pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
+	/* place for user code */
+}
+/* USER CODE END GET_IDLE_TASK_MEMORY */
+
+/**
+  * @brief  FreeRTOS initialization
+  * @param  None
+  * @retval None
+  */
+void MX_FREERTOS_Init(void) {
+  /* USER CODE BEGIN Init */
+
+  /* USER CODE END Init */
+
+  /* USER CODE BEGIN RTOS_MUTEX */
+	/* add mutexes, ... */
+  /* USER CODE END RTOS_MUTEX */
+
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+	/* add semaphores, ... */
+  /* USER CODE END RTOS_SEMAPHORES */
+
+  /* USER CODE BEGIN RTOS_TIMERS */
+	/* start timers, add new ones, ... */
+  /* USER CODE END RTOS_TIMERS */
+
+  /* Create the queue(s) */
+  /* definition and creation of JogCmdQueue */
+  osMessageQDef(JogCmdQueue, 16, uint32_t);
+  JogCmdQueueHandle = osMessageCreate(osMessageQ(JogCmdQueue), NULL);
+
+  /* definition and creation of TrajCmdQueue */
+  osMessageQDef(TrajCmdQueue, 16, uint32_t);
+  TrajCmdQueueHandle = osMessageCreate(osMessageQ(TrajCmdQueue), NULL);
+
+  /* definition and creation of myQueue03 */
+  osMessageQDef(myQueue03, 30, TrajMsg);
+  myQueue03Handle = osMessageCreate(osMessageQ(myQueue03), NULL);
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+	/* add queues, ... */
+  /* USER CODE END RTOS_QUEUES */
+
+  /* Create the thread(s) */
+  /* definition and creation of defaultTask */
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
+  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+
+  /* definition and creation of TrajectoryTask */
+  osThreadDef(TrajectoryTask, StartTrajectoryTask, osPriorityNormal, 0, 256);
+  TrajectoryTaskHandle = osThreadCreate(osThread(TrajectoryTask), NULL);
+
+  /* definition and creation of JogTask */
+  osThreadDef(JogTask, StartJogTask, osPriorityNormal, 0, 128);
+  JogTaskHandle = osThreadCreate(osThread(JogTask), NULL);
+
+  /* USER CODE BEGIN RTOS_THREADS */
+	/* add threads, ... */
+  /* USER CODE END RTOS_THREADS */
+
+}
+
+/* USER CODE BEGIN Header_StartDefaultTask */
+/**
+ * @brief  Function implementing the defaultTask thread.
+ * @param  argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_StartDefaultTask */
+void StartDefaultTask(void const * argument)
+{
+  /* init code for USB_DEVICE */
+  MX_USB_DEVICE_Init();
+  /* USER CODE BEGIN StartDefaultTask */
+	/* Infinite loop */
+	for (;;) {
+		HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+		osDelay(1000);
+	}
+	free (board.cable_motor);
+	free (board.archor_motor);
+	free (board.steer_motor);
+	free (board.roll_motor);
+  /* USER CODE END StartDefaultTask */
+}
+
+/* USER CODE BEGIN Header_StartTrajectoryTask */
+/**
+ * @brief Function implementing the TrajectoryTask thread.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_StartTrajectoryTask */
+void StartTrajectoryTask(void const * argument)
+{
+  /* USER CODE BEGIN StartTrajectoryTask */
+	uint8_t *buf = 0;
+	portBASE_TYPE xStatus;
+	const portTickType xTicksToWait = 100 / portTICK_RATE_MS;
+	/* Infinite loop */
+	for (;;) {
+		if ((xStatus = xQueueReceive(TrajCmdQueueHandle, buf, xTicksToWait)) != pdPASS)
+			taskYIELD();
+		if( pdTRUE == xQueueReceive( xMyQueueHandle,&r_queue,portMAX_DELAY) )
+		{}
+		Process_Traj_Cmd(buf, sizeof(TrajMsg));
+		osDelay(1);
+	}
+  /* USER CODE END StartTrajectoryTask */
+}
+
+/* USER CODE BEGIN Header_StartJogTask */
+/**
+ * @brief Function implementing the JogTask thread.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_StartJogTask */
+void StartJogTask(void const * argument)
+{
+  /* USER CODE BEGIN StartJogTask */
+	uint8_t *buf = 0;
+	portBASE_TYPE xStatus;
+	const portTickType xTicksToWait = 100 / portTICK_RATE_MS;
+	/* Infinite loop */
+	for (;;) {
+		if ((xStatus = xQueueReceive(JogCmdQueueHandle, buf, xTicksToWait)) != pdPASS)
+			taskYIELD();
+		CmdMsg temp = CmdMsg_fromCharArray(buf, sizeof(CmdMsg));
+		switch (temp.new_cmd) {
+			case CABLE:
+				Process_Cable_Cmd((uint8_t*) &(temp.cable_cmd), sizeof(MotorMsg));
+				break;
+			case ARCHOR:
+				Process_Archor_Cmd((uint8_t*) &(temp.archor_cmd), sizeof(MotorMsg));
+				break;
+			case GO:
+				Process_GO_Cmd((uint8_t*) &(temp.go_cmd), sizeof(MotorMsg));
+				break;
+			case A1:
+				Process_A1_Cmd((uint8_t*) &(temp.a1_cmd), sizeof(MotorMsg));
+				break;
+			default:
+				break;
+		}
+		osDelay(1);
+	}
+  /* USER CODE END StartJogTask */
+}
+
+/* Private application code --------------------------------------------------*/
+/* USER CODE BEGIN Application */
+
+/* USER CODE END Application */

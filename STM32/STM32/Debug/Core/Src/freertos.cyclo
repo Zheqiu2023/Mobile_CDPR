@@ -1,0 +1,6 @@
+../Core/Src/freertos.c:61:6:CDC_Process_Recv_Data	5
+../Core/Src/freertos.c:95:6:vApplicationGetIdleTaskMemory	1
+../Core/Src/freertos.c:109:6:MX_FREERTOS_Init	1
+../Core/Src/freertos.c:165:6:StartDefaultTask	1
+../Core/Src/freertos.c:189:6:StartTrajectoryTask	2
+../Core/Src/freertos.c:214:6:StartJogTask	6

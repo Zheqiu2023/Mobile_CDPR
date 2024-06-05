@@ -1,0 +1,66 @@
+/*
+ * unitree_a1.h
+ *
+ *  Created on: May 21, 2024
+ *      Author: 23877
+ */
+
+#ifndef UNITREE_A1_H_
+#define UNITREE_A1_H_
+
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <stdbool.h>
+
+#include "unitree_a1_msg.h"
+
+typedef enum {
+	A1_MODE_STOP, 	  //电机停止
+	A1_MODE_T,        //力矩模式
+	A1_MODE_W,        //速度模式
+	A1_MODE_POS,      //位置模式
+	A1_MODE_HB        //混控模式
+} A1_Ctrl_Mode;
+
+typedef enum {
+	STOP, 	  //电机停止
+	OPEN_LOOP = 5,	//开环
+	CLOSED_LOOP = 10	//闭环
+} A1_Run_Mode;
+
+typedef struct {
+	uint8_t rs485_ind;
+	uint8_t id;
+	int8_t dir; //旋转方向，顺时针为负，逆时针为正
+} A1_Config;
+
+//typedef struct {
+//	A1_Run_Mode mode;	// 0:停止	5:开环	10:闭环
+//	float T;
+//	float W;
+//	float Pos;
+//	float K_P;
+//	float K_W;
+//} A1_Des;
+
+typedef struct {
+	A1_Config config;
+//	A1_Des des;
+	MotorData motor_data_prev;        // 上次收到的数据
+	MotorData motor_data;   //收到的数据
+	MotorCmd motor_cmd;	//发送的数据
+
+	bool run_flag;
+	int8_t round_cnt;           //转过圈数（电机反馈位置范围：-256*2*pi ~ 256*2*pi）
+	float zero_pos;            //零位（rad），上电时的位置
+} A1_Motor;
+
+A1_Motor* A1_Motor_Create(A1_Config config);
+void A1_Motor_SetCmd(A1_Motor *obj, A1_Ctrl_Mode mode, float T, float W, float Pos);
+void A1_Motor_RecvData_Process(A1_Motor *obj, uint8_t *data, uint8_t len);
+void A1_Motor_Send(A1_Motor *obj);
+uint32_t crc32_core(uint32_t *ptr, uint32_t len);
+
+#endif /* UNITREE_A1_H_ */

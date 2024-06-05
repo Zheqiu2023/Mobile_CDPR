@@ -1,0 +1,6 @@
+../User/Src/CDC_msg.c:11:6:MotorMsg_toCharArray	2
+../User/Src/CDC_msg.c:16:6:CmdMsg_toCharArray	2
+../User/Src/CDC_msg.c:21:6:TrajMsg_toCharArray	2
+../User/Src/CDC_msg.c:28:10:MotorMsg_fromCharArray	2
+../User/Src/CDC_msg.c:38:8:CmdMsg_fromCharArray	5
+../User/Src/CDC_msg.c:48:9:TrajMsg_fromCharArray	2

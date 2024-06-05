@@ -1,0 +1,239 @@
+/*
+ * unitree_a1.c
+ *
+ *  Created on: May 21, 2024
+ *      Author: 23877
+ */
+
+#include "unitree_a1.h"
+#include "bsp.h"
+#include "usbd_cdc_if.h"
+
+#include <stdio.h>
+
+#define A1_REDUCTION_RATIO 9.1f
+#define WHEEL_R 0.1175  // 轮胎半径（m）
+
+A1_Motor* A1_Motor_Create(A1_Config config) {
+	A1_Motor *obj = (A1_Motor*) malloc(sizeof(A1_Motor));
+	if (obj == NULL) {
+		// 如果内存分配失败，返回 NULL
+		return NULL;
+	}
+	memset(obj, 0, sizeof(A1_Motor));
+
+	obj->config = config;
+
+	return obj;
+}
+
+void A1_Motor_SetCmd(A1_Motor *obj, A1_Ctrl_Mode mode, float T, float W, float Pos) {
+	obj->motor_cmd.id = obj->config.id;
+	switch (mode) {
+		case A1_MODE_STOP:
+			obj->motor_cmd.mode = STOP;
+			obj->motor_cmd.K_P = 0;
+			obj->motor_cmd.K_W = 0;
+			obj->motor_cmd.T = 0;
+			obj->motor_cmd.W = 0;
+			obj->motor_cmd.Pos = 0;
+			break;
+		case A1_MODE_T:
+			obj->motor_cmd.mode = CLOSED_LOOP;
+			obj->motor_cmd.K_P = 0;
+			obj->motor_cmd.K_W = 0;
+			obj->motor_cmd.T = T;
+			obj->motor_cmd.W = 0;
+			obj->motor_cmd.Pos = 0;
+			break;
+		case A1_MODE_W:
+			obj->motor_cmd.mode = CLOSED_LOOP;
+			obj->motor_cmd.K_P = 0;
+			obj->motor_cmd.K_W = 20;
+			obj->motor_cmd.T = 0;
+			obj->motor_cmd.W = W * A1_REDUCTION_RATIO * obj->config.dir;
+			obj->motor_cmd.Pos = 0;
+			break;
+		case A1_MODE_POS:
+			obj->motor_cmd.mode = CLOSED_LOOP;
+			obj->motor_cmd.K_P = 0.001;
+			obj->motor_cmd.K_W = 0.001;
+			obj->motor_cmd.T = 0;
+			obj->motor_cmd.W = 0;
+			obj->motor_cmd.Pos = obj->zero_pos + Pos * A1_REDUCTION_RATIO * obj->config.dir;
+			break;
+		case A1_MODE_HB:
+			obj->motor_cmd.mode = CLOSED_LOOP;
+			obj->motor_cmd.K_P = 0.05;
+			obj->motor_cmd.K_W = 3;
+			obj->motor_cmd.T = T;
+			obj->motor_cmd.W = W * A1_REDUCTION_RATIO * obj->config.dir;
+			obj->motor_cmd.Pos = obj->zero_pos + Pos * A1_REDUCTION_RATIO * obj->config.dir;
+		default:
+			break;
+	}
+}
+
+void A1_Modify_Data(A1Cmd *motor_s) {
+	// Header
+	motor_s->motor_send_data.head.start[0] = 0xFE;
+	motor_s->motor_send_data.head.start[1] = 0xEE;
+	motor_s->motor_send_data.head.motorID = motor_s->id;
+	motor_s->motor_send_data.head.reserved = 0;
+	// Command
+	motor_s->motor_send_data.Mdata.mode = motor_s->mode;
+	motor_s->motor_send_data.Mdata.ModifyBit = 0xFF;
+	motor_s->motor_send_data.Mdata.ReadBit = 0;
+	motor_s->motor_send_data.Mdata.reserved = 0;
+	motor_s->motor_send_data.Mdata.Modify.u32 = 0;
+	// T
+	motor_s->motor_send_data.Mdata.T = (int16_t) (motor_s->T * 256) & 0xFFFF;
+	// W
+	motor_s->motor_send_data.Mdata.W = (int16_t) (motor_s->W * 128) & 0xFFFF;
+	// Pos
+	motor_s->motor_send_data.Mdata.Pos = (int32_t) (motor_s->Pos * 2607.5945876176f);  //*16384/2π
+	// K_P
+	motor_s->motor_send_data.Mdata.K_P = (int16_t) (motor_s->K_P * 2048) & 0xFFFF;
+	// K_W
+	motor_s->motor_send_data.Mdata.K_W = (int16_t) (motor_s->K_W * 1024) & 0xFFFF;
+	// LowHzMotorCmdIndex & LowHzMotorCmdIndex & Res
+	motor_s->motor_send_data.Mdata.LowHzMotorCmdIndex = 0;
+	motor_s->motor_send_data.Mdata.LowHzMotorCmdByte = 0;
+	motor_s->motor_send_data.Mdata.Res.u32 = 0;
+	// CRC Data
+	motor_s->motor_send_data.CRCdata.u32 = crc32_core((uint32_t*) (&(motor_s->motor_send_data)), 7);
+}
+
+void A1_Get_Send_Data(A1Cmd *motor_s, uint8_t *buf) {
+	memcpy(buf, &(motor_s->motor_send_data), sizeof(MasterComdDataV3));
+}
+
+void A1_Motor_Send(A1_Motor *obj) {
+	A1_Modify_Data(&(obj->motor_cmd));
+
+	uint8_t tx_buf[34];
+	memcpy(tx_buf, &(obj->motor_cmd.motor_send_data), sizeof(tx_buf));
+
+	RS485_Send_DMA(obj->config.rs485_ind, tx_buf, sizeof(tx_buf));
+}
+
+bool A1_Extract_Data(A1Data *motor_r, uint8_t *data) {
+	// header
+//	motor_r->motor_recv_data.head.start[0] = data[0];
+//	motor_r->motor_recv_data.head.start[1] = data[1];
+	motor_r->motor_recv_data.head.motorID = data[2];
+//	motor_r->motor_recv_data.head.reserved = data[3];
+	// data
+	motor_r->motor_recv_data.Mdata.mode = data[4];
+//	motor_r->motor_recv_data.Mdata.ReadBit = data[5];
+//	motor_r->motor_recv_data.Mdata.Temp = data[6];
+//	motor_r->motor_recv_data.Mdata.MError = data[7];
+//	motor_r->motor_recv_data.Mdata.Read.u32 = data[8] | ((uint32_t) data[9]) << 8 | ((uint32_t) data[10]) << 16
+//	        | ((uint32_t) data[11]) << 24; //可忽略
+	motor_r->motor_recv_data.Mdata.T = ((int16_t) (data[12] | (((uint16_t) data[13]) << 8)));
+	motor_r->motor_recv_data.Mdata.W = ((int16_t) (data[14] | (((uint16_t) data[15]) << 8)));
+	motor_r->motor_recv_data.Mdata.LW = ((float) ((int32_t) (data[16] | (((uint32_t) data[17]) << 8)
+	        | (((uint32_t) data[18]) << 16) | (((uint32_t) data[19]) << 24))));
+//	motor_r->motor_recv_data.Mdata.W2 = ((int16_t) (data[20] | (((uint16_t) data[21]) << 8)));
+//	motor_r->motor_recv_data.Mdata.LW2 = ((float) ((int32_t) (data[22] | (((uint32_t) data[23]) << 8)
+//	        | (((uint32_t) data[24]) << 16) | (((uint32_t) data[25]) << 24))));
+//	motor_r->motor_recv_data.Mdata.Acc = ((int16_t) (data[26] | (((uint16_t) data[27]) << 8)));
+//	motor_r->motor_recv_data.Mdata.OutAcc = ((int16_t) (data[28] | (((uint16_t) data[29]) << 8)));
+	motor_r->motor_recv_data.Mdata.Pos = ((int32_t) (data[30] | (((uint32_t) data[31]) << 8)
+	        | (((uint32_t) data[32]) << 16) | (((uint32_t) data[33]) << 24)));
+//	motor_r->motor_recv_data.Mdata.Pos2 = ((int32_t) (data[34] | (((uint32_t) data[35]) << 8)
+//	        | (((uint32_t) data[36]) << 16) | (((uint32_t) data[37]) << 24)));
+//	motor_r->motor_recv_data.Mdata.gyro[0] = ((int16_t) (data[38] | (((uint16_t) data[39]) << 8)));
+//	motor_r->motor_recv_data.Mdata.gyro[1] = ((int16_t) (data[40] | (((uint16_t) data[41]) << 8)));
+//	motor_r->motor_recv_data.Mdata.gyro[2] = ((int16_t) (data[42] | (((uint16_t) data[43]) << 8)));
+//	motor_r->motor_recv_data.Mdata.acc[0] = ((int16_t) (data[44] | (((uint16_t) data[45]) << 8)));
+//	motor_r->motor_recv_data.Mdata.acc[1] = ((int16_t) (data[46] | (((uint16_t) data[47]) << 8)));
+//	motor_r->motor_recv_data.Mdata.acc[2] = ((int16_t) (data[48] | (((uint16_t) data[49]) << 8)));
+//	motor_r->motor_recv_data.Mdata.Fgyro[0] = ((int16_t) (data[50] | (((uint16_t) data[51]) << 8)));
+//	motor_r->motor_recv_data.Mdata.Fgyro[1] = ((int16_t) (data[52] | (((uint16_t) data[53]) << 8)));
+//	motor_r->motor_recv_data.Mdata.Fgyro[2] = ((int16_t) (data[54] | (((uint16_t) data[55]) << 8)));
+//	motor_r->motor_recv_data.Mdata.Facc[0] = ((int16_t) (data[56] | (((uint16_t) data[57]) << 8)));
+//	motor_r->motor_recv_data.Mdata.Facc[1] = ((int16_t) (data[58] | (((uint16_t) data[59]) << 8)));
+//	motor_r->motor_recv_data.Mdata.Facc[2] = ((int16_t) (data[60] | (((uint16_t) data[61]) << 8)));
+//	motor_r->motor_recv_data.Mdata.Fmag[0] = ((int16_t) (data[62] | (((uint16_t) data[63]) << 8)));
+//	motor_r->motor_recv_data.Mdata.Fmag[1] = ((int16_t) (data[64] | (((uint16_t) data[65]) << 8)));
+//	motor_r->motor_recv_data.Mdata.Fmag[2] = ((int16_t) (data[66] | (((uint16_t) data[67]) << 8)));
+//	motor_r->motor_recv_data.Mdata.Ftemp = data[68];
+//	motor_r->motor_recv_data.Mdata.Force16 = ((int16_t) (data[69] | (((uint16_t) data[70]) << 8)));
+//	motor_r->motor_recv_data.Mdata.Force8 = data[71];
+//	motor_r->motor_recv_data.Mdata.FError = data[72];
+//	motor_r->motor_recv_data.Mdata.Res = data[73];
+
+	motor_r->id = motor_r->motor_recv_data.head.motorID;
+	motor_r->mode = motor_r->motor_recv_data.Mdata.mode;
+	motor_r->T = motor_r->motor_recv_data.Mdata.T / 256.0f;
+	motor_r->W = motor_r->motor_recv_data.Mdata.W / 256.0f;
+	motor_r->LW = motor_r->motor_recv_data.Mdata.LW / 128.0f;
+	motor_r->Pos = motor_r->motor_recv_data.Mdata.Pos * 2 * M_PI / 16384;
+
+	//	motor_r->Acc = motor_r->motor_recv_data.Mdata.Acc;
+	//	motor_r->gyro[0] = motor_r->motor_recv_data.Mdata.gyro[0] * 0.0010652644; // 2000*2*pi/(2^15*360)
+	//	motor_r->gyro[1] = motor_r->motor_recv_data.Mdata.gyro[1] * 0.0010652644;
+	//	motor_r->gyro[2] = motor_r->motor_recv_data.Mdata.gyro[2] * 0.0010652644;
+	//	motor_r->acc[0] = motor_r->motor_recv_data.Mdata.acc[0] * 0.0023942017; // 8*9.80665 / 2^15
+	//	motor_r->acc[1] = motor_r->motor_recv_data.Mdata.acc[1] * 0.0023942017; // 8*9.80665 /2^15
+	//	motor_r->acc[2] = motor_r->motor_recv_data.Mdata.acc[2] * 0.0023942017; //8*9.80665 / 2^15
+
+	// CRC data
+	motor_r->motor_recv_data.CRCdata.u32 = data[74] | ((uint32_t) data[75] << 8) | ((uint32_t) data[76] << 16)
+	        | ((uint32_t) data[77] << 24);
+
+	if (motor_r->motor_recv_data.CRCdata.u32 == crc32_core((uint32_t*) data, 18))
+		return motor_r->correct = true;
+	else
+		return motor_r->correct = false;
+}
+
+void A1_Get_Recv_Data(A1Data *motor_r, uint8_t *buf) {
+	memcpy(buf, &(motor_r->motor_recv_data), sizeof(ServoComdDataV3));
+}
+
+void A1_Motor_RecvData_Process(A1_Motor *obj, uint8_t *data, uint8_t len) {
+	obj->motor_data_prev = obj->motor_data;
+
+	A1_Extract_Data(&(obj->motor_data), data);
+
+	if ((obj->motor_data.Pos - obj->motor_data_prev.Pos) > 512 * M_PI)  // 512*M_PI: 256*2*pi
+		--obj->round_cnt;
+	if ((obj->motor_data.Pos - obj->motor_data_prev.Pos) < -512 * M_PI)
+		++obj->round_cnt;
+
+	obj->cur_angle = obj->motor_data.Pos + obj->round_cnt * 1024 * M_PI; // 1024*M_PI: -256*2*pi~256*2*pi
+	obj->cur_speed = obj->motor_data.W;
+
+	char str[20] = {0};
+	// 将浮点数转换为字符串
+	sprintf(str, "%.2f", 2.0);
+	CDC_Transmit_FS((uint8_t*) str, sizeof(str));
+}
+
+float A1_Convert_Vel(float vel){
+	return vel / WHEEL_R;  //   m/s转换为rad/s
+}
+
+uint32_t crc32_core(uint32_t *ptr, uint32_t len) {
+	uint32_t xbit = 0;
+	uint32_t data = 0;
+	uint32_t CRC32 = 0xFFFFFFFF;
+	const uint32_t dwPolynomial = 0x04c11db7;
+	for (uint32_t i = 0; i < len; i++) {
+		xbit = 1 << 31;
+		data = ptr[i];
+		for (uint32_t bits = 0; bits < 32; bits++) {
+			if (CRC32 & 0x80000000) {
+				CRC32 <<= 1;
+				CRC32 ^= dwPolynomial;
+			} else
+				CRC32 <<= 1;
+			if (data & xbit)
+				CRC32 ^= dwPolynomial;
+			xbit >>= 1;
+		}
+	}
+	return CRC32;
+}

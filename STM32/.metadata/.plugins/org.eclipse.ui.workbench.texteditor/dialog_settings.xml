@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
+		<item key="casesensitive" value="true"/>
+		<item key="wholeword" value="false"/>
+		<item key="isRegEx" value="false"/>
+		<item key="selection" value="crc"/>
+		<list key="findhistory">
+			<item value="接受"/>
+			<item value=", uint32_t Len"/>
+			<item value="temp."/>
+			<item value="myQueue03Handle"/>
+			<item value="vApplicationTask"/>
+			<item value="MotorCmd"/>
+			<item value="motor_r-&gt;"/>
+			<item value="obj-&gt;rx_data"/>
+		</list>
+		<list key="replacehistory">
+			<item value=" 接收"/>
+			<item value=" "/>
+			<item value="data-&gt;"/>
+			<item value="MotorMsg"/>
+			<item value="obj-&gt;motor_data."/>
+			<item value="motor_r-&gt;motor_recv_data"/>
+			<item value="motor_s-&gt;"/>
+			<item value="motor_s-&gt;motor_send_data"/>
+		</list>
+	</section>
+</section>

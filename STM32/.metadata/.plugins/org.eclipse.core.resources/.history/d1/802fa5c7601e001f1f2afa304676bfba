@@ -1,0 +1,111 @@
+/*
+ * CDC_msg.h
+ *
+ *  Created on: May 30, 2024
+ *      Author: 23877
+ */
+
+#ifndef CDC_MSG_H_
+#define CDC_MSG_H_
+
+#include <string.h>
+
+enum CmdMode {
+	M,  // 电机模式选择指令
+	J,  // 点动指令
+	T   // 轨迹指令
+};
+
+#pragma pack(1)
+typedef struct {
+	bool start;
+	unsigned char motor_mode;
+	float vel;
+	float pos;
+
+} MotorCmd;
+#pragma pack()
+
+enum NewCmd {
+	CABLE, ARCHOR, GO, A1
+};
+
+#pragma pack(1)
+typedef struct {
+	unsigned char cmd_mode;
+	unsigned char new_cmd;
+	MotorCmd cable_cmd;
+	MotorCmd archor_cmd;
+	MotorCmd go_cmd;
+	MotorCmd a1_cmd;
+} CmdMsg;
+#pragma pack()
+
+enum LocalTrajType {
+	EMPTY1, UPDOWN, LINE, CIRCLE
+};
+
+enum GlobalTrajType {
+	EMPTY2, NO_OBS, OBS
+};
+
+#pragma pack(1)
+typedef struct {
+	unsigned char cmd_mode;
+	bool start;
+	unsigned char cdpr_traj;
+	unsigned char chassis_traj;
+	float period;
+} TrajMsg;
+#pragma pack()
+
+// 将结构体转换为char数组
+void MotorCmd_toCharArray(const MotorCmd *msg, char *buffer, size_t size) {
+	if (size < sizeof(*msg))
+		return;
+	memcpy(buffer, msg, sizeof(*msg));
+}
+void CmdMsg_toCharArray(const CmdMsg *msg, char *buffer, size_t size) {
+    if (size < sizeof(*msg))
+		return;
+    memcpy(buffer, msg, sizeof(*msg));
+}
+void TrajMsg_toCharArray(const TrajMsg *msg, char *buffer, size_t size) {
+	if (size < sizeof(*msg))
+		return;
+	memcpy(buffer, msg, sizeof(*msg));
+}
+
+// 从char数组转换回结构体
+MotorCmd MotorCmd_fromCharArray(const char *data, size_t size) {
+	MotorCmd cmd;
+	if (size < sizeof(cmd)) {
+		// 返回一个默认初始化的结构体，这里简单地清零
+		memset(&cmd, 0, sizeof(cmd));
+		return cmd;
+	}
+	memcpy(&cmd, data, sizeof(MotorCmd));
+	return cmd;
+}
+CmdMsg CmdMsg_fromCharArray(const char *data, size_t size) {
+	CmdMsg msg;
+	if (size < sizeof(msg)) {
+		// 返回一个默认初始化的结构体，这里简单地清零
+		memset(&msg, 0, sizeof(msg));
+		return msg;
+	}
+	memcpy(&msg, data, sizeof(CmdMsg));
+	return msg;
+}
+TrajMsg TrajMsg_fromCharArray(const char *data, size_t size) {
+	TrajMsg msg;
+	if (size < sizeof(msg)) {
+		// 返回一个默认初始化的结构体，这里简单地清零
+		memset(&msg, 0, sizeof(msg));
+		return msg;
+	}
+	memcpy(&msg, data, sizeof(TrajMsg));
+	return msg;
+}
+
+#endif /* CDC_MSG_H_ */

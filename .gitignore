@@ -1,0 +1,10 @@
+*.a
+*.dll
+*.dylib
+*.exe
+*.o
+*.obj
+*.so
+*/.git/*
+*.git
+.metadata/*

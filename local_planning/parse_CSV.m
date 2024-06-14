@@ -1,14 +1,14 @@
 clear, close all
 param_cdpr = param_mobile_cdpr;
 %% 读取文件
-fid1 = fopen('data/archorPos04_02_20_46_14.csv');   
-fid2 = fopen('data/cablePos04_02_20_46_14.csv');
-fid3 = fopen('data/recvPos04_02_20_46_14.csv');
-fid4 = fopen('data/ee_target_pose03_31_22_27_09.csv');
+fid1 = fopen('data/archorPos03_18_16_24_15.csv');   
+fid2 = fopen('data/cablePos03_18_16_24_15.csv');
+fid3 = fopen('data/recvPos03_18_16_24_15.csv');
+fid4 = fopen('data/03_18_16_24_15.csv');
 A = textscan(fid1, '%f64%f64%f64', 'Delimiter', ',');
 B = textscan(fid2, '%f64%f64%f64', 'Delimiter', ',');
 C = textscan(fid3, '%f64%f64%f64', 'Delimiter', ',');
-D = textscan(fid4, '%f64%f64%f64%f64%f64%f64', 'Delimiter', ',');
+D = textscan(fid4, '%f64%f64%f64%f64%f64%f64%f64%f64', 'Delimiter', ',');
 fclose(fid1); fclose(fid2); fclose(fid3); fclose(fid4);
 a = cell2mat(A);
 b = cell2mat(B);
@@ -59,7 +59,7 @@ for i = 1:4
 end
 
 %% 修改时间戳
-for i = 2:2
+for i = 1:4
     archor_t_start = archor_target_pos{i}(1,1);
     for j = 1:size(archor_target_pos{i}, 1)
         archor_target_pos{i}(j,1) = (archor_target_pos{i}(j,1) - archor_t_start) / 1000;
@@ -78,7 +78,7 @@ end
 %% 计算电机位置误差
 archor_error = cell(4, 1); archor_error_max = zeros(4, 1);
 cable_error = cell(4, 1); cable_error_max = zeros(4, 1);
-for i = 2:2
+for i = 1:4
     for j = 1:size(archor_target_pos{i}, 1)
         [~,index] = min(abs(archor_cur_pos{i}(:, 1) - archor_target_pos{i}(j, 1)));
         archor_error{i}(j) = archor_target_pos{i}(j, 2) - archor_cur_pos{i}(index, 2);
@@ -93,7 +93,7 @@ end
 %% 绘图
 % 锚点座
 figure(1);
-for i = 2:2
+for i = 1:4
     subplot(2,2,i);
     yyaxis left; % 设置左侧纵坐标轴
     plot(archor_target_pos{i}(:,1),archor_target_pos{i}(:,2),'r-',...
@@ -108,7 +108,7 @@ for i = 2:2
 end
 % 绳索
 figure(2);
-for i = 2:2
+for i = 1:4
     subplot(2,2,i);
     yyaxis left; % 设置左侧纵坐标轴
     plot(cable_target_pos{i}(:,1),cable_target_pos{i}(:,2),'r-',...
@@ -177,7 +177,7 @@ for i = 1:3
     plot(target_timestamp,target_pose(i,:),'r-',...
          cur_timestamp,real_pose(i,:),'b--','LineWidth',1.2);
     ylabel('pos(m)');
-    xlabel('time(s)');xlim([0 215]);
+    xlabel('time(s)');xlim([0 22]);
     yyaxis right; % 设置右侧纵坐标轴
     plot(target_timestamp,ep_pos_error(i,:),'-.','LineWidth',1.2);
     ylabel('error(m)');
@@ -190,7 +190,7 @@ for i = 4:6
     plot(target_timestamp,target_pose(i,:)*180/pi,'r-',...
          cur_timestamp,real_pose(i,:)*180/pi,'b--','LineWidth',1.2);
     ylabel('angle(°)');
-    xlabel('time(s)');xlim([0 215]);
+    xlabel('time(s)');xlim([0 22]);
     yyaxis right; % 设置右侧纵坐标轴
     plot(target_timestamp,ep_pos_error(i,:)*180/pi,'-.','LineWidth',1.2);
     ylabel('error(°)');

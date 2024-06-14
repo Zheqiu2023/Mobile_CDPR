@@ -16,10 +16,10 @@
 % constraints can often be nonlinear. Therefore, you need to use nonlinear
 % MPC controller for problem formulation and solution. In this example, you
 % design a nonlinear MPC controller that finds an optimal route to
-% automatically park CDPR from its initial position to its target position,
-% which is between two static obstacles. You can then pass the generated
-% path to a low-level controller as a reference signal, so that it can
-% execute the parking maneuver in real time.
+% automatically park CDPR from its initial position to its target position
+% . You can then pass the generated path to a low-level controller as a
+% reference signal, so that it can execute the parking maneuver in real
+% time.
 %
 % This example requires Optimization Toolbox(TM) and Robotics System
 % Toolbox(TM) software.
@@ -35,11 +35,13 @@
 % # |x| (center of the CDPR rear axle, global x position)
 % # |y| (center of the CDPR rear axle, global y position)
 % # |theta| (CDPR orientation, global angle, 0 = east)
+% # |v| (CDPR longitudinal velocity)
+% # |alpha| (CDPR steering angle)
 %
 % The inputs for this model are:
 %
-% # |alpha| (CDPR steering angle)
-% # |v| (CDPR longitudinal velocity)
+% # |a| (CDPR longitudinal acceleration)
+% # |w| (CDPR steering angular velocity)
 %
 % For this model, length and position are in meters, velocity is in m/s,
 % and angles are in radians.
@@ -57,22 +59,18 @@ params = struct('L',1.114,...
     'W',1.09,...
     'Lwheel',0.235,...
     'Wwheel',0.05);
-enable_obs = 1;
+enable_obs = 0;
 
 %%
 % The nonlinear model is implemented in the |CdprStateFcn| function and its
 % manually-derived analytical Jacobian (which is used to speed up
 % optimization) is in the |CdprStateJacobianFcn| function .
-%
-% In this example, since you use MPC as a path planner instead of a
-% low-level path-following controller, the CDPR's longitudinal velocity is
-% used as one of the manipulated variables instead of the acceleration.
 
 %% Path Planning Problem
 % The goal is to find a viable path that brings the CDPR system from any
 % initial position to the target position (the green cross in the following
-% figure) in 20 seconds using reverse parking. In the process, the planned
-% path must avoid collisions with obstacles.
+% figure). In the process, the planned path must avoid collisions with
+% obstacles.
 if ~enable_obs
     initialPose = [-3;0;0;0;0];
     targetPose = [1;1;pi/6;0;0];
@@ -83,8 +81,8 @@ end
 CdprPlot(enable_obs,initialPose,targetPose,params);
 
 %%
-% The initial plant inputs (steering angle and longitudinal velocity) are
-% both |0|.
+% The initial plant inputs (steering angular velocity and longitudinal
+% acceleration) are both |0|.
 u0 = zeros(2,1);
 
 %%
@@ -114,40 +112,39 @@ end
 % |k| to |k+p|), satisfying all the stage constraints (from time |k| to
 % |k+p|).
 %
-% In this example, the plant has four states and two inputs (both MVs).
-% Choose the prediction horizon |p| and sample time |Ts| such that p*Ts =
-% 20.
+% In this example, the plant has five states and two inputs (both MVs).
+% Choose the prediction horizon |p| and sample time |Ts| such as p*Ts = 20.
 
 % Create the multistage nonlinear MPC controller.
-p = 300;
+p = 200;
 nlobj = nlmpcMultistage(p,5,2);
 nlobj.Ts = 0.05;
 
 %%
 % Specify the prediction model and its analytical Jacobian in the
-% controller object. Since the model requires three parameters (|M|, |L1|,
-% and |L2|), set |Model.ParameterLength| to |3|.
+% controller object. Since the model requires one parameters (|L|), set
+% |Model.ParameterLength| to |1|.
 nlobj.Model.StateFcn = "CdprStateFcn";
 nlobj.Model.StateJacFcn = "CdprStateJacobianFcn";
 nlobj.Model.ParameterLength = 1;
 
 %%
-% Specify hard bounds on the two manipulated variables. The steering angle
-% must remain in the range +/- 45 degrees. The maximum forward speed is 2
-% m/s and the maximum reverse speed is 2 m/s.
+% Specify hard bounds on states. The steering angle must remain in the
+% range +/- 45 degrees. The maximum forward speed is 2 m/s and the maximum
+% reverse speed is 2 m/s.
 nlobj.States(4).Min = -2;   % Minimum steering angle
 nlobj.States(4).Max = 2;    % Maximum steering angle
 nlobj.States(5).Min = -pi/4;    % Minimum velocity (reverse)
 nlobj.States(5).Max = pi/4;     % Maximum velocity (forward)
 
-
+% Specify hard bounds on the two manipulated variables.
 nlobj.MV(1).Min = -3;     % Minimum steering angular velocity
 nlobj.MV(1).Max =  3;     % Maximum steering angular velocity
-nlobj.MV(2).Min = -3;       % Minimum acceleration 
+nlobj.MV(2).Min = -3;       % Minimum acceleration
 nlobj.MV(2).Max =  3;       % Maximum acceleration
 
-nlobj.MV(1).RateMax = 1;  % Maximum steering angle increment
-nlobj.MV(2).RateMax = 1;  % Maximum velocity increment
+nlobj.MV(1).RateMax = 0.5;  % Maximum steering angular velocity increment
+nlobj.MV(2).RateMax = 0.5;  % Maximum acceleration increment
 
 %%
 % You can use different ways to define the cost terms. For example, you
@@ -230,27 +227,36 @@ tic;[~,~,info] = nlmpcmove(nlobj,initialPose,u0,simdata);t=toc;
 fprintf('Calculation Time = %s; Objective cost = %s; ExitFlag = %s; Iterations = %s\n',...
     num2str(t),num2str(info.Cost),num2str(info.ExitFlag),num2str(info.Iterations));
 
+%% calculate and save alpha&v for each wheelset
+num = size(info.MVopt, 1);
+alpha = zeros(num, 4);
+v = zeros(num, 4);
+
+L = params.L;
+W = params.W;
+Vref = info.Xopt(:, 4); % 前轴中心速度
+ALPHAref = info.Xopt(:, 5); % 前轴中心转角
+R = L./tan(ALPHAref); % 转弯半径
+Wref = Vref./R;% 转向角速度 
+
+% Ackerman steering 
+alpha(:, 1) = atan(L./(R-W.*sign(ALPHAref)/2));
+alpha(:, 2) = atan(L./(R+W.*sign(ALPHAref)/2));
+v(:, 1) = Wref.*L./sin(alpha(:, 1));
+v(:, 2) = Wref.*L./sin(alpha(:, 2));
+v(:, 3) = Wref.*(R-sign(ALPHAref).*W/2);
+v(:, 4) = Wref.*(R+sign(ALPHAref).*W/2);
+writematrix([alpha v],'result.csv','WriteMode','append');
+
 %% animate and plot
 % Two plots are generated. One is the animation of the parking process,
 % where blue circles indicate the optimal path and the initial guess is
 % shown as a dot. The other displays the optimal trajectory of plant states
 % and control moves.
-CdprPlot(enable_obs, initialPose, targetPose, params, info, XY0);
+CdprPlot(enable_obs, initialPose, targetPose, params, info, alpha, XY0);
 
 %% analyze results
 analyzeResults(info, targetPose, t);
-
-%% calculate and save alpha&v for each wheelset
-num = size(info.MVopt, 1);
-alpha = zeros(num, 4);
-v = zeros(num, 4);
-alpha(:, 1) = info.Xopt(:, 5);
-alpha(:, 2) = info.Xopt(:, 5);
-v(:, 1) = info.Xopt(:, 4)./cos(alpha(:, 1));
-v(:, 2) = info.Xopt(:, 4)./cos(alpha(:, 2));
-v(:, 3) = info.Xopt(:, 4);
-v(:, 4) = info.Xopt(:, 4);
-writematrix([alpha v],'result.csv','WriteMode','append');
 
 %%
 % You can try other initial X-Y positions in the Path Planning Problem

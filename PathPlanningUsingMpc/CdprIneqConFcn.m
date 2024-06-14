@@ -1,6 +1,6 @@
 function cineq = CdprIneqConFcn(stage,x,u,p)
 % Inequality constraint function of the path planner of a CDPR system, used
-% to avoid two static obstacles.
+% to avoid static obstacles.
 
 %% Ego and obstacles
 persistent obstacles cdpr

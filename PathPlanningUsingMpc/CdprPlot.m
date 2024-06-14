@@ -1,5 +1,5 @@
-function CdprPlot(enable_obs, initialPose, targetPose, params, info, XY0)
-% Animate automated parking of a CDPR system.
+function CdprPlot(enable_obs, initialPose, targetPose, params, info, alpha, XY0)
+% Animate automated parking of a CDPR system. 
 
 % plot initial poses
 f = figure('NumberTitle','off');
@@ -28,7 +28,7 @@ end
 
 if nargin<=5
     f.Name = 'Parking Lot with Initial and Target Positions';
-    animateCdpr(gca, 0, initialPose', params);
+    animateCdpr(gca, 0, initialPose', [0 0], params);
 else
     f.Name = ['Automated Parking Animation (x0 = ' num2str(initialPose(1)) ', y0 = ' num2str(initialPose(2)) ')'];
     % obtain optimal trajectory designed by MPC
@@ -40,7 +40,7 @@ else
     % plot the optimal XY trajectory by MPC
     plot(xTrackHistory(:,1),xTrackHistory(:,2),'bo')
     % animate track trailer moves
-    animateCdpr(gca, tTrackHistory, xTrackHistory, params);
+    animateCdpr(gca, tTrackHistory, xTrackHistory, alpha, params);
     %
     if enable_obs
         legend('','','','Initial Guess','Optimal Path');
@@ -58,7 +58,8 @@ else
     subplot(4,2,3)
     plot(tTrackHistory,xTrackHistory(:,1),'g.');title('x (m)');grid on;
     subplot(4,2,4)
-    plot(tTrackHistory,xTrackHistory(:,2),'g.');title('y (m)');grid on;
+    plot(tTrackHistory,xTrackHistory(:,2),'g.');
+    title('y (m)');grid on;
     subplot(4,2,5)
     plot(tTrackHistory,xTrackHistory(:,3),'g.');title('\theta (rad)');grid on;
     subplot(4,2,6)
@@ -73,15 +74,12 @@ else
     end
 end
 
-
-function animateCdpr(ax, tOut, qOut, params)
+function animateCdpr(ax, tOut, qOut, alpha, params)
 % Playback CDPR motions
-
 tSample = tOut;
 xSample = qOut(:,1);
 ySample = qOut(:,2);
 thSample = qOut(:,3);
-alphaSample = qOut(:,5);
 
 W1 = params.W;
 L1 = params.L;
@@ -103,11 +101,11 @@ hWheelRR = fill(ax, wheelPoints(:,1), wheelPoints(:,2), 'k', 'Visible', 'off');
 hPoint = plot(ax, 0, 0, 'r.', 'Visible', 'off');
 
 for i = 1:length(tSample)
-
     x = xSample(i);
     y = ySample(i);
     th = thSample(i);
-    alpha = alphaSample(i);
+    alphaFL = alpha(i, 1);
+    alphaFR = alpha(i, 2);
 
     % Draw CDPR
     TCdpr = [cos(th) -sin(th) x;
@@ -118,23 +116,30 @@ for i = 1:length(tSample)
     hCdpr.YData = pts(:,2);
 
     % Draw CDPR wheels
-    TWheel = [cos(alpha) -sin(alpha) 0;
-        sin(alpha) cos(alpha)  0;
+    TWheelFL = [cos(alphaFL) -sin(alphaFL) 0;
+        sin(alphaFL) cos(alphaFL) 0;
         0 0 1];
+    TWheelFR = [cos(alphaFR) -sin(alphaFR) 0;
+        sin(alphaFR) cos(alphaFR) 0;
+        0 0 1];
+
     TOffsetFL = [1 0 L1; 0 1 W1/2; 0 0 1];
     TOffsetFR = [1 0 L1; 0 1 -W1/2; 0 0 1];
     TOffsetRL = [1 0 0; 0 1 W1/2; 0 0 1];
     TOffsetRR = [1 0 0; 0 1 -W1/2; 0 0 1];
-    pts = transformPoints(wheelPoints, TCdpr*TOffsetFL*TWheel);
+
+    pts = transformPoints(wheelPoints, TCdpr*TOffsetFL*TWheelFL);
     hWheelFL.XData = pts(:,1);
     hWheelFL.YData = pts(:,2);
-    pts = transformPoints(wheelPoints, TCdpr*TOffsetFR*TWheel);
+
+    pts = transformPoints(wheelPoints, TCdpr*TOffsetFR*TWheelFR);
     hWheelFR.XData = pts(:,1);
     hWheelFR.YData = pts(:,2);
 
     pts = transformPoints(wheelPoints, TCdpr*TOffsetRL);
     hWheelRL.XData = pts(:,1);
     hWheelRL.YData = pts(:,2);
+
     pts = transformPoints(wheelPoints, TCdpr*TOffsetRR);
     hWheelRR.XData = pts(:,1);
     hWheelRR.YData = pts(:,2);
@@ -149,11 +154,10 @@ for i = 1:length(tSample)
     hWheelRL.Visible = 'on';
     hWheelRR.Visible = 'on';
     hPoint.Visible = 'on';
-
+    
     % pause for animation
     %drawnow;
     pause(0.1)
-
 end
 
 function points = getRectangleVertices(L, W)
@@ -169,4 +173,3 @@ function newPoints = transformPoints(points, T)
 newPoints = T*[points';ones(1, size(points,1))];
 newPoints = newPoints';
 newPoints = newPoints(:, 1:2);
-

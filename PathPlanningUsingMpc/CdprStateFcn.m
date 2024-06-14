@@ -5,10 +5,12 @@ function dxdt = CdprStateFcn(x,u,p)
 %       1: x (center of the CDPR's rear axle, global x position)
 %       2: y (center of the CDPR's rear axle, global y position)
 %       3: theta (CDPR orientation, global angle, 0 = east)
+%       4: v (CDPR longitudinal velocity)
+%       5: alpha (CDPR steering angle)
 %
 %   Inputs:
-%       1: alpha (CDPR steering angle)
-%       2: v (CDPR longitudinal velocity)
+%       1: |a| (CDPR longitudinal acceleration)
+%       2: |w| (CDPR steering angular velocity)
 %
 %   Parameters:
 %       p(1): L (CDPR length)

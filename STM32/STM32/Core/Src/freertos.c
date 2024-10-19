@@ -28,6 +28,8 @@
 #include "bsp.h"
 #include "stdlib.h"
 #include "board.h"
+#include "utilities.h"
+#include "usbd_cdc_if.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -52,35 +54,20 @@
 osThreadId defaultTaskHandle;
 osThreadId TrajectoryTaskHandle;
 osThreadId JogTaskHandle;
+osThreadId MotorDataTaskHandle;
 osMessageQId TrajCmdQueueHandle;
 osMessageQId JogCmdQueueHandle;
+osMutexId bufferMutexHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
-/* 虚拟串口接收数据处理函数 */
-void CDC_Process_Recv_Data(uint8_t *data, uint32_t Len) {
-	BaseType_t xHigherPriorityTaskWoken = pdTRUE;
-	switch (data[0]) {
-		case M:	// 电机模式选择
-		case J:	// 点动
-			CmdMsg temp1 = CmdMsg_fromCharArray(data, Len);
-			osMessagePut(JogCmdQueueHandle, (uint32_t)&temp1, 0);
-//			xQueueSendToBackFromISR(JogCmdQueueHandle, data, 0);//从data指向的空间复制队列长度的数据到队列的存储区域
-			portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-			break;
-		case T:	// 轨迹
-			TrajMsg temp2 = TrajMsg_fromCharArray(data, Len);
-			osMessagePut(TrajCmdQueueHandle, (uint32_t)&temp2, 0);
-			break;
-		default:
-			break;
-	}
-}
+
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void const * argument);
 void StartTrajectoryTask(void const * argument);
 void StartJogTask(void const * argument);
+void ProcessMotorDataTask(void const * argument);
 
 extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -110,6 +97,10 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
+  /* Create the mutex(es) */
+  /* definition and creation of bufferMutex */
+  osMutexDef(bufferMutex);
+  bufferMutexHandle = osMutexCreate(osMutex(bufferMutex));
 
   /* USER CODE BEGIN RTOS_MUTEX */
 	/* add mutexes, ... */
@@ -138,7 +129,7 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityIdle, 0, 128);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* definition and creation of TrajectoryTask */
@@ -148,6 +139,10 @@ void MX_FREERTOS_Init(void) {
   /* definition and creation of JogTask */
   osThreadDef(JogTask, StartJogTask, osPriorityBelowNormal, 0, 128);
   JogTaskHandle = osThreadCreate(osThread(JogTask), NULL);
+
+  /* definition and creation of MotorDataTask */
+  osThreadDef(MotorDataTask, ProcessMotorDataTask, osPriorityLow, 0, 128);
+  MotorDataTaskHandle = osThreadCreate(osThread(MotorDataTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -167,15 +162,12 @@ void StartDefaultTask(void const * argument)
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN StartDefaultTask */
+
 	/* Infinite loop */
 	for (;;) {
-//		HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-		osDelay(1);
+		HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+		osDelay(500);
 	}
-	free (board.cable_motor);
-	free (board.archor_motor);
-	free (board.steer_motor);
-	free (board.roll_motor);
   /* USER CODE END StartDefaultTask */
 }
 
@@ -189,17 +181,19 @@ void StartDefaultTask(void const * argument)
 void StartTrajectoryTask(void const * argument)
 {
   /* USER CODE BEGIN StartTrajectoryTask */
+//	osThreadSuspend(MotorDataTaskHandle);
+	Board_Init();
+
 	TrajMsg *buf;
 	osEvent evt;
 	/* Infinite loop */
 	for (;;) {
-		evt = osMessageGet(TrajCmdQueueHandle,osWaitForever);
-		if (evt.status == osEventMessage)
-		{
-			buf = (TrajMsg *)evt.value.p;
+		evt = osMessageGet(TrajCmdQueueHandle, osWaitForever);
+		if (evt.status == osEventMessage) {
+			buf = (TrajMsg*) evt.value.p;
 			Process_Traj_Cmd(buf);
 		}
-		osDelay(1);
+		osDelay(50);
 	}
   /* USER CODE END StartTrajectoryTask */
 }
@@ -214,14 +208,13 @@ void StartTrajectoryTask(void const * argument)
 void StartJogTask(void const * argument)
 {
   /* USER CODE BEGIN StartJogTask */
-	CmdMsg* buf;
+	JogMsg *buf;
 	osEvent evt;
 	/* Infinite loop */
 	for (;;) {
-		evt = osMessageGet(TrajCmdQueueHandle,0);
-		if (evt.status == osEventMessage)
-		{
-			buf = (CmdMsg *)evt.value.p;
+		evt = osMessageGet(JogCmdQueueHandle, osWaitForever);
+		if (evt.status == osEventMessage) {
+			buf = (JogMsg*) evt.value.p;
 			switch (buf->new_cmd) {
 				case CABLE:
 					Process_Cable_Cmd(&(buf->cable_cmd));
@@ -229,19 +222,43 @@ void StartJogTask(void const * argument)
 				case ARCHOR:
 					Process_Archor_Cmd(&(buf->archor_cmd));
 					break;
-				case GO:
-					Process_GO_Cmd( &(buf->go_cmd));
+				case STEER:
+					Process_GO_Cmd(&(buf->go_cmd));
 					break;
-				case A1:
+				case ROLL:
 					Process_A1_Cmd(&(buf->a1_cmd));
 					break;
 				default:
 					break;
 			}
 		}
-		osDelay(1);
+		osDelay(50);
 	}
   /* USER CODE END StartJogTask */
+}
+
+/* USER CODE BEGIN Header_ProcessMotorDataTask */
+/**
+* @brief Function implementing the MotorDataTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_ProcessMotorDataTask */
+void ProcessMotorDataTask(void const * argument)
+{
+  /* USER CODE BEGIN ProcessMotorDataTask */
+	MotorFBData motor_fb_data = {0};
+	uint8_t data[20] = {0XAA, 0X55};
+  /* Infinite loop */
+  for(;;)
+  {
+	if(Buffer_Get(&motor_fb_buffer, &motor_fb_data.motor_type, &motor_fb_data.id, &motor_fb_data.pos, &motor_fb_data.vel)){
+		memcpy(&data[2], &motor_fb_data, sizeof(motor_fb_data));
+		CDC_Transmit_FS((uint8_t*)data, 12);
+	}
+    osDelay(10);
+  }
+  /* USER CODE END ProcessMotorDataTask */
 }
 
 /* Private application code --------------------------------------------------*/

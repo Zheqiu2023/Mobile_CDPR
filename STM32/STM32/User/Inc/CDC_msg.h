@@ -12,15 +12,22 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-enum CmdMode {
+/* 电机指令格式**************************************/
+typedef enum{
+	MAXON_RE35,
+	UNITREE_A1,
+	UNITREE_GO
+} MotorType;
+
+typedef enum {
 	M,  // 电机模式选择指令
 	J,  // 点动指令
 	T   // 轨迹指令
-};
+} CmdMode;
 
+// 单片机虚拟串口最大接收字节数为64，因此需要字节对齐，防止超出限制
 #pragma pack(1)
 typedef struct {
-	bool start;
 	unsigned char motor_mode;
 	float vel;
 	float pos;
@@ -28,9 +35,10 @@ typedef struct {
 #pragma pack()
 
 enum NewCmd {
-	CABLE, ARCHOR, GO, A1
+	CABLE, ARCHOR, STEER, ROLL
 };
 
+/* 点动指令格式**************************************/
 #pragma pack(1)
 typedef struct {
 	unsigned char cmd_mode;
@@ -39,9 +47,10 @@ typedef struct {
 	MotorMsg archor_cmd;
 	MotorMsg go_cmd;
 	MotorMsg a1_cmd;
-} CmdMsg;
+} JogMsg;
 #pragma pack()
 
+/* 轨迹指令格式**************************************/
 enum LocalTrajType {
 	EMPTY1, UPDOWN, LINE, CIRCLE
 };
@@ -60,14 +69,25 @@ typedef struct {
 } TrajMsg;
 #pragma pack()
 
+/* 电机反馈数据**************************************/
+#pragma pack(1)
+typedef struct {
+	MotorType motor_type;
+	uint8_t id;
+//	float current;
+	float vel;
+	float pos;
+} MotorFBData;
+#pragma pack()
+
 // 将结构体转换为char数组
 void MotorMsg_toCharArray(const MotorMsg *msg, uint8_t *buffer, size_t size);
-void CmdMsg_toCharArray(const CmdMsg *msg, uint8_t *buffer, size_t size);
+void JogMsg_toCharArray(const JogMsg *msg, uint8_t *buffer, size_t size);
 void TrajMsg_toCharArray(const TrajMsg *msg, uint8_t *buffer, size_t size);
 
 // 从char数组转换回结构体
 MotorMsg MotorMsg_fromCharArray(const uint8_t *data, size_t size);
-CmdMsg CmdMsg_fromCharArray(const uint8_t *data, size_t size);
+JogMsg JogMsg_fromCharArray(const uint8_t *data, size_t size);
 TrajMsg TrajMsg_fromCharArray(const uint8_t *data, size_t size);
 
 #endif /* CDC_MSG_H_ */

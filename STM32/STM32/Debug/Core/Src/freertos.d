@@ -57,7 +57,16 @@ Core/Src/freertos.o: ../Core/Src/freertos.c \
  D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_a1_msg.h \
  D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_go.h \
  D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_go_msg.h \
- D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/maxon_re35.h
+ D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/maxon_re35.h \
+ D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/utilities.h \
+ ../USB_DEVICE/App/usbd_cdc_if.h \
+ ../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h \
+ ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
+ ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h \
+ ../USB_DEVICE/Target/usbd_conf.h \
+ ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h \
+ ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
+ ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h
 ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:
 ../Core/Inc/FreeRTOSConfig.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h:
@@ -120,3 +129,12 @@ D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_a1_msg.h:
 D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_go.h:
 D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_go_msg.h:
 D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/maxon_re35.h:
+D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/utilities.h:
+../USB_DEVICE/App/usbd_cdc_if.h:
+../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h:
+../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h:
+../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h:
+../USB_DEVICE/Target/usbd_conf.h:
+../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h:
+../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h:
+../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h:

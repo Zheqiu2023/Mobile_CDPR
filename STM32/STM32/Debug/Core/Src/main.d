@@ -60,14 +60,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_a1_msg.h \
  D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_go.h \
  D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_go_msg.h \
- D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/maxon_re35.h \
- ../USB_DEVICE/App/usbd_cdc_if.h \
- ../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h \
- ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
- ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h \
- ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h \
- ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h \
- ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h
+ D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/maxon_re35.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -135,10 +128,3 @@ D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_a1_msg.h:
 D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_go.h:
 D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_go_msg.h:
 D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/maxon_re35.h:
-../USB_DEVICE/App/usbd_cdc_if.h:
-../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h:
-../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h:
-../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h:
-../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_core.h:
-../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ioreq.h:
-../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h:

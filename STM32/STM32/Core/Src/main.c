@@ -29,7 +29,6 @@
 /* USER CODE BEGIN Includes */
 #include "bsp.h"
 #include "board.h"
-#include "usbd_cdc_if.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -96,23 +95,26 @@ int main(void)
   MX_DMA_Init();
   MX_CAN1_Init();
   MX_USART1_UART_Init();
-  MX_USART2_UART_Init();
+  MX_USART6_UART_Init();
+  MX_UART5_Init();
   /* USER CODE BEGIN 2 */
-  MX_USB_DEVICE_Init();
 	CAN_Filter_Init();
 	BSP_Init();
-	Board_Init();
-//	uint8_t sss[17] = { 0xfe, 0xee, 0x10, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x19, 0x00, 0xe6,
-//	        0x5a };
-//	uint8_t sss[34] = { 0xFE, 0xEE, 0x00, 0x00, 0x0A, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A,
-//	        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0xA4, 0xAD, 0xD6 };
+
+//	uint8_t dada[17] = { 0xfe, 0xee, 0x10, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x19, 0x00, 0xe6,
+//			0x5a };
+//	uint8_t aaa[38] = { 0x01, 0x00, 0x05, 0x00, 0x00, 0x7A, 0x44, 0x0A, 0xD7, 0xA3, 0x3B,
+//			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+//	        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+//	        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+//	01 00 05 00 00 7A 44 0A D7 A3 3B 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */
-//  MX_FREERTOS_Init();
+  MX_FREERTOS_Init();
 
   /* Start scheduler */
-//  osKernelStart();
+  osKernelStart();
 
   /* We should never get here as control is now taken by the scheduler */
 
@@ -122,13 +124,16 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		GO_Motor_SetCmd(board.steer_motor, GO_MODE_W, 0, -2, 0);
-		GO_Motor_Send(board.steer_motor);
+//		GO_Motor_SetCmd(board.steer_motor, GO_MODE_W, 0, -2, 0);
+//		GO_Motor_Send(board.steer_motor);
 //		A1_Motor_SetCmd(board.roll_motor, A1_MODE_W, 0, 1, 0);
 //		A1_Motor_Send(board.roll_motor);
-
+		RE35_Motor_SetCmd(board.cable_motor, VEL, 1000, 0);
+		RE35_Motor_Send(board.cable_motor);
+//		if(HAL_UART_Transmit(&huart5, dada, sizeof(dada), 100)!=HAL_OK)
+//			Error_Handler();
+//
 		HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-
 		HAL_Delay(500);
 	}
   /* USER CODE END 3 */
@@ -186,7 +191,7 @@ void SystemClock_Config(void)
 
 /**
   * @brief  Period elapsed callback in non blocking mode
-  * @note   This function is called  when TIM2 interrupt took place, inside
+  * @note   This function is called  when TIM6 interrupt took place, inside
   * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
   * a global variable "uwTick" used as application time base.
   * @param  htim : TIM handle
@@ -197,7 +202,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 0 */
 
   /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM2) {
+  if (htim->Instance == TIM6) {
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */

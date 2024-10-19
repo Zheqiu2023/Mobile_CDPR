@@ -8,6 +8,7 @@
 #include "unitree_a1.h"
 #include "bsp.h"
 #include "usbd_cdc_if.h"
+#include "utilities.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -61,7 +62,7 @@ void A1_Motor_SetCmd(A1_Motor *obj, A1_Ctrl_Mode mode, float T, float W, float P
 			obj->motor_cmd.K_W = 0.001;
 			obj->motor_cmd.T = 0;
 			obj->motor_cmd.W = 0;
-			obj->motor_cmd.Pos = obj->zero_pos + Pos * A1_REDUCTION_RATIO * obj->config.dir;
+			obj->motor_cmd.Pos = obj->init_pos + Pos * A1_REDUCTION_RATIO * obj->config.dir;
 			break;
 		case A1_MODE_HB:
 			obj->motor_cmd.mode = CLOSED_LOOP;
@@ -69,7 +70,7 @@ void A1_Motor_SetCmd(A1_Motor *obj, A1_Ctrl_Mode mode, float T, float W, float P
 			obj->motor_cmd.K_W = 3;
 			obj->motor_cmd.T = T;
 			obj->motor_cmd.W = W * A1_REDUCTION_RATIO * obj->config.dir;
-			obj->motor_cmd.Pos = obj->zero_pos + Pos * A1_REDUCTION_RATIO * obj->config.dir;
+			obj->motor_cmd.Pos = obj->init_pos + Pos * A1_REDUCTION_RATIO * obj->config.dir;
 		default:
 			break;
 	}
@@ -146,12 +147,19 @@ char str[30];
 void A1_Motor_RecvData_Process(A1_Motor *obj, uint8_t *data, uint8_t len) {
 	A1_Extract_Data(&(obj->motor_data), data);
 
-	// 将浮点数转换为字符串
-	sprintf(str, "%.2f %.2f\n", obj->motor_data.LW, obj->motor_data.Pos);
-	if (CDC_Transmit_FS((uint8_t*) str, strlen(str)) != USBD_OK) {
-//		HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-		Error_Handler();
+	static int firstTime = 1; // 静态变量，只在第一次调用时初始化
+	if (firstTime) {
+		obj->init_pos = obj->motor_data.Pos; // 获取零位
+		firstTime = 0; // 确保下次中断不会覆盖数据
 	}
+
+	Buffer_Put(&motor_fb_buffer, UNITREE_A1, obj->motor_data.id, obj->motor_data.Pos, obj->motor_data.LW);
+
+	// 将浮点数转换为字符串
+//	sprintf(str, "%.2f %.2f\n", obj->motor_data.LW, obj->motor_data.Pos);
+//	if (CDC_Transmit_FS((uint8_t*) str, strlen(str)) != USBD_OK) {
+//		Error_Handler();
+//	}
 }
 
 float A1_Convert_Vel(float vel) {

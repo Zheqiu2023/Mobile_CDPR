@@ -41,8 +41,7 @@ typedef struct {
 	A1Data motor_data;   //收到的数据
 	A1Cmd motor_cmd;	//发送的数据
 
-	bool run_flag;
-	float zero_pos;            //零位（rad），上电时的位置
+	float init_pos;            //零位（rad），上电时的位置
 } A1_Motor;
 
 A1_Motor* A1_Motor_Create(A1_Config config);

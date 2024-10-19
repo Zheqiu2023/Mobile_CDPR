@@ -10,20 +10,14 @@
 
 #include <stdint.h>
 
-#define COLS 2
+extern float updown_traj[][2];
+extern float line_traj[][2];
+extern float circle_traj[][2];
 
-// 定义一个结构体来存储 CSV 解析后的数据
-typedef struct {
-	float **data;
-	uint16_t rows;
-	uint16_t cols;
-} CSVData;
+extern float no_obs_traj[][4];
+extern float obs_traj[][4];
 
-int parseLine(char *line, float *row, int maxCols);
-CSVData Read_CSV(const char *filename);
-void Free_CSVData(CSVData csvData);
-
-void Start_Local_Traj(CSVData traj, float period);
-void Start_Global_Traj(CSVData traj, float period);
+void Start_Local_Traj(float traj[][2], uint16_t rows, float period);
+void Start_Global_Traj(float traj[][4], uint16_t rows, float period);
 
 #endif /* TRAJ_H_ */

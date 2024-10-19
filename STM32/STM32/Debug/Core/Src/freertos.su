@@ -1,6 +1,6 @@
-../Core/Src/freertos.c:61:6:CDC_Process_Recv_Data	72	static,ignoring_inline_asm
-../Core/Src/freertos.c:95:6:vApplicationGetIdleTaskMemory	24	static
-../Core/Src/freertos.c:109:6:MX_FREERTOS_Init	136	static
-../Core/Src/freertos.c:165:6:StartDefaultTask	16	static
-../Core/Src/freertos.c:189:6:StartTrajectoryTask	32	static
-../Core/Src/freertos.c:214:6:StartJogTask	32	static
+../Core/Src/freertos.c:82:6:vApplicationGetIdleTaskMemory	24	static
+../Core/Src/freertos.c:96:6:MX_FREERTOS_Init	168	static
+../Core/Src/freertos.c:160:6:StartDefaultTask	16	static
+../Core/Src/freertos.c:181:6:StartTrajectoryTask	32	static
+../Core/Src/freertos.c:208:6:StartJogTask	32	static
+../Core/Src/freertos.c:247:6:ProcessMotorDataTask	56	static

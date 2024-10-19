@@ -59,6 +59,8 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define POWER1_Pin GPIO_PIN_13
 #define POWER1_GPIO_Port GPIOC
+#define POWER_5V_EN_Pin GPIO_PIN_14
+#define POWER_5V_EN_GPIO_Port GPIOC
 #define RS485_DIR1_Pin GPIO_PIN_15
 #define RS485_DIR1_GPIO_Port GPIOC
 #define LED_Pin GPIO_PIN_0

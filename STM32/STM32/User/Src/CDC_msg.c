@@ -13,7 +13,7 @@ void MotorMsg_toCharArray(const MotorMsg *msg, uint8_t *buffer, size_t size) {
 		return;
 	memcpy(buffer, msg, sizeof(*msg));
 }
-void CmdMsg_toCharArray(const CmdMsg *msg, uint8_t *buffer, size_t size) {
+void JogMsg_toCharArray(const JogMsg *msg, uint8_t *buffer, size_t size) {
 	if (size < sizeof(*msg))
 		return;
 	memcpy(buffer, msg, sizeof(*msg));
@@ -35,14 +35,14 @@ MotorMsg MotorMsg_fromCharArray(const uint8_t *data, size_t size) {
 	memcpy(&cmd, data, sizeof(MotorMsg));
 	return cmd;
 }
-CmdMsg CmdMsg_fromCharArray(const uint8_t *data, size_t size) {
-	CmdMsg msg;
+JogMsg JogMsg_fromCharArray(const uint8_t *data, size_t size) {
+	JogMsg msg;
 	if (size < sizeof(msg)) {
 		// 返回一个默认初始化的结构体，这里简单地清零
 		memset(&msg, 0, sizeof(msg));
 		return msg;
 	}
-	memcpy(&msg, data, sizeof(CmdMsg));
+	memcpy(&msg, data, sizeof(JogMsg));
 	return msg;
 }
 TrajMsg TrajMsg_fromCharArray(const uint8_t *data, size_t size) {

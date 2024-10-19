@@ -15,22 +15,20 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-void Start_Local_Traj(CSVData traj, float period) {
-	float target_pos[traj.cols];
-	int32_t cmd_pos[traj.cols], cmd_vel[traj.cols], cmd_pos_prev[traj.cols];
+void Start_Local_Traj(float traj[][2], uint16_t rows, float period) {
+	float target_pos[2];
+	int32_t cmd_pos[2], cmd_vel[2], cmd_pos_prev[2];
 
-	const TickType_t xFrequency = pdMS_TO_TICKS((uint32_t )1000 * period); // 周期1秒
+	const TickType_t xFrequency = pdMS_TO_TICKS((uint32_t )1000 * period); // 周期period秒
 	TickType_t xLastWakeTime = xTaskGetTickCount(); // 初始化上次唤醒时刻
 
-	for (size_t i = 0; i < traj.rows; ++i) {
-		for (size_t j = 0; j < traj.cols; ++j) {
-			target_pos[j] = traj.data[i][j];
+	for (size_t i = 0; i < rows; ++i) {
+		for (size_t j = 0; j < 2; ++j) {
+			target_pos[j] = traj[i][j];
 			cmd_pos_prev[j] = cmd_pos[j];
+			cmd_pos[j] = Cable_Convert_Pos(target_pos[j]);
+			cmd_vel[j] = (int32_t) ceil(fabs((cmd_pos[j] - cmd_pos_prev[j]) * 60 / period));
 		}
-		cmd_pos[0] = Cable_Convert_Pos(target_pos[0]);
-		cmd_pos[1] = Archor_Convert_Pos(target_pos[1]);
-		cmd_vel[0] = (int32_t) ceil(fabs((cmd_pos[0] - cmd_pos_prev[0]) * 60 / period));
-		cmd_vel[1] = (int32_t) ceil(fabs((cmd_pos[1] - cmd_pos_prev[1]) * 60 / period));
 		RE35_Motor_SetCmd(board.cable_motor, VEL_POS, cmd_vel[0], cmd_pos[0]);
 		RE35_Motor_SetCmd(board.archor_motor, VEL_POS, cmd_vel[1], cmd_pos[1]);
 		RE35_Motor_Send(board.cable_motor);
@@ -39,84 +37,37 @@ void Start_Local_Traj(CSVData traj, float period) {
 	}
 }
 
-void Start_Global_Traj(CSVData traj, float period) {
+void Start_Global_Traj(float traj[][4], uint16_t rows, float period) {
+	float target_pos[2];
+	int32_t cmd_pos[2], cmd_vel[2], cmd_pos_prev[2];
+
 	const TickType_t xFrequency = pdMS_TO_TICKS((uint32_t )1000 * period); // 周期period秒
 	TickType_t xLastWakeTime = xTaskGetTickCount(); // 初始化上次唤醒时刻
 
-	for (size_t i = 0; i < traj.rows; ++i) {
-		GO_Motor_SetCmd(board.steer_motor, GO_MODE_POS, 0, 0, traj.data[i][0]);
-		A1_Motor_SetCmd(board.roll_motor, A1_MODE_W, 0, A1_Convert_Vel(traj.data[i][1]), 0);
+	for (size_t i = 0; i < rows; ++i) {
+		for (size_t j = 0; j < 2; ++j) {
+			target_pos[j] = traj[i][j];
+			cmd_pos_prev[j] = cmd_pos[j];
+			cmd_pos[j] = Cable_Convert_Pos(target_pos[j]);
+			cmd_vel[j] = (int32_t) ceil(fabs((cmd_pos[j] - cmd_pos_prev[j]) * 60 / period));
+		}
+		RE35_Motor_SetCmd(board.cable_motor, VEL_POS, cmd_vel[0], cmd_pos[0]);
+		RE35_Motor_SetCmd(board.archor_motor, VEL_POS, cmd_vel[1], cmd_pos[1]);
+		GO_Motor_SetCmd(board.steer_motor, GO_MODE_POS, 0, 0, traj[i][2]);
+		A1_Motor_SetCmd(board.roll_motor, A1_MODE_W, 0, A1_Convert_Vel(traj[i][3]), 0);
+		RE35_Motor_Send(board.cable_motor);
+		RE35_Motor_Send(board.archor_motor);
 		GO_Motor_Send(board.steer_motor);
 		A1_Motor_Send(board.roll_motor);
 		vTaskDelayUntil(&xLastWakeTime, xFrequency);
 	}
 }
 
-CSVData Read_CSV(const char *filename) {
-	CSVData csvData = { .data = NULL, .rows = 0, .cols = COLS };
+// local traj
+float updown_traj[][2] = {};
+float line_traj[][2] = {};
+float circle_traj[][2] = {};
 
-	// 打开CSV文件进行读取
-	FILE *file = fopen(filename, "r");
-	if (file == NULL) {
-		perror("Error opening file");
-		return csvData;
-	}
-
-	// 读取并解析文件中的每一行
-	char line[1024];
-	float **data = NULL;
-	int capacity = 0;
-	while (fgets(line, sizeof(line), file)) {
-		// 移除换行符
-		line[strcspn(line, "\r\n")] = 0;
-
-		if (csvData.rows >= capacity) {
-			capacity = capacity == 0 ? 10 : capacity * 2;
-			data = realloc(data, capacity * sizeof(float*));
-			if (data == NULL) {
-				perror("Error reallocating memory");
-				fclose(file);
-				csvData.data = NULL;
-				return csvData;
-			}
-		}
-
-		data[csvData.rows] = malloc(COLS * sizeof(float));
-		if (data[csvData.rows] == NULL) {
-			perror("Error allocating memory");
-			for (int i = 0; i < csvData.rows; ++i) {
-				free(data[i]);
-			}
-			free(data);
-			fclose(file);
-			csvData.data = NULL;
-			return csvData;
-		}
-
-		parseLine(line, data[csvData.rows], COLS);
-		++csvData.rows;
-	}
-
-	fclose(file);
-	csvData.data = data;
-	return csvData;
-}
-
-// 解析一行 CSV 数据
-int parseLine(char *line, float *row, int maxCols) {
-	int col = 0;
-	char *token = strtok(line, ",");
-	while (token != NULL && col < maxCols) {
-		row[col++] = atof(token);
-		token = strtok(NULL, ",");
-	}
-	return col;
-}
-
-// 释放 CSV 数据
-void Free_CSVData(CSVData csvData) {
-	for (int i = 0; i < csvData.rows; ++i) {
-		free(csvData.data[i]);
-	}
-	free(csvData.data);
-}
+// global traj
+float no_obs_traj[][4] = {};
+float obs_traj[][4] = {};

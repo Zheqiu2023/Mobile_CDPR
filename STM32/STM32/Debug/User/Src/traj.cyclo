@@ -1,5 +1,2 @@
 ../User/Src/traj.c:18:6:Start_Local_Traj	3
-../User/Src/traj.c:42:6:Start_Global_Traj	2
-../User/Src/traj.c:55:9:Read_CSV	8
-../User/Src/traj.c:106:5:parseLine	3
-../User/Src/traj.c:117:6:Free_CSVData	2
+../User/Src/traj.c:40:6:Start_Global_Traj	3

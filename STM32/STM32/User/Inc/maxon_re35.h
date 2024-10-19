@@ -30,14 +30,17 @@ typedef struct {
 } RE35_Cmd;
 
 typedef struct {
+	int16_t current;	// 当前电流（mA）
+	int16_t speed;      // 当前角速度（rpm）
+	int32_t angle;      // 当前角度值（qc）
+} RE35_Data;
+
+typedef struct {
 	RE35_Config config;
 	RE35_Cmd cmd;
-	bool run_flag;
-	bool reset_flag;
+	RE35_Data data;
 
-	int16_t now_current;	// 当前电流（mA）
-	int16_t now_speed;      // 当前角速度（rpm）
-	int32_t now_angle;      // 当前角度值（qc）
+	bool reset_flag;
 } RE35_Motor;
 
 RE35_Motor* RE35_Motor_Create(RE35_Config config);

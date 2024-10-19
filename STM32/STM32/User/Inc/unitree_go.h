@@ -37,21 +37,11 @@ typedef struct {
 } GO_Config;
 
 typedef struct {
-	uint8_t mode;	// 0:停止	1:FOC	2:电机标定
-	float T;
-	float W;
-	float Pos;
-	float K_P;
-	float K_W;
-} GO_Cmd;
-
-typedef struct {
 	GO_Config config;
 	GOData motor_data;        //收到的数据
 	GOCmd motor_cmd;	//发送的数据
 
-	bool run_flag;
-	float zero_pos;            //零位（rad），上电时的位置
+	float init_pos;            //零位（rad），上电时的位置
 } GO_Motor;
 
 GO_Motor* GO_Motor_Create(GO_Config config);

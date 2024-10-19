@@ -8,6 +8,7 @@
 #include "unitree_go.h"
 #include "bsp.h"
 #include "usbd_cdc_if.h"
+#include "utilities.h"
 
 #define GO_REDUCTION_RATIO 6.33f
 
@@ -58,7 +59,7 @@ void GO_Motor_SetCmd(GO_Motor *obj, GO_Ctrl_Mode mode, float T, float W, float P
 			obj->motor_cmd.K_W = 0.1;
 			obj->motor_cmd.T = 0;
 			obj->motor_cmd.W = 0;
-			obj->motor_cmd.Pos = obj->zero_pos + Pos * GO_REDUCTION_RATIO * obj->config.dir;
+			obj->motor_cmd.Pos = obj->init_pos + Pos * GO_REDUCTION_RATIO * obj->config.dir;
 			break;
 		case GO_MODE_HB:
 			obj->motor_cmd.mode = FOC;
@@ -66,7 +67,7 @@ void GO_Motor_SetCmd(GO_Motor *obj, GO_Ctrl_Mode mode, float T, float W, float P
 			obj->motor_cmd.K_W = 0.05;
 			obj->motor_cmd.T = T;
 			obj->motor_cmd.W = W * GO_REDUCTION_RATIO * obj->config.dir;
-			obj->motor_cmd.Pos = obj->zero_pos + Pos * GO_REDUCTION_RATIO * obj->config.dir;
+			obj->motor_cmd.Pos = obj->init_pos + Pos * GO_REDUCTION_RATIO * obj->config.dir;
 		default:
 			break;
 	}
@@ -103,6 +104,7 @@ void GO_Motor_Send(GO_Motor *obj) {
 	RS485_Send_DMA(obj->config.rs485_ind, tx_buf, sizeof(tx_buf));
 }
 
+
 bool GO_Extract_Data(GOData *motor_r, uint8_t *data) {
 	memcpy(&(motor_r->motor_recv_data), data, sizeof(MotorData_t));
 
@@ -128,11 +130,18 @@ char sss[30];
 void GO_Motor_RecvData_Process(GO_Motor *obj, uint8_t *data, uint8_t len) {
 	GO_Extract_Data(&(obj->motor_data), data);
 
-	sprintf(sss, "%.2f %.2f\n", obj->motor_data.W, obj->motor_data.Pos);
-	if (CDC_Transmit_FS((uint8_t*) sss, strlen(sss)) != USBD_OK) {
-//		HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-		Error_Handler();
+	static int firstTime = 1; // 静态变量，只在第一次调用时初始化
+	if (firstTime) {
+		obj->init_pos = obj->motor_data.Pos; // 获取零位
+		firstTime = 0; // 确保下次中断不会覆盖数据
 	}
+
+	Buffer_Put(&motor_fb_buffer, UNITREE_GO, obj->motor_data.id, obj->motor_data.Pos, obj->motor_data.W);
+
+//	sprintf(sss, "%.2f %.2f\n", obj->motor_data.W, obj->motor_data.Pos);
+//	if (CDC_Transmit_FS((uint8_t*) sss, strlen(sss)) != USBD_OK) {
+//		Error_Handler();
+//	}
 }
 
 /*

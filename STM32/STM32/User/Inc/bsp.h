@@ -11,6 +11,7 @@
 #include "usart.h"
 #include "can.h"
 #include "CDC_msg.h"
+#include "cmsis_os.h"
 
 #define UART_BUFFER_SIZE 255
 
@@ -31,9 +32,8 @@ typedef struct {
 	CAN_RxHeaderTypeDef RxHeader;      //接收句柄
 } CAN_info;
 
-// 用于虚拟串口接收中断与freertos间通信
-extern CmdMsg g_cmd_msg;
-extern TrajMsg g_traj_msg;
+extern osMessageQId JogCmdQueueHandle, TrajCmdQueueHandle;
+extern osThreadId MotorDataTaskHandle;
 
 void BSP_Init();
 

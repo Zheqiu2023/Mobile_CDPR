@@ -1,0 +1,171 @@
+function CdprPlot(initialPose, targetPose, params, info, XY0)
+% Animate automated parking of a CDPR system.
+
+% plot initial poses
+f = figure('NumberTitle','off');
+xlabel('x');
+ylabel('y');
+plot3(initialPose(1), initialPose(2), initialPose(3),'rx');
+hold on;
+plot3(targetPose(1), targetPose(2), targetPose(3),'gx');
+% set bounds
+xbound = [-0.5 0.5];
+ybound = [-0.5 0.5];
+zbound = [-0.1 0.5];
+xlim(xbound);
+ylim(ybound);
+zlim(zbound);
+% plot obstacles
+obses = struct('Length', {0.05,0.1,0.05,0.1}, ...
+    'Width', {0.1,0.05,0.1,0.05}, ...
+    'Height', {0.05,0.05,0.05,0.05}, ...
+    'Pos', {[0.051;0],[0;0.051],[-0.051;0],[0;-0.051]}, ...
+    'Theta', {0,0,0,0});
+for j = 1:length(obses)
+    obsStruct = obses(j);
+    obs = collisionBox(obsStruct.Length,obsStruct.Width,obsStruct.Height);
+    obs.Pose(1:3,1:3) = eul2rotm([obsStruct.Theta 0 0]);
+    obs.Pose(1:2,4) = obsStruct.Pos;
+    show(obs)
+end
+
+if nargin<=4
+    f.Name = 'Planning with Initial and Target Positions';
+    animateCdpr(gca, 0, initialPose', params);
+else
+    f.Name = ['Automated Planning Animation (p = ' num2str(params.p) ', dt = ' num2str(params.dt) ')'];
+    % obtain optimal trajectory designed by MPC
+    xTrackHistory = info.Xopt;
+    uTrackHistory = info.MVopt;
+    tTrackHistory = info.Topt;
+    % plot the initial guess of XY trajectory
+    plot3(XY0(:,1),XY0(:,2),XY0(:,3),'c.')
+    % plot the optimal XY trajectory by MPC
+    plot3(xTrackHistory(:,1),xTrackHistory(:,2),xTrackHistory(:,3),'bo')
+    % animate track trailer moves
+    animateCdpr(gca, tTrackHistory, xTrackHistory, params);
+    %
+    legend('','','Initial Guess','Optimal Path');
+    saveas(gcf, strcat("path", string(datetime, 'MM-dd-HH-mm'), '].fig'));
+
+    % plot optimal MV and states
+    figure('NumberTitle','off','Name','Optimal Trajectory of MVs and States');
+    subplot(3,6,1)
+    plot(tTrackHistory,xTrackHistory(:,1),'g.');title('x (m)');grid on;
+    subplot(3,6,2)
+    plot(tTrackHistory,xTrackHistory(:,2),'g.');title('y (m)');grid on;
+    subplot(3,6,3)
+    plot(tTrackHistory,xTrackHistory(:,3),'g.');title('z (m)');grid on;
+    subplot(3,6,4)
+    plot(tTrackHistory,xTrackHistory(:,4),'g.');title('α (rad)');grid on;
+    subplot(3,6,5)
+    plot(tTrackHistory,xTrackHistory(:,5),'g.');title('β (rad)');grid on;
+    subplot(3,6,6)
+    plot(tTrackHistory,xTrackHistory(:,6),'g.');title('γ (rad)');grid on;
+
+    subplot(3,6,7)
+    plot(tTrackHistory,xTrackHistory(:,7),'g.');title('v_x (m/s)');grid on;
+    subplot(3,6,8)
+    plot(tTrackHistory,xTrackHistory(:,8),'g.');title('v_y (m/s)');grid on;
+    subplot(3,6,9)
+    plot(tTrackHistory,xTrackHistory(:,9),'g.');title('v_z (m/s)');grid on;
+    subplot(3,6,10)
+    plot(tTrackHistory,xTrackHistory(:,10),'g.');title('w_α (rad/s)');grid on;
+    subplot(3,6,11)
+    plot(tTrackHistory,xTrackHistory(:,11),'g.');title('w_β (rad/s)');grid on;
+    subplot(3,6,12)
+    plot(tTrackHistory,xTrackHistory(:,12),'g.');title('w_γ (rad/s)');grid on;
+
+    subplot(3,6,13)
+    plot(tTrackHistory(1:end-1),uTrackHistory((1:end-1),1),'g.');title('$a_x(m/s^2)$', 'interpreter', 'latex');grid on;
+    subplot(3,6,14)
+    plot(tTrackHistory(1:end-1),uTrackHistory((1:end-1),2),'g.');title('$a_y(m/s^2)$', 'interpreter', 'latex');grid on;
+    subplot(3,6,15)
+    plot(tTrackHistory(1:end-1),uTrackHistory((1:end-1),3),'g.');title('$a_z(m/s^2)$', 'interpreter', 'latex');grid on;
+    subplot(3,6,16)
+    plot(tTrackHistory(1:end-1),uTrackHistory((1:end-1),4),'g.');title('$a_α(rad/s^2)$', 'interpreter', 'latex');grid on;
+    subplot(3,6,17)
+    plot(tTrackHistory(1:end-1),uTrackHistory((1:end-1),5),'g.');title('$a_β(rad/s^2)$', 'interpreter', 'latex');grid on;
+    subplot(3,6,18)
+    plot(tTrackHistory(1:end-1),uTrackHistory((1:end-1),6),'g.');title('$a_γ(rad/s^2)$', 'interpreter', 'latex');grid on;
+
+    saveas(gcf, strcat("path", string(datetime, 'MM-dd-HH-mm'), '.fig'));
+end
+
+function animateCdpr(ax, tOut, qOut, params)
+% Playback CDPR motions
+tSample = tOut;
+xSample = qOut(:,1);
+ySample = qOut(:,2);
+zSample = qOut(:,3);
+alphaSample = qOut(:,4);
+betaSample = qOut(:,5);
+gammaSample = qOut(:,6);
+
+W = params.W;
+L = params.L;
+H = params.H;
+
+
+% 设置 GIF 文件名
+gifFilename = strcat(string(datetime, 'MM-dd-HH-mm'), '.gif');
+
+for i = 1:length(tSample)
+    x = xSample(i);
+    y = ySample(i);
+    z = zSample(i);
+    alpha = alphaSample(i);
+    beta = betaSample(i);
+    gamma = gammaSample(i);
+
+    % 创建长方体顶点
+    center = [x,y,z];
+    [xx, yy, zz] = meshgrid([-1, 1], [-1, 1], [-1, 1]);
+    vertices = [xx(:), yy(:), zz(:)] .* [L/2, W/2, H/2];
+    
+
+    % 创建长方体面
+    faces = [
+        1, 2, 6, 5; % 底面
+        3, 4, 8, 7; % 顶面
+        1, 2, 4, 3; % 前面
+        5, 6, 8, 7; % 后面
+        1, 5, 7, 3; % 左面
+        2, 6, 8, 4  % 右面
+        ];
+
+    % 创建旋转矩阵
+    R_x = [1, 0, 0; 0, cosd(alpha), -sind(alpha); 0, sind(alpha), cosd(alpha)];
+    R_y = [cosd(beta), 0, sind(beta); 0, 1, 0; -sind(beta), 0, cosd(beta)];
+    R_z = [cosd(gamma), -sind(gamma), 0; sind(gamma), cosd(gamma), 0; 0, 0, 1];
+    R = R_z * R_y * R_x; % 组合旋转矩阵
+
+    % 应用旋转
+    vertices_rotated = vertices * R';
+
+    % 应用平移
+    vertices_final = vertices_rotated + center;
+
+    % 创建 patch 对象
+    p = patch('Vertices', vertices_final, 'Faces', faces, 'FaceColor', 'r', 'EdgeColor', 'k');
+
+    % pause for animation
+    drawnow;
+    pause(0.1)
+
+    % 捕获当前帧
+    frame = getframe(gcf);
+    im = frame2im(frame);
+    [imind, cm] = rgb2ind(im, 256);
+
+    % 将帧写入 GIF 文件
+    if i == 1
+        % 第一个帧：创建 GIF 文件
+        imwrite(imind, cm, gifFilename, 'gif', 'Loopcount', inf, 'DelayTime', 0.1);
+    else
+        % 后续帧：追加到 GIF 文件
+        imwrite(imind, cm, gifFilename, 'gif', 'WriteMode', 'append', 'DelayTime', 0.1);
+    end
+
+    delete(p);
+end

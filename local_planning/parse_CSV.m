@@ -4,11 +4,11 @@ param_cdpr = param_mobile_cdpr;
 fid1 = fopen('data/archorPos03_18_16_24_15.csv');   
 fid2 = fopen('data/cablePos03_18_16_24_15.csv');
 fid3 = fopen('data/recvPos03_18_16_24_15.csv');
-fid4 = fopen('data/03_18_16_24_15.csv');
+fid4 = fopen('data/ee_target_pose03_18_16_24_15.csv');
 A = textscan(fid1, '%f64%f64%f64', 'Delimiter', ',');
 B = textscan(fid2, '%f64%f64%f64', 'Delimiter', ',');
 C = textscan(fid3, '%f64%f64%f64', 'Delimiter', ',');
-D = textscan(fid4, '%f64%f64%f64%f64%f64%f64%f64%f64', 'Delimiter', ',');
+D = textscan(fid4, '%f64%f64%f64%f64%f64%f64', 'Delimiter', ',');
 fclose(fid1); fclose(fid2); fclose(fid3); fclose(fid4);
 a = cell2mat(A);
 b = cell2mat(B);
@@ -87,8 +87,8 @@ for i = 1:4
         [~,index] = min(abs(cable_cur_pos{i}(:, 1) - cable_target_pos{i}(j, 1)));
         cable_error{i}(j) = cable_target_pos{i}(j, 2) - cable_cur_pos{i}(index, 2);
     end
-    archor_error_max(i) = max(archor_error{i});
-    cable_error_max(i) = max(cable_error{i});
+    archor_error_max(i) = max(abs(archor_error{i}));
+    cable_error_max(i) = max(abs(cable_error{i}));
 end
 %% 绘图
 % 锚点座
@@ -98,13 +98,13 @@ for i = 1:4
     yyaxis left; % 设置左侧纵坐标轴
     plot(archor_target_pos{i}(:,1),archor_target_pos{i}(:,2),'r-',...
          archor_cur_pos{i}(:,1),archor_cur_pos{i}(:,2),'b--','LineWidth',1.2);
-    ylabel('pos(m)');
-    xlabel('time(s)');xlim([0 12]);
+    ylabel('位置(m)');
+    xlabel('时间(s)');xlim([0 22]);
     yyaxis right; % 设置右侧纵坐标轴
     plot(archor_target_pos{i}(:,1),archor_error{i},'-.','LineWidth',1.2);
-    ylabel('error(m)');
-    legend('target pos','current pos','pos error','FontSize',5,'EdgeColor','none');
-    title(['archor', num2str(i-1),' pos analysis'],'FontSize',10);
+    ylabel('误差(m)');
+    legend('期望位置','实际位置','位置误差','FontSize',5,'EdgeColor','none');
+    title(['锚点座', num2str(i)],'FontSize',10);
 end
 % 绳索
 figure(2);
@@ -113,13 +113,13 @@ for i = 1:4
     yyaxis left; % 设置左侧纵坐标轴
     plot(cable_target_pos{i}(:,1),cable_target_pos{i}(:,2),'r-',...
          cable_cur_pos{i}(:,1),cable_cur_pos{i}(:,2),'b--','LineWidth',1.2);
-    ylabel('pos(m)');
-    xlabel('time(s)');xlim([0 12]);
+    ylabel('位置(m)');
+    xlabel('时间(s)');xlim([0 22]);
     yyaxis right; % 设置右侧纵坐标轴
     plot(cable_target_pos{i}(:,1),cable_error{i},'-.','LineWidth',1.2);
-    ylabel('error(m)');
-    legend('target pos','current pos','pos error','FontSize',5,'EdgeColor','none','Location','southeast');
-    title(['cable',num2str(i-1),' pos analysis'],'FontSize',10);
+    ylabel('误差(m)');
+    legend('期望位置','实际位置','位置误差','FontSize',5,'EdgeColor','none','Location','southeast');
+    title(['绳索',num2str(i)],'FontSize',10);
 end
 %% 正运动学求解末端平台实际位置，与期望位置做对比
 num = size(archor_cur_pos{1},1);
@@ -151,12 +151,12 @@ for i = 1:4
 end
 
 % 末端平台实际位置、期望位置
-real_pose_last = [zeros(4,1);1;1;1;1;zeros(4,1);0;0;0.03;0;0;0];
-target_pose_last = [zeros(4,1);1;1;1;1;zeros(4,1);0;0;0.03;0;0;0];
+real_pose_last = [zeros(4,1);1;1;1;1;zeros(4,1);0;0;0.028;0;0;0];
+target_pose_last = [zeros(4,1);1;1;1;1;zeros(4,1);0;0;0.028;0;0;0];
 for n = 1:num
-    [real, ~] = direct_kine(acp(:,n), ccp(:,n), real_pose_last);
-    real_pose(:,n) = real;
-    real_pose_last(13:18) = real;
+    [res, ~] = direct_kine(acp(:,n), ccp(:,n), real_pose_last, param_cdpr)
+    real_pose(:,n) = res;
+    real_pose_last(13:18) = res;
 end
 
 %% 计算末端平台位置误差
@@ -176,25 +176,25 @@ for i = 1:3
     yyaxis left; % 设置左侧纵坐标轴
     plot(target_timestamp,target_pose(i,:),'r-',...
          cur_timestamp,real_pose(i,:),'b--','LineWidth',1.2);
-    ylabel('pos(m)');
-    xlabel('time(s)');xlim([0 22]);
+    ylabel('位置(m)');
+    xlabel('时间(s)');xlim([0 22]);
     yyaxis right; % 设置右侧纵坐标轴
     plot(target_timestamp,ep_pos_error(i,:),'-.','LineWidth',1.2);
-    ylabel('error(m)');
-    legend('target pos','current pos','FontSize',5,'EdgeColor','none');
-    title('end plaform pos analysis','FontSize',10);
+    ylabel('误差(m)');
+    legend('期望位置','实际位置','位置误差','FontSize',5,'EdgeColor','none','Location','southeast');
+    title('末端平台位置分析','FontSize',10);
 end
 for i = 4:6
     subplot(2,3,i);
     yyaxis left; % 设置左侧纵坐标轴
     plot(target_timestamp,target_pose(i,:)*180/pi,'r-',...
          cur_timestamp,real_pose(i,:)*180/pi,'b--','LineWidth',1.2);
-    ylabel('angle(°)');
-    xlabel('time(s)');xlim([0 22]);
+    ylabel('角度(°)');
+    xlabel('时间(s)');xlim([0 22]);
     yyaxis right; % 设置右侧纵坐标轴
     plot(target_timestamp,ep_pos_error(i,:)*180/pi,'-.','LineWidth',1.2);
-    ylabel('error(°)');
-    legend('target angle','current angle','FontSize',5,'EdgeColor','none');
-    title('end plaform angle analysis','FontSize',10);
+    ylabel('误差(m)');
+    legend('期望角度','实际角度','角度误差','FontSize',5,'EdgeColor','none','Location','southeast');
+    title('末端平台姿态分析','FontSize',10);
 end
 

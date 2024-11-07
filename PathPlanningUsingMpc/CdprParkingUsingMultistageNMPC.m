@@ -73,7 +73,7 @@ enable_obs = 0;
 % obstacles.
 if ~enable_obs
     initialPose = [-3;0;0;0;0];
-    targetPose = [1;1;pi/6;0;0];
+    targetPose = [1;2;pi/6;0;0];
 else
     initialPose = [-4.5;0;0;0;0];
     targetPose = [4.5;0;0;0;0];
@@ -116,7 +116,7 @@ end
 % Choose the prediction horizon |p| and sample time |Ts| such as p*Ts = 20.
 
 % Create the multistage nonlinear MPC controller.
-p = 200;
+p = 100;
 nlobj = nlmpcMultistage(p,5,2);
 nlobj.Ts = 0.05;
 
@@ -201,7 +201,7 @@ nlobj.Model.TerminalState = zeros(5,1);
 % parameters stacked into a single vector.  We also use |TerminalState| to
 % specify terminal state at run time.
 simdata = getSimulationData(nlobj,'TerminalState');
-simdata.StateFcnParameter = params.L;
+simdata.StateFcnParameter = [params.L;params.W];
 simdata.StageParameter = repmat([params.L;params.W],p,1);
 simdata.TerminalState = targetPose;
 validateFcns(nlobj,[2;3;0.5;0;0],[0.1;0.2],simdata);

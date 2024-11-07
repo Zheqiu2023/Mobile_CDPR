@@ -16,7 +16,7 @@ b3_g = param.bp_coor(:,3);
 b4_g = param.bp_coor(:,4);
 
 % 末端执行器坐标系到全局坐标系的姿态变换矩阵 
-Trans = transl(param_cdpr.ep_o_g(1:3));
+Trans = transl(param.ep_o_g(1:3));
 % 全局坐标系下末端执行器上的点的坐标
 a1_g = Trans*a1_e; 
 a2_g = Trans*a2_e;

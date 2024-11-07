@@ -10,7 +10,7 @@ t_num = length(t_vec);
 traj_x = traj_generator.QuinticInterpolation(p_start(1), 0, 0, p_end(1), 0, 0, t_vec);  % 轨迹位置
 traj_y = traj_generator.QuinticInterpolation(p_start(2), 0, 0, p_end(2), 0, 0, t_vec);
 traj_z = traj_generator.QuinticInterpolation(p_start(3), 0, 0, p_end(3), 0, 0, t_vec);
-steer_angle = atan2(p_end(2)-p_start(2), p_end(1)-p_start(1)) % 车轮转向角度，rad
+% steer_angle = atan2(p_end(2)-p_start(2), p_end(1)-p_start(1)) % 车轮转向角度，rad
 % 将规划结果写入文件，以和求解结果作对比
 writematrix(traj_x,'test.xlsx','WriteMode','append');   % 保存末端平台期望位置，期望姿态设为[0;0;0]
 writematrix(traj_y,'test.xlsx','WriteMode','append');

@@ -17,7 +17,7 @@ param_cdpr.bp_coor(3,:) = z;
 [result,resnorm,residual,exitflag,output] = ...
     lsqnonlin(@(x) direct_kine_lsqnonlin(x,l,param_cdpr),x0,lb,ub,options);
 
-real_pose = result(1:6) % 实际位姿 
-real_cf = result(7:10)  % 实际绳力
+real_pose = result(1:6); % 实际位姿 
+real_cf = result(7:10);  % 实际绳力
 
 

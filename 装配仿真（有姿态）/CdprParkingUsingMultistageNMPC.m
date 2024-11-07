@@ -1,0 +1,157 @@
+%% CDPR Path Planning Using Multistage Nonlinear MPC
+clear, close all, fclose all;
+delete("result.csv");
+%%
+% Define the following model parameters.
+params = struct('L',0.04,...
+                'W',0.04,...
+                'H',0.04,...
+                'p',400,...
+                'dt',0.05);
+
+%% Path Planning Problem
+initialPose = [0.2;0.1;0.3;pi/8;pi/8;0;0;0;0;0;0;0];  % x y z α β γ
+targetPose = [0;0;0.02;0;0;0;0;0;0;0;0;0];
+
+num_x = 12; num_u = 6;
+
+CdprPlot(initialPose,targetPose,params);
+
+%%
+u0 = zeros(num_u,1);
+
+cineq = CdprIneqConFcn(1,initialPose,u0,[params.L;params.W;params.H]);
+if any(cineq>0)
+    fprintf('Initial pose is not valid.\n');
+    return
+end
+
+%% Path Planning Using Multistage Nonlinear MPC
+% Create the multistage nonlinear MPC controller.
+nlobj = nlmpcMultistage(params.p,num_x,num_u);
+nlobj.Ts = params.dt;
+
+%%
+% Specify the prediction model and its analytical Jacobian in the
+% controller object. Since the model requires one parameters (|L|), set
+% |Model.ParameterLength| to |1|.
+nlobj.Model.StateFcn = "CdprStateFcn";
+nlobj.Model.StateJacFcn = "CdprStateJacobianFcn";
+nlobj.Model.ParameterLength = 1;
+
+%%
+nlobj.States(4).Min = -pi/2;   
+nlobj.States(4).Max = pi/2;    
+nlobj.States(5).Min = -pi/2;    
+nlobj.States(5).Max = pi/2;  
+nlobj.States(6).Min = -pi/3;    
+nlobj.States(6).Max = pi/3;  
+nlobj.States(7).Min = -0.1;   % Minimum v_x
+nlobj.States(7).Max = 0.1;    % Maximum v_x
+nlobj.States(8).Min = -0.1;    % Minimum v_y
+nlobj.States(8).Max = 0.1;     % Maximum v_y
+nlobj.States(9).Min = -0.1;    % Minimum v_z
+nlobj.States(9).Max = 0.1;     % Maximum v_z
+nlobj.States(10).Min = -0.1;   
+nlobj.States(10).Max = 0.1;    
+nlobj.States(11).Min = -0.1;    
+nlobj.States(11).Max = 0.1;  
+nlobj.States(12).Min = -0.1;    
+nlobj.States(12).Max = 0.1;  
+
+% Specify hard bounds on the two manipulated variables.
+nlobj.MV(1).Min = -0.1;       % Minimum a_x
+nlobj.MV(1).Max =  0.1;       % Maximum a_x
+nlobj.MV(2).Min = -0.1;       % Minimum a_y
+nlobj.MV(2).Max =  0.1;       % Maximum a_y
+nlobj.MV(3).Min = -0.1;       % Minimum a_z
+nlobj.MV(3).Max =  0.1;       % Maximum a_z
+nlobj.MV(4).Min = -0.1;     
+nlobj.MV(4).Max =  0.1;      
+nlobj.MV(5).Min = -0.1;      
+nlobj.MV(5).Max =  0.1;    
+nlobj.MV(6).Min = -0.1;    
+nlobj.MV(6).Max =  0.1;    
+
+nlobj.MV(1).RateMax = 0.2;  % Maximum acceleration increment
+nlobj.MV(2).RateMax = 0.2;
+nlobj.MV(3).RateMax = 0.2;
+nlobj.MV(4).RateMax = 0.2; 
+nlobj.MV(5).RateMax = 0.2;
+nlobj.MV(6).RateMax = 0.2;
+
+%%
+for ct=1:params.p
+    nlobj.Stages(ct).CostFcn = "CdprCost";
+    nlobj.Stages(ct).CostJacFcn = "CdprCostGradientFcn";
+    nlobj.Stages(ct).ParameterLength = 3;
+end
+
+%%
+for ct=2:params.p
+    nlobj.Stages(ct).IneqConFcn = "CdprIneqConFcn";
+end
+
+%%
+% Use terminal state for the last stage to ensure successful parking at the
+% target position. In this example, the target position is provided as a
+% run-time signal.  Here we use a dummy finite value to let MPC know which
+% states will have terminal values at run time.
+nlobj.Model.TerminalState = zeros(num_x,1);
+
+%%
+% At the end of multistage nonlinear MPC design, you can use the
+% |validateFcns| command with random initial plant states and inputs to
+% check whether any of the user-defined state, cost, and constraint
+% function as well as any analytical Jacobian function, has a problem.
+%
+% You must provide all the defined state functions and stage parameters to
+% the controller at run time. |StageParameter| contains all the stage
+% parameters stacked into a single vector.  We also use |TerminalState| to
+% specify terminal state at run time.
+simdata = getSimulationData(nlobj,'TerminalState');
+simdata.StateFcnParameter = params.dt;
+simdata.StageParameter = repmat([params.L;params.W;params.H],params.p,1);
+simdata.TerminalState = targetPose;
+validateFcns(nlobj,[0.3;0.4;0.5;0;0;0;0;0;0;0;0;0],[0;0;0;0;0;0],simdata);
+
+%%
+% Since the default nonlinear programming solver |fmincon| searches for a
+% local minimum, you must provide a good initial guess for the decision
+% variables, especially for trajectory optimization problems that usually
+% involve a complicated (likely nonconvex) solution space.
+%
+% This example has 244 decision variables, the plant states and inputs (6
+% in total) for each of the first p (40) stages and plant states (4) for
+% the last stage |p+1|. The |CdprInitialGuess| function uses simple
+% heuristics to generate the initial guess. The initial guess is displayed
+% as dots in the following animation plot.
+[simdata.InitialGuess, XYZ0] = CdprInitialGuess(initialPose,targetPose,u0,params.p);
+
+%% Trajectory Planning and Simulation Result
+% Use the |nlmpcmove| function to find the optimal parking path, which
+% typically takes ten to twenty seconds, depending on the initial position.
+fprintf('Path Planner is running...\n');
+tic;[~,~,info] = nlmpcmove(nlobj,initialPose,u0,simdata);t=toc;
+fprintf('Calculation Time = %s; Objective cost = %s; ExitFlag = %s; Iterations = %s\n',...
+    num2str(t),num2str(info.Cost),num2str(info.ExitFlag),num2str(info.Iterations));
+
+%% animate and plot
+% Two plots are generated. One is the animation of the parking process,
+% where blue circles indicate the optimal path and the initial guess is
+% shown as a dot. The other displays the optimal trajectory of plant states
+% and control moves.
+CdprPlot(initialPose, targetPose, params, info, XYZ0);
+
+%% analyze results
+analyzeResults(info, targetPose, t);
+
+%%
+% You can try other initial X-Y positions in the Path Planning Problem
+% section by changing the first two parameters of |initialPose|, as long as
+% the positions are valid.
+%
+% If |ExitFlag| is negative, the nonlinear MPC controller fails to find an
+% optimal solution and you cannot trust the returned trajectory. In that
+% case, you might need to provide a better initial guess and specify it in
+% |simdata.InitialGuess| before calling |nlmpcmove|.

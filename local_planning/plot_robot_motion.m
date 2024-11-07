@@ -77,6 +77,9 @@ ylim([min(param_cdpr.bp_coor(2,:)),max(param_cdpr.bp_coor(2,:))])
 % zlim([0,max(param_cdpr.bp_coor(3,:))+100])
 pause(0.5)
 
+% 设置 GIF 文件名
+gifFilename = strcat(string(datetime, 'MM-dd-HH-mm'), '.gif');
+
 for i=1:length(trj_x)
     Tr_matrix=transl(pose_ee(1,i),pose_ee(2,i),pose_ee(3,i))*trotz(pose_ee(6,i))*troty(pose_ee(5,i))*trotx(pose_ee(4,i));
     e1_g=Tr_matrix*param_cdpr.ep_coor(:,1);
@@ -125,9 +128,23 @@ for i=1:length(trj_x)
     addpoints(hp,trj_x(i),trj_y(i),trj_z(i)); 
     drawnow;
 
-    if i<length(trj_x)
-        pause(t_vec(i+1)-t_vec(i));
+%     if i<length(trj_x)
+%         pause(t_vec(i+1)-t_vec(i));
+%     else
+%         pause(t_vec(i)-t_vec(i-1));
+%     end
+
+    % 捕获当前帧
+    frame = getframe(gcf);
+    im = frame2im(frame);
+    [imind, cm] = rgb2ind(im, 256);
+    
+    % 将帧写入 GIF 文件
+    if i == 1
+        % 第一个帧：创建 GIF 文件
+        imwrite(imind, cm, gifFilename, 'gif', 'Loopcount', inf, 'DelayTime', 0.01);
     else
-        pause(t_vec(i)-t_vec(i-1));
+        % 后续帧：追加到 GIF 文件
+        imwrite(imind, cm, gifFilename, 'gif', 'WriteMode', 'append', 'DelayTime', 0.01);
     end
 end

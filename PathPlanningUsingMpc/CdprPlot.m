@@ -100,6 +100,9 @@ hWheelRL = fill(ax, wheelPoints(:,1), wheelPoints(:,2), 'k', 'Visible', 'off');
 hWheelRR = fill(ax, wheelPoints(:,1), wheelPoints(:,2), 'k', 'Visible', 'off');
 hPoint = plot(ax, 0, 0, 'r.', 'Visible', 'off');
 
+% 设置 GIF 文件名
+gifFilename = strcat(string(datetime, 'MM-dd-HH-mm'), '.gif');
+
 for i = 1:length(tSample)
     x = xSample(i);
     y = ySample(i);
@@ -156,8 +159,22 @@ for i = 1:length(tSample)
     hPoint.Visible = 'on';
     
     % pause for animation
-    %drawnow;
+    drawnow;
     pause(0.1)
+
+     % 捕获当前帧
+    frame = getframe(gcf);
+    im = frame2im(frame);
+    [imind, cm] = rgb2ind(im, 256);
+    
+    % 将帧写入 GIF 文件
+    if i == 1
+        % 第一个帧：创建 GIF 文件
+        imwrite(imind, cm, gifFilename, 'gif', 'Loopcount', inf, 'DelayTime', 0.1);
+    else
+        % 后续帧：追加到 GIF 文件
+        imwrite(imind, cm, gifFilename, 'gif', 'WriteMode', 'append', 'DelayTime', 0.1);
+    end
 end
 
 function points = getRectangleVertices(L, W)

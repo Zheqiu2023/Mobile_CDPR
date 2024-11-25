@@ -4,11 +4,11 @@ param_cdpr = param_mobile_cdpr;
 fid1 = fopen('data/archorPos03_18_16_24_15.csv');   
 fid2 = fopen('data/cablePos03_18_16_24_15.csv');
 fid3 = fopen('data/recvPos03_18_16_24_15.csv');
-fid4 = fopen('data/ee_target_pose03_18_16_24_15.csv');
+fid4 = fopen('data/03_08_21_45_10.csv');
 A = textscan(fid1, '%f64%f64%f64', 'Delimiter', ',');
 B = textscan(fid2, '%f64%f64%f64', 'Delimiter', ',');
 C = textscan(fid3, '%f64%f64%f64', 'Delimiter', ',');
-D = textscan(fid4, '%f64%f64%f64%f64%f64%f64', 'Delimiter', ',');
+D = textscan(fid4, '%f64%f64%f64%f64%f64%f64%f64%f64', 'Delimiter', ',');
 fclose(fid1); fclose(fid2); fclose(fid3); fclose(fid4);
 a = cell2mat(A);
 b = cell2mat(B);
@@ -99,7 +99,7 @@ for i = 1:4
     plot(archor_target_pos{i}(:,1),archor_target_pos{i}(:,2),'r-',...
          archor_cur_pos{i}(:,1),archor_cur_pos{i}(:,2),'b--','LineWidth',1.2);
     ylabel('位置(m)');
-    xlabel('时间(s)');xlim([0 22]);
+    xlabel('时间(s)');xlim([0 220]);
     yyaxis right; % 设置右侧纵坐标轴
     plot(archor_target_pos{i}(:,1),archor_error{i},'-.','LineWidth',1.2);
     ylabel('误差(m)');
@@ -114,7 +114,7 @@ for i = 1:4
     plot(cable_target_pos{i}(:,1),cable_target_pos{i}(:,2),'r-',...
          cable_cur_pos{i}(:,1),cable_cur_pos{i}(:,2),'b--','LineWidth',1.2);
     ylabel('位置(m)');
-    xlabel('时间(s)');xlim([0 22]);
+    xlabel('时间(s)');xlim([0 220]);
     yyaxis right; % 设置右侧纵坐标轴
     plot(cable_target_pos{i}(:,1),cable_error{i},'-.','LineWidth',1.2);
     ylabel('误差(m)');
@@ -137,7 +137,7 @@ for i = 1:4
     end
 end
 
-real_pose = zeros(6,num);target_pose = d';
+real_pose = zeros(6,num);
 acp = zeros(4, num);ccp = zeros(4, num);
 target_timestamp = archor_target_pos{1}(:,1);
 
@@ -153,6 +153,14 @@ end
 % 末端平台实际位置、期望位置
 real_pose_last = [zeros(4,1);1;1;1;1;zeros(4,1);0;0;0.028;0;0;0];
 target_pose_last = [zeros(4,1);1;1;1;1;zeros(4,1);0;0;0.028;0;0;0];
+for n = 1:size(d, 1)
+    archor = d(n, 1:4)' + param_cdpr.bp_z_init;
+    cable = d(n, 5:8)' + param_cdpr.cl_init;
+    [res, ~] = direct_kine(archor, cable, target_pose_last, param_cdpr)
+    target_pose(:,n) = res;
+    target_pose_last(13:18) = res;
+end
+
 for n = 1:num
     [res, ~] = direct_kine(acp(:,n), ccp(:,n), real_pose_last, param_cdpr)
     real_pose(:,n) = res;
@@ -169,32 +177,57 @@ end
 for i = 1:6
     ep_pos_error_max(i) = max(ep_pos_error(i, :));
 end
-% 绘图
+
+%% 绘图
 figure(3);
+set(gcf,'color','white');
 for i = 1:3
     subplot(2,3,i);
     yyaxis left; % 设置左侧纵坐标轴
     plot(target_timestamp,target_pose(i,:),'r-',...
          cur_timestamp,real_pose(i,:),'b--','LineWidth',1.2);
-    ylabel('位置(m)');
-    xlabel('时间(s)');xlim([0 22]);
+    ylabel('位置(m)', 'FontSize', 12);
+    xlabel('时间(s)', 'FontSize', 12);xlim([0 22]);
     yyaxis right; % 设置右侧纵坐标轴
-    plot(target_timestamp,ep_pos_error(i,:),'-.','LineWidth',1.2);
+    plot(target_timestamp,ep_pos_error(i,:),'g-.','LineWidth',1.2,'Color',[0.7, 0.5, 0.3]);
     ylabel('误差(m)');
-    legend('期望位置','实际位置','位置误差','FontSize',5,'EdgeColor','none','Location','southeast');
-    title('末端平台位置分析','FontSize',10);
+    legend('期望位置','实际位置','位置误差','FontSize',10,'EdgeColor','none','Location','northeast');
+    if i == 1
+        title('x轴位置', 'FontSize', 12);
+    elseif i == 2
+        title('y轴位置', 'FontSize', 12);
+    elseif i == 3
+        title('z轴位置', 'FontSize', 12);
+    end
 end
 for i = 4:6
     subplot(2,3,i);
     yyaxis left; % 设置左侧纵坐标轴
     plot(target_timestamp,target_pose(i,:)*180/pi,'r-',...
          cur_timestamp,real_pose(i,:)*180/pi,'b--','LineWidth',1.2);
-    ylabel('角度(°)');
-    xlabel('时间(s)');xlim([0 22]);
+    ylabel('角度(°)', 'FontSize', 12);
+    xlabel('时间(s)', 'FontSize', 12);xlim([0 22]);
     yyaxis right; % 设置右侧纵坐标轴
-    plot(target_timestamp,ep_pos_error(i,:)*180/pi,'-.','LineWidth',1.2);
-    ylabel('误差(m)');
-    legend('期望角度','实际角度','角度误差','FontSize',5,'EdgeColor','none','Location','southeast');
-    title('末端平台姿态分析','FontSize',10);
+    plot(target_timestamp,ep_pos_error(i,:)*180/pi,'g-.','LineWidth',1.2,'Color',[0.7, 0.5, 0.3]);
+    ylabel('误差(°)');
+    legend('期望角度','实际角度','角度误差','FontSize',10,'EdgeColor','none','Location','northeast');
+    if i == 4
+        title('x轴姿态', 'FontSize', 12);
+    elseif i == 5
+        title('y轴姿态', 'FontSize', 12);
+    elseif i == 6
+        title('z轴姿态', 'FontSize', 12);
+    end
 end
+
+figure(4);
+set(gcf,'color','white');
+plot3(target_pose(1,:), target_pose(2,:), target_pose(3,:), 'r-','LineWidth',2);hold on;
+plot3(real_pose(1,:), real_pose(2,:), real_pose(3,:), 'b--','LineWidth',2);
+xlabel('X(m)', 'FontSize', 13);
+ylabel('Y(m)', 'FontSize', 13);
+zlabel('Z(m)', 'FontSize', 13);
+axis([-0.5 0.5 -0.5 0.5 0 0.7]);
+legend('期望轨迹','实际轨迹','FontSize',13,'EdgeColor','none','Location','northeast');
+
 

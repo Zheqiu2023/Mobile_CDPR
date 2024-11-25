@@ -2,20 +2,20 @@ function [trj_type, param_trj] = traj_coor(ep_start,timestep)
 % 初始位置
 b0 = ep_start';
 %% 竖直轨迹
-a1 = [0.0, 0.0, 0.6] + b0;
-param_trj1 = {0,timestep,10,b0,a1};
-param_trj2 = {0,timestep,10,a1,b0};
-
-param_trj = {param_trj1};
-trj_type = {'line'};
-%% 直线轨迹
-% a1 = [0.1,0.2,0.4] + b0;
-% 
-% param_trj1 = {0,timestep,20,b0,a1};
-% param_trj2 = {0,timestep,20,a1,b0};
+% a1 = [0.0, 0.0, 0.6] + b0;
+% param_trj1 = {0,timestep,10,b0,a1};
+% param_trj2 = {0,timestep,10,a1,b0};
 % 
 % param_trj = {param_trj1};
 % trj_type = {'line'};
+%% 直线轨迹
+a1 = [0.1,0.2,0.4] + b0;
+
+param_trj1 = {0,timestep,20,b0,a1};
+param_trj2 = {0,timestep,20,a1,b0};
+
+param_trj = {param_trj1};
+trj_type = {'line'};
 %% 圆轨迹
 % a1=[0,0,0.4] + b0;
 % a2=[0,0.2,0.4] + b0;

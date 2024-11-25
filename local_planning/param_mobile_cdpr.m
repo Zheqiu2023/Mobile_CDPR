@@ -12,7 +12,7 @@ bp_x = [0.5544;0.5544;-0.5544;-0.5544]; % 估计值
 bp_y = [0.5446;-0.5446;0.5446;-0.5446]; 
 
 bp_z_init = bp_z_min + 0.15;
-cl_init = [1.3423;1.3423;1.3423;1.3423];
+cl_init = [1.3269;1.3269;1.3269;1.3269];
 % bp_z_init = bp_z_min + [0.175;0.05;0.05;0.175];
 % cl_init = [1.3332;1.3756;1.3756;1.3332];
 
@@ -28,8 +28,8 @@ param_cdpr.bp_z_min = bp_z_min;
 param_cdpr.cl_init = cl_init;
 param_cdpr.bp_coor = bp_coor;
 %% 末端平台的绳索固定位置 单位m
-ep_x = 25e-3;
-ep_y = 25e-3;
+ep_x = 40e-3;
+ep_y = 40e-3;
 ep_z = 30e-3;
 
 ep_1 = [ep_x;  ep_y;  ep_z; 1];
@@ -56,6 +56,6 @@ dia_pulley = 9.4;   % 滑轮直径 单位mm
 param_cdpr.pulley_radius = (dia_pulley/2+dia_cable)*1e-3;   
 param_cdpr.rotation_radius = 17e-3;     % 滑轮组旋转半径 单位m
 %% 轨迹步长
-param_cdpr.timestep = 0.01;
-param_cdpr.max_z_step = 0.000167;
-param_cdpr.max_cl_step = 0.003142;
+param_cdpr.timestep = 0.01*5;
+param_cdpr.max_z_step = 0.000167*5;
+param_cdpr.max_cl_step = 0.003142*5;

@@ -1,3 +1,4 @@
+clear, close all
 angle(:, 1) = [-0.054055;-0.858469;-0.018205;-0.509683];
 pos(:, 1) = [14.286902;-426.527679;308.638306];
 
@@ -33,7 +34,7 @@ max_beta_err = (max_beta - min_beta)*180/pi;
 max_gamma_err = (max_gamma - min_gamma)*180/pi;
 
 for i=1:5
-    plot3(pos(1, i), pos(2, i), pos(3, i), 'k.', 'MarkerSize', 10); % 黑色圆点表示原点
+    plot3(pos(1, i), pos(2, i), pos(3, i), 'k.', 'MarkerSize', 15); % 黑色圆点表示原点
     hold on;
     R = rotx(eulerAngles(i, 1)) * roty(eulerAngles(i, 2)) * rotz(eulerAngles(i, 3));
     % 绘制旋转后的坐标轴
@@ -44,8 +45,13 @@ for i=1:5
     quiver3(pos(1, i), pos(2, i), pos(3, i), i_rotated(1), i_rotated(2), i_rotated(3), arrow_length_factor, 'r'); % 红色表示 X 轴
     quiver3(pos(1, i), pos(2, i), pos(3, i), j_rotated(1), j_rotated(2), j_rotated(3), arrow_length_factor, 'g'); % 绿色表示 Y 轴
     quiver3(pos(1, i), pos(2, i), pos(3, i), k_rotated(1), k_rotated(2), k_rotated(3), arrow_length_factor, 'b'); % 蓝色表示 Z 轴
+
+    % 标注每个点的位置
+    str = sprintf('  (%0.1f, %0.1f, %0.1f)', pos(1, i), pos(2, i), pos(3, i)); % 格式化点的位置
+    text(pos(1, i), pos(2, i), pos(3, i), str, 'FontSize', 12);
 end
 
+legend('','x轴','y轴','z轴');
 xlabel('X 轴(mm)');
 ylabel('Y 轴(mm)');
 zlabel('Z 轴(mm)');

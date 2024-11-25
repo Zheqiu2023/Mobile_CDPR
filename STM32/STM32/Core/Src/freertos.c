@@ -25,8 +25,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "bsp.h"
+#include "task.h"
 #include "stdlib.h"
+#include "bsp.h"
 #include "board.h"
 #include "utilities.h"
 #include "usbd_cdc_if.h"
@@ -52,10 +53,8 @@
 
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
-osThreadId TrajectoryTaskHandle;
 osThreadId JogTaskHandle;
 osThreadId MotorDataTaskHandle;
-osMessageQId TrajCmdQueueHandle;
 osMessageQId JogCmdQueueHandle;
 osMutexId bufferMutexHandle;
 
@@ -65,7 +64,6 @@ osMutexId bufferMutexHandle;
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void const * argument);
-void StartTrajectoryTask(void const * argument);
 void StartJogTask(void const * argument);
 void ProcessMotorDataTask(void const * argument);
 
@@ -115,10 +113,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_TIMERS */
 
   /* Create the queue(s) */
-  /* definition and creation of TrajCmdQueue */
-  osMessageQDef(TrajCmdQueue, 16, uint32_t);
-  TrajCmdQueueHandle = osMessageCreate(osMessageQ(TrajCmdQueue), NULL);
-
   /* definition and creation of JogCmdQueue */
   osMessageQDef(JogCmdQueue, 16, uint32_t);
   JogCmdQueueHandle = osMessageCreate(osMessageQ(JogCmdQueue), NULL);
@@ -131,10 +125,6 @@ void MX_FREERTOS_Init(void) {
   /* definition and creation of defaultTask */
   osThreadDef(defaultTask, StartDefaultTask, osPriorityIdle, 0, 128);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
-
-  /* definition and creation of TrajectoryTask */
-  osThreadDef(TrajectoryTask, StartTrajectoryTask, osPriorityNormal, 0, 256);
-  TrajectoryTaskHandle = osThreadCreate(osThread(TrajectoryTask), NULL);
 
   /* definition and creation of JogTask */
   osThreadDef(JogTask, StartJogTask, osPriorityBelowNormal, 0, 128);
@@ -171,33 +161,6 @@ void StartDefaultTask(void const * argument)
   /* USER CODE END StartDefaultTask */
 }
 
-/* USER CODE BEGIN Header_StartTrajectoryTask */
-/**
- * @brief Function implementing the TrajectoryTask thread.
- * @param argument: Not used
- * @retval None
- */
-/* USER CODE END Header_StartTrajectoryTask */
-void StartTrajectoryTask(void const * argument)
-{
-  /* USER CODE BEGIN StartTrajectoryTask */
-//	osThreadSuspend(MotorDataTaskHandle);
-	Board_Init();
-
-	TrajMsg *buf;
-	osEvent evt;
-	/* Infinite loop */
-	for (;;) {
-		evt = osMessageGet(TrajCmdQueueHandle, osWaitForever);
-		if (evt.status == osEventMessage) {
-			buf = (TrajMsg*) evt.value.p;
-			Process_Traj_Cmd(buf);
-		}
-		osDelay(50);
-	}
-  /* USER CODE END StartTrajectoryTask */
-}
-
 /* USER CODE BEGIN Header_StartJogTask */
 /**
  * @brief Function implementing the JogTask thread.
@@ -208,31 +171,16 @@ void StartTrajectoryTask(void const * argument)
 void StartJogTask(void const * argument)
 {
   /* USER CODE BEGIN StartJogTask */
-	JogMsg *buf;
+	JogCmd *buf;
 	osEvent evt;
 	/* Infinite loop */
 	for (;;) {
 		evt = osMessageGet(JogCmdQueueHandle, osWaitForever);
 		if (evt.status == osEventMessage) {
-			buf = (JogMsg*) evt.value.p;
-			switch (buf->new_cmd) {
-				case CABLE:
-					Process_Cable_Cmd(&(buf->cable_cmd));
-					break;
-				case ARCHOR:
-					Process_Archor_Cmd(&(buf->archor_cmd));
-					break;
-				case STEER:
-					Process_GO_Cmd(&(buf->go_cmd));
-					break;
-				case ROLL:
-					Process_A1_Cmd(&(buf->a1_cmd));
-					break;
-				default:
-					break;
-			}
+			buf = (JogCmd*) evt.value.p;
+
+			Process_Cmd(buf);
 		}
-		osDelay(50);
 	}
   /* USER CODE END StartJogTask */
 }
@@ -247,16 +195,14 @@ void StartJogTask(void const * argument)
 void ProcessMotorDataTask(void const * argument)
 {
   /* USER CODE BEGIN ProcessMotorDataTask */
-	MotorFBData motor_fb_data = {0};
-	uint8_t data[20] = {0XAA, 0X55};
+	uint8_t data[40] = {0XAA, 0X55};
+	data[38] = 0xcc; data[39] = 0x88;
   /* Infinite loop */
   for(;;)
   {
-	if(Buffer_Get(&motor_fb_buffer, &motor_fb_data.motor_type, &motor_fb_data.id, &motor_fb_data.pos, &motor_fb_data.vel)){
-		memcpy(&data[2], &motor_fb_data, sizeof(motor_fb_data));
-		CDC_Transmit_FS((uint8_t*)data, 12);
-	}
-    osDelay(10);
+	memcpy(&data[2], &robot_fb_data, sizeof(robot_fb_data));
+	CDC_Transmit_FS((uint8_t*)data, sizeof(data));
+    osDelay(5);
   }
   /* USER CODE END ProcessMotorDataTask */
 }

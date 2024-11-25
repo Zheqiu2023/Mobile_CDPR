@@ -57,7 +57,7 @@ User/Src/bsp.o: ../User/Src/bsp.c \
  D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_go.h \
  D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_go_msg.h \
  D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/maxon_re35.h \
- ../Core/Inc/main.h D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/traj.h \
+ ../Core/Inc/main.h \
  D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_a1.h \
  D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_go.h \
  ../USB_DEVICE/App/usbd_cdc_if.h \
@@ -130,7 +130,6 @@ D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_go.h:
 D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_go_msg.h:
 D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/maxon_re35.h:
 ../Core/Inc/main.h:
-D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/traj.h:
 D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_a1.h:
 D:/Desktop/Mobile_CDPR/STM32/STM32/User/Inc/unitree_go.h:
 ../USB_DEVICE/App/usbd_cdc_if.h:

@@ -12,6 +12,7 @@
 #include <stdint.h>
 
 typedef enum {
+	ZERO_RESET = 0,		// 复位
 	VEL = 0X03,     // 速度模式
 	VEL_POS = 0X05  // 速度位置模式
 } RE35_Run_Mode;

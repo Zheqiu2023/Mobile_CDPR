@@ -9,7 +9,6 @@ C_SRCS += \
 ../User/Src/board.c \
 ../User/Src/bsp.c \
 ../User/Src/maxon_re35.c \
-../User/Src/traj.c \
 ../User/Src/unitree_a1.c \
 ../User/Src/unitree_go.c \
 ../User/Src/utilities.c 
@@ -19,7 +18,6 @@ OBJS += \
 ./User/Src/board.o \
 ./User/Src/bsp.o \
 ./User/Src/maxon_re35.o \
-./User/Src/traj.o \
 ./User/Src/unitree_a1.o \
 ./User/Src/unitree_go.o \
 ./User/Src/utilities.o 
@@ -29,7 +27,6 @@ C_DEPS += \
 ./User/Src/board.d \
 ./User/Src/bsp.d \
 ./User/Src/maxon_re35.d \
-./User/Src/traj.d \
 ./User/Src/unitree_a1.d \
 ./User/Src/unitree_go.d \
 ./User/Src/utilities.d 
@@ -42,7 +39,7 @@ User/Src/%.o User/Src/%.su User/Src/%.cyclo: ../User/Src/%.c User/Src/subdir.mk
 clean: clean-User-2f-Src
 
 clean-User-2f-Src:
-	-$(RM) ./User/Src/CDC_msg.cyclo ./User/Src/CDC_msg.d ./User/Src/CDC_msg.o ./User/Src/CDC_msg.su ./User/Src/board.cyclo ./User/Src/board.d ./User/Src/board.o ./User/Src/board.su ./User/Src/bsp.cyclo ./User/Src/bsp.d ./User/Src/bsp.o ./User/Src/bsp.su ./User/Src/maxon_re35.cyclo ./User/Src/maxon_re35.d ./User/Src/maxon_re35.o ./User/Src/maxon_re35.su ./User/Src/traj.cyclo ./User/Src/traj.d ./User/Src/traj.o ./User/Src/traj.su ./User/Src/unitree_a1.cyclo ./User/Src/unitree_a1.d ./User/Src/unitree_a1.o ./User/Src/unitree_a1.su ./User/Src/unitree_go.cyclo ./User/Src/unitree_go.d ./User/Src/unitree_go.o ./User/Src/unitree_go.su ./User/Src/utilities.cyclo ./User/Src/utilities.d ./User/Src/utilities.o ./User/Src/utilities.su
+	-$(RM) ./User/Src/CDC_msg.cyclo ./User/Src/CDC_msg.d ./User/Src/CDC_msg.o ./User/Src/CDC_msg.su ./User/Src/board.cyclo ./User/Src/board.d ./User/Src/board.o ./User/Src/board.su ./User/Src/bsp.cyclo ./User/Src/bsp.d ./User/Src/bsp.o ./User/Src/bsp.su ./User/Src/maxon_re35.cyclo ./User/Src/maxon_re35.d ./User/Src/maxon_re35.o ./User/Src/maxon_re35.su ./User/Src/unitree_a1.cyclo ./User/Src/unitree_a1.d ./User/Src/unitree_a1.o ./User/Src/unitree_a1.su ./User/Src/unitree_go.cyclo ./User/Src/unitree_go.d ./User/Src/unitree_go.o ./User/Src/unitree_go.su ./User/Src/utilities.cyclo ./User/Src/utilities.d ./User/Src/utilities.o ./User/Src/utilities.su
 
 .PHONY: clean-User-2f-Src
 

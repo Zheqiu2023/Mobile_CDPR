@@ -104,7 +104,6 @@ void GO_Motor_Send(GO_Motor *obj) {
 	RS485_Send_DMA(obj->config.rs485_ind, tx_buf, sizeof(tx_buf));
 }
 
-
 bool GO_Extract_Data(GOData *motor_r, uint8_t *data) {
 	memcpy(&(motor_r->motor_recv_data), data, sizeof(MotorData_t));
 
@@ -126,7 +125,6 @@ void GO_Get_Recv_Data(GOData *motor_r, uint8_t *buf) {
 	memcpy(buf, &(motor_r->motor_recv_data), sizeof(MotorData_t));
 }
 
-char sss[30];
 void GO_Motor_RecvData_Process(GO_Motor *obj, uint8_t *data, uint8_t len) {
 	GO_Extract_Data(&(obj->motor_data), data);
 
@@ -136,12 +134,9 @@ void GO_Motor_RecvData_Process(GO_Motor *obj, uint8_t *data, uint8_t len) {
 		firstTime = 0; // 确保下次中断不会覆盖数据
 	}
 
-	Buffer_Put(&motor_fb_buffer, UNITREE_GO, obj->motor_data.id, obj->motor_data.Pos, obj->motor_data.W);
-
-//	sprintf(sss, "%.2f %.2f\n", obj->motor_data.W, obj->motor_data.Pos);
-//	if (CDC_Transmit_FS((uint8_t*) sss, strlen(sss)) != USBD_OK) {
-//		Error_Handler();
-//	}
+	robot_fb_data.steer_fb_data.id = obj->motor_data.id;
+	robot_fb_data.steer_fb_data.vel = obj->motor_data.W;
+	robot_fb_data.steer_fb_data.pos = (obj->motor_data.Pos - obj->init_pos) / (GO_REDUCTION_RATIO * obj->config.dir);
 }
 
 /*

@@ -1,5 +1,5 @@
 ../User/Src/utilities.c:14:7:deg2rad	16	static
 ../User/Src/utilities.c:18:7:rad2deg	16	static
 ../User/Src/utilities.c:22:1:__io_putchar	16	static
-../User/Src/utilities.c:31:6:Buffer_Put	24	static
-../User/Src/utilities.c:46:6:Buffer_Get	24	static
+../User/Src/utilities.c:27:6:Buffer_Put	24	static
+../User/Src/utilities.c:42:6:Buffer_Get	24	static

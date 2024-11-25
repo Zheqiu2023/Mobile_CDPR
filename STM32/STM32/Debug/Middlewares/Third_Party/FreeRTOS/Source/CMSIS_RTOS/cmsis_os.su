@@ -39,6 +39,8 @@
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c:1290:9:osMailGet	56	static,ignoring_inline_asm
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c:1346:10:osMailFree	16	static
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c:1362:6:osSystickHandler	8	static
+../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c:1381:15:osThreadGetState	24	static
+../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c:1419:10:osThreadIsSuspended	16	static
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c:1432:10:osThreadSuspend	16	static
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c:1448:10:osThreadResume	16	static,ignoring_inline_asm
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c:1472:10:osThreadSuspendAll	8	static

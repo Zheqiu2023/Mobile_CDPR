@@ -1,6 +1,4 @@
-../User/Src/CDC_msg.c:11:6:MotorMsg_toCharArray	24	static
-../User/Src/CDC_msg.c:16:6:JogMsg_toCharArray	24	static
-../User/Src/CDC_msg.c:21:6:TrajMsg_toCharArray	24	static
-../User/Src/CDC_msg.c:28:10:MotorMsg_fromCharArray	40	static
-../User/Src/CDC_msg.c:38:8:JogMsg_fromCharArray	80	static
-../User/Src/CDC_msg.c:48:9:TrajMsg_fromCharArray	32	static
+../User/Src/CDC_msg.c:11:6:MotorCmd_toCharArray	24	static
+../User/Src/CDC_msg.c:16:6:JogCmd_toCharArray	24	static
+../User/Src/CDC_msg.c:23:10:MotorCmd_fromCharArray	40	static
+../User/Src/CDC_msg.c:33:8:JogCmd_fromCharArray	80	static

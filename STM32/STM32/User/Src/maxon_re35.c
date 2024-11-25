@@ -35,25 +35,28 @@ RE35_Motor* RE35_Motor_Create(RE35_Config config) {
 }
 
 void RE35_Motor_Init(RE35_Motor *obj, RE35_Run_Mode mode) {
-	obj->reset_flag = false;
 	obj->cmd.mode = mode;
+
 	// 发送复位指令
 	obj->cmd.cmd_id = 0x000 | (obj->config.driver_id << 4);  // 复位指令（帧ID，由驱动器编号和功能序号决定）
 	for (uint8_t i = 0; i < 8; ++i)
 		obj->cmd.tx_data[i] = 0x55;
 	RE35_Motor_Send(obj);
 	HAL_Delay(500);
-	// 发送模式选择指令
-	obj->cmd.cmd_id = 0x001 | (obj->config.driver_id << 4);   // 模式选择指令
-	obj->cmd.tx_data[0] = mode;  // 选择mode对应模式
-	RE35_Motor_Send(obj);
-	HAL_Delay(500);
-	// 发送配置指令
-	obj->cmd.cmd_id = 0x00A | (obj->config.driver_id << 4);  // 配置指令
-	obj->cmd.tx_data[0] = 0x05;    // 以 1 毫秒为周期对外发送电流、速度、位置等信息
-	obj->cmd.tx_data[1] = obj->config.period;  // 以 period 毫秒为周期对外发送CTL1/CTL2的电平状态
-	RE35_Motor_Send(obj);
-	HAL_Delay(500);
+
+	if (mode != ZERO_RESET) {
+		// 发送模式选择指令
+		obj->cmd.cmd_id = 0x001 | (obj->config.driver_id << 4);   // 模式选择指令
+		obj->cmd.tx_data[0] = mode;  // 选择mode对应模式
+		RE35_Motor_Send(obj);
+		HAL_Delay(500);
+		// 发送配置指令
+		obj->cmd.cmd_id = 0x00A | (obj->config.driver_id << 4);  // 配置指令
+		obj->cmd.tx_data[0] = 0x01;    // 以 1 毫秒为周期对外发送电流、速度、位置等信息
+		obj->cmd.tx_data[1] = obj->config.period;  // 以 period 毫秒为周期对外发送CTL1/CTL2的电平状态
+		RE35_Motor_Send(obj);
+		HAL_Delay(500);
+	}
 }
 
 void RE35_Motor_SetCmd(RE35_Motor *obj, RE35_Run_Mode mode, int32_t speed, int32_t angle) {
@@ -97,16 +100,24 @@ void RE35_Motor_RecvData_Process(RE35_Motor *obj, uint32_t recv_id, uint8_t *dat
 
 	if (temp_id == 0x0b) {
 		// 接收到电流、速度、位置等信息
-//		obj->data.current = (data[0] << 8) | data[1];
-		obj->data.speed = (data[2] << 8) | data[3];
-		obj->data.angle = (data[4] << 24) | (data[5] << 16) | (data[6] << 8) | data[7];
+		uint8_t id = (recv_id - 0x0b) >> 4;
 
-		Buffer_Put(&motor_fb_buffer, MAXON_RE35, (recv_id-0x0b)>>4, obj->data.angle, obj->data.speed);
+		if (id <= 4) {
+			robot_fb_data.cable_fb_data.id = id;
+			robot_fb_data.cable_fb_data.vel = (data[2] << 8) | data[3];
+			robot_fb_data.cable_fb_data.pos = (data[4] << 24) | (data[5] << 16) | (data[6] << 8) | data[7];
+		} else {
+			robot_fb_data.archor_fb_data.id = id;
+			robot_fb_data.archor_fb_data.vel = (data[2] << 8) | data[3];
+			robot_fb_data.archor_fb_data.pos = (data[4] << 24) | (data[5] << 16) | (data[6] << 8) | data[7];
+		}
 	} else if (temp_id == 0x0c && data[0] == 0x01) {
 		// 接收到驱动器CTL1/CTL2的电平状态(针对锚点座电机)
-		obj->reset_flag = true;
-		RE35_Motor_SetCmd(obj, obj->cmd.mode, 0, 0);
-		RE35_Motor_Send(obj);
+		if (obj->reset_flag == false) {
+			RE35_Motor_SetCmd(obj, obj->cmd.mode, 0, 0);
+			RE35_Motor_Send(obj);
+			obj->reset_flag = true;
+		}
 	}
 }
 

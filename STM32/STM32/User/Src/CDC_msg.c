@@ -8,50 +8,36 @@
 #include "CDC_msg.h"
 
 // 将结构体转换为char数组
-void MotorMsg_toCharArray(const MotorMsg *msg, uint8_t *buffer, size_t size) {
+void MotorCmd_toCharArray(const MotorCmd *msg, uint8_t *buffer, size_t size) {
 	if (size < sizeof(*msg))
 		return;
 	memcpy(buffer, msg, sizeof(*msg));
 }
-void JogMsg_toCharArray(const JogMsg *msg, uint8_t *buffer, size_t size) {
-	if (size < sizeof(*msg))
-		return;
-	memcpy(buffer, msg, sizeof(*msg));
-}
-void TrajMsg_toCharArray(const TrajMsg *msg, uint8_t *buffer, size_t size) {
+void JogCmd_toCharArray(const JogCmd *msg, uint8_t *buffer, size_t size) {
 	if (size < sizeof(*msg))
 		return;
 	memcpy(buffer, msg, sizeof(*msg));
 }
 
 // 从char数组转换回结构体
-MotorMsg MotorMsg_fromCharArray(const uint8_t *data, size_t size) {
-	MotorMsg cmd;
+MotorCmd MotorCmd_fromCharArray(const uint8_t *data, size_t size) {
+	MotorCmd cmd;
 	if (size < sizeof(cmd)) {
 		// 返回一个默认初始化的结构体，这里简单地清零
 		memset(&cmd, 0, sizeof(cmd));
 		return cmd;
 	}
-	memcpy(&cmd, data, sizeof(MotorMsg));
+	memcpy(&cmd, data, sizeof(MotorCmd));
 	return cmd;
 }
-JogMsg JogMsg_fromCharArray(const uint8_t *data, size_t size) {
-	JogMsg msg;
+JogCmd JogCmd_fromCharArray(const uint8_t *data, size_t size) {
+	JogCmd msg;
 	if (size < sizeof(msg)) {
 		// 返回一个默认初始化的结构体，这里简单地清零
 		memset(&msg, 0, sizeof(msg));
 		return msg;
 	}
-	memcpy(&msg, data, sizeof(JogMsg));
+	memcpy(&msg, data, sizeof(JogCmd));
 	return msg;
 }
-TrajMsg TrajMsg_fromCharArray(const uint8_t *data, size_t size) {
-	TrajMsg msg;
-	if (size < sizeof(msg)) {
-		// 返回一个默认初始化的结构体，这里简单地清零
-		memset(&msg, 0, sizeof(msg));
-		return msg;
-	}
-	memcpy(&msg, data, sizeof(TrajMsg));
-	return msg;
-}
+

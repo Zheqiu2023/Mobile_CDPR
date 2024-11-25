@@ -53,7 +53,6 @@
 "./User/Src/board.o"
 "./User/Src/bsp.o"
 "./User/Src/maxon_re35.o"
-"./User/Src/traj.o"
 "./User/Src/unitree_a1.o"
 "./User/Src/unitree_go.o"
 "./User/Src/utilities.o"

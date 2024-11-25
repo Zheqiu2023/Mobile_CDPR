@@ -29,15 +29,14 @@ float rad2deg(float radian);
 #define RING_BUFFER_SIZE 256
 
 typedef struct {
-    float data[RING_BUFFER_SIZE][2]; // 存储电机反馈数据
-    uint8_t id[RING_BUFFER_SIZE];     // 存储电机ID
-    MotorType motor_type[RING_BUFFER_SIZE];	// 电机类型
-    uint8_t head;
-    uint8_t tail;
-    bool full;
+	float data[RING_BUFFER_SIZE][2]; // 存储电机反馈数据
+	uint8_t id[RING_BUFFER_SIZE];     // 存储电机ID
+	MotorType motor_type[RING_BUFFER_SIZE];	// 电机类型
+	uint8_t head;
+	uint8_t tail;
+	bool full;
 } RingBuffer;
 
-extern RingBuffer motor_fb_buffer;
 extern osMutexId bufferMutexHandle;
 
 void Buffer_Put(RingBuffer *buffer, MotorType type, uint8_t id, float pos, float vel);

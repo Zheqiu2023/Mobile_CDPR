@@ -32,7 +32,8 @@ typedef struct {
 	CAN_RxHeaderTypeDef RxHeader;      //接收句柄
 } CAN_info;
 
-extern osMessageQId JogCmdQueueHandle, TrajCmdQueueHandle;
+extern RobotFBData robot_fb_data;
+extern osMessageQId JogCmdQueueHandle;
 extern osThreadId MotorDataTaskHandle;
 
 void BSP_Init();
@@ -45,10 +46,6 @@ void CAN_Filter_Init();   //过滤器配置函数
 void CAN_Send_Msg(uint8_t can_ind, uint8_t id, uint8_t *msg, uint8_t len);  //数据发送函数
 
 void CDC_Process_Recv_Data(uint8_t *data, uint32_t Len);
-void Process_Cable_Cmd(MotorMsg *data);
-void Process_Archor_Cmd(MotorMsg *data);
-void Process_GO_Cmd(MotorMsg *data);
-void Process_A1_Cmd(MotorMsg *data);
-void Process_Traj_Cmd(TrajMsg *data);
+void Process_Cmd(JogCmd *cmd);
 
 #endif /* BSP_H_ */

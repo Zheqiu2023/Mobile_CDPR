@@ -96,10 +96,12 @@ int main(void)
   MX_CAN1_Init();
   MX_USART1_UART_Init();
   MX_USART6_UART_Init();
+  MX_CAN2_Init();
   MX_UART5_Init();
   /* USER CODE BEGIN 2 */
 	CAN_Filter_Init();
 	BSP_Init();
+	Board_Init();
 
 //	uint8_t dada[17] = { 0xfe, 0xee, 0x10, 0x00, 0x00, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x19, 0x00, 0xe6,
 //			0x5a };

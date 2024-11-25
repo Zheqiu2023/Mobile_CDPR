@@ -53,7 +53,7 @@ void A1_Motor_SetCmd(A1_Motor *obj, A1_Ctrl_Mode mode, float T, float W, float P
 			obj->motor_cmd.K_P = 0;
 			obj->motor_cmd.K_W = 20;
 			obj->motor_cmd.T = 0;
-			obj->motor_cmd.W = W * A1_REDUCTION_RATIO * obj->config.dir;
+			obj->motor_cmd.W = W * A1_REDUCTION_RATIO * obj->config.dir / WHEEL_R;
 			obj->motor_cmd.Pos = 0;
 			break;
 		case A1_MODE_POS:
@@ -71,6 +71,7 @@ void A1_Motor_SetCmd(A1_Motor *obj, A1_Ctrl_Mode mode, float T, float W, float P
 			obj->motor_cmd.T = T;
 			obj->motor_cmd.W = W * A1_REDUCTION_RATIO * obj->config.dir;
 			obj->motor_cmd.Pos = obj->init_pos + Pos * A1_REDUCTION_RATIO * obj->config.dir;
+			break;
 		default:
 			break;
 	}
@@ -113,9 +114,8 @@ void A1_Get_Send_Data(A1Cmd *motor_s, uint8_t *buf) {
 void A1_Motor_Send(A1_Motor *obj) {
 	A1_Modify_Data(&(obj->motor_cmd));
 
-	uint8_t tx_buf[34];
+	uint8_t tx_buf[34] = {0};
 	memcpy(tx_buf, &(obj->motor_cmd.motor_send_data), sizeof(tx_buf));
-
 	RS485_Send_DMA(obj->config.rs485_ind, tx_buf, sizeof(tx_buf));
 }
 
@@ -143,23 +143,18 @@ void A1_Get_Recv_Data(A1Data *motor_r, uint8_t *buf) {
 	memcpy(buf, &(motor_r->motor_recv_data), sizeof(ServoComdDataV3));
 }
 
-char str[30];
 void A1_Motor_RecvData_Process(A1_Motor *obj, uint8_t *data, uint8_t len) {
 	A1_Extract_Data(&(obj->motor_data), data);
 
-	static int firstTime = 1; // 静态变量，只在第一次调用时初始化
+	static bool firstTime = true; // 静态变量，只在第一次调用时初始化
 	if (firstTime) {
 		obj->init_pos = obj->motor_data.Pos; // 获取零位
-		firstTime = 0; // 确保下次中断不会覆盖数据
+		firstTime = false; // 确保下次中断不会覆盖数据
 	}
 
-	Buffer_Put(&motor_fb_buffer, UNITREE_A1, obj->motor_data.id, obj->motor_data.Pos, obj->motor_data.LW);
-
-	// 将浮点数转换为字符串
-//	sprintf(str, "%.2f %.2f\n", obj->motor_data.LW, obj->motor_data.Pos);
-//	if (CDC_Transmit_FS((uint8_t*) str, strlen(str)) != USBD_OK) {
-//		Error_Handler();
-//	}
+	robot_fb_data.roll_fb_data.id = obj->motor_data.id;
+	robot_fb_data.roll_fb_data.vel = obj->motor_data.LW * WHEEL_R / (A1_REDUCTION_RATIO * obj->config.dir);
+	robot_fb_data.roll_fb_data.pos = obj->motor_data.Pos;
 }
 
 float A1_Convert_Vel(float vel) {

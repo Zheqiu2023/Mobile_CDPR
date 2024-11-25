@@ -1,5 +1,5 @@
 ../User/Src/utilities.c:14:7:deg2rad	1
 ../User/Src/utilities.c:18:7:rad2deg	1
 ../User/Src/utilities.c:22:1:__io_putchar	1
-../User/Src/utilities.c:31:6:Buffer_Put	2
-../User/Src/utilities.c:46:6:Buffer_Get	3
+../User/Src/utilities.c:27:6:Buffer_Put	2
+../User/Src/utilities.c:42:6:Buffer_Get	3
